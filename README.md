@@ -17,9 +17,12 @@ apt-get install libgmp-dev
 `./configure --enable-targets=aarch64-linux-gnu,arm-linux-gnueabi,x86_64-pc-linux-gnu --enable-tui --with-python --disable-ld --disable-gas --disable-sim`
 
 (3) make only gdb:  
-`make all-gdb`  
+`make all-gdb` 
+and  
+`make install` in order to install all gdb components
 
-This process generates a `./gdb/gdb` executable.
+
+This process generates a `gdb` executable.
 
 New functions added:
 **tui comment**:  
