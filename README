@@ -6,7 +6,7 @@ on Ubuntu you need to:
 
 (1) Load the following packages:
 
->apt install libncurses5-dev
+`apt install libncurses5-dev`
 >apt install texinfo
 >apt install build-essential
 >apt-get install libgmp-dev
