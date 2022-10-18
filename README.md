@@ -20,8 +20,14 @@ apt-get install libgmp-dev
 This process generates `./gdb/gdb` executable.
 
 New functions added:
-**tui comment**
-**tui rename**
+**tui comment**: 
+`tui comment set <text>`: to add a comment at the current PC
+`tui comment save`: to save all comments (and renames) to $HOME/.comments file
+`tui comment clear`: to clear all in-memory comments
+
+**tui rename**:
+`tui rename set <text>`: renames the current PC call address to <text>. Will also show as a comment at that address
+`tui rename save`: saves all renames, similar to `tui comment save`.	
 
 -------------------------------------------------------------------------------------------------------------------------------
 This directory contains various GNU compilers, assemblers, linkers, 
