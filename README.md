@@ -1,4 +1,6 @@
-		   README for GNU development tools
+**README for GNU development tools**
+
+The main idea of this fork is to add Ida-like functionality of comments and function renames for the layout asm in the gdb tui.
 
 
 In order to build gdb for aarch64 (or other arm targets) and x86_64 targets 
@@ -11,13 +13,13 @@ apt install texinfo
 apt install build-essential
 apt-get install libgmp-dev
 ```
-(2) run:   
+(2) configure:   
 `./configure --enable-targets=aarch64-linux-gnu,arm-linux-gnueabi,x86_64-pc-linux-gnu --enable-tui --disable-ld --disable-gas --disable-sim`
 
-(3) run:  
+(3) make only gdb:  
 `make all-gdb`  
 
-This process generates `./gdb/gdb` executable.
+This process generates a `./gdb/gdb` executable.
 
 New functions added:
 **tui comment**:  
