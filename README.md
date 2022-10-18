@@ -45,6 +45,7 @@ run the ``configure'' script here, e.g.:
 	./configure 
 	make
 
+	
 To install them (by default in /usr/local/bin, /usr/local/lib, etc),
 then do:
 	make install
