@@ -34,6 +34,12 @@ New functions added:
 `tui rename set <text>`: renames the current PC call address to <text>. Will also show as a comment at that address  
 `tui rename save`: saves all renames, similar to `tui comment save`.	  
 
+	
+Notes:
+1. You may need to copy the gdb python libraries to /usr/share/gdb:  
+`cp -R ./gdb/data-directory/* /usr/share/gdb/`  
+	
+
 -------------------------------------------------------------------------------------------------------------------------------
 This directory contains various GNU compilers, assemblers, linkers, 
 debuggers, etc., plus their support routines, definitions, and documentation.
