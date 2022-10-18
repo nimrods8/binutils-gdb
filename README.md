@@ -5,15 +5,26 @@ In order to build gdb for aarch64 (or other arm targets) and x86_64 targets
 on Ubuntu you need to:
 
 (1) Load the following packages:
+```
+apt install libncurses5-dev
+apt install texinfo
+apt install build-essential
+apt-get install libgmp-dev
+```
+(2) run 
+`./configure --enable-targets=aarch64-linux-gnu,arm-linux-gnueabi,x86_64-pc-linux-gnu --enable-tui --disable-ld --disable-gas --disable-sim`
 
-`apt install libncurses5-dev`
->apt install texinfo
->apt install build-essential
->apt-get install libgmp-dev
+(3) run:
+`make all-gdb`
+
+This process generates ./gdb/gdb executable.
+
+New functions added:
+>tui comment
+>tui rename
 
 
-
-
+-------------------------------------------------------------------------------------------------------------------------------
 This directory contains various GNU compilers, assemblers, linkers, 
 debuggers, etc., plus their support routines, definitions, and documentation.
 
