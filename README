@@ -5,12 +5,12 @@ In order to build gdb for aarch64 (or other arm targets) and x86_64 targets
 on Ubuntu you need to:
 
 (1) Load the following packages:
-'''
-apt install libncurses5-dev
-apt install texinfo
-apt install build-essential
-apt-get install libgmp-dev
-'''
+
+>apt install libncurses5-dev
+>apt install texinfo
+>apt install build-essential
+>apt-get install libgmp-dev
+
 
 
 
