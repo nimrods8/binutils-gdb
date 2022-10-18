@@ -14,7 +14,7 @@ apt install build-essential
 apt-get install libgmp-dev
 ```
 (2) configure:   
-`./configure --enable-targets=aarch64-linux-gnu,arm-linux-gnueabi,x86_64-pc-linux-gnu --enable-tui --disable-ld --disable-gas --disable-sim`
+`./configure --enable-targets=aarch64-linux-gnu,arm-linux-gnueabi,x86_64-pc-linux-gnu --enable-tui --with-python --disable-ld --disable-gas --disable-sim`
 
 (3) make only gdb:  
 `make all-gdb`  
