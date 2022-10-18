@@ -11,23 +11,23 @@ apt install texinfo
 apt install build-essential
 apt-get install libgmp-dev
 ```
-(2) run 
+(2) run:   
 `./configure --enable-targets=aarch64-linux-gnu,arm-linux-gnueabi,x86_64-pc-linux-gnu --enable-tui --disable-ld --disable-gas --disable-sim`
 
-(3) run:
-`make all-gdb`
+(3) run:  
+`make all-gdb`  
 
 This process generates `./gdb/gdb` executable.
 
 New functions added:
-**tui comment**: 
-`tui comment set <text>`: to add a comment at the current PC
-`tui comment save`: to save all comments (and renames) to $HOME/.comments file
-`tui comment clear`: to clear all in-memory comments
+**tui comment**:  
+`tui comment set <text>`: to add a comment at the current PC  
+`tui comment save`: to save all comments (and renames) to $HOME/.comments file  
+`tui comment clear`: to clear all in-memory comments  
 
-**tui rename**:
-`tui rename set <text>`: renames the current PC call address to <text>. Will also show as a comment at that address
-`tui rename save`: saves all renames, similar to `tui comment save`.	
+**tui rename**:  
+`tui rename set <text>`: renames the current PC call address to <text>. Will also show as a comment at that address  
+`tui rename save`: saves all renames, similar to `tui comment save`.	  
 
 -------------------------------------------------------------------------------------------------------------------------------
 This directory contains various GNU compilers, assemblers, linkers, 
