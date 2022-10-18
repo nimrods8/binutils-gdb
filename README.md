@@ -19,7 +19,7 @@ apt-get install libgmp-dev
 (3) make only gdb:  
 `make all-gdb` 
 and  
-`make install` in order to install all gdb components
+`make install` in order to install all gdb components, including gdb-python and TUI support
 
 
 This process generates a `gdb` executable.
