@@ -20,9 +20,8 @@ apt-get install libgmp-dev
 This process generates `./gdb/gdb` executable.
 
 New functions added:
->tui comment
->tui rename
-
+**tui comment**
+**tui rename**
 
 -------------------------------------------------------------------------------------------------------------------------------
 This directory contains various GNU compilers, assemblers, linkers, 
