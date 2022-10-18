@@ -17,7 +17,7 @@ apt-get install libgmp-dev
 (3) run:
 `make all-gdb`
 
-This process generates ./gdb/gdb executable.
+This process generates `./gdb/gdb` executable.
 
 New functions added:
 >tui comment
