@@ -501,7 +501,7 @@ bool tui_hooks_serialize_comments( bool onlyShow)
      if( fd == 0)
        return false;
   }
-  sprintf( text, "type\taddr\tfile\tcomment\n");
+  sprintf( text, "%s\t%10s\t%-50s\t%s\n", "type", "addr", "file", "comment");
 
   if( onlyShow)
      gdb_printf( "%s", text);
@@ -519,16 +519,33 @@ bool tui_hooks_serialize_comments( bool onlyShow)
 
   for( int i = 0; i < m_comments.size(); i++)
   {
-     sprintf( text, "%d\t%s\t%s\t%s\n", 
+     sprintf( text, "%d\t%10s\t%s\t%s\n", 
                     (int)m_comments.at(i).type,
                     paddress( gdbarch, m_comments.at(i).unbased_addr),
                     m_comments.at(i).filename,
                     m_comments.at(i).text);
 
      if( onlyShow)
-        gdb_printf( "%s", text);
+     {
+         int takefrom = 0;
+         if( strlen( m_comments.at(i).filename) > 50)
+         {
+            takefrom = strlen( m_comments.at(i).filename)  - 50;
+         }
+         sprintf( text, "%d\t%10s\t%-50s\t%s\n", 
+                    (int)m_comments.at(i).type,
+                    paddress( gdbarch, m_comments.at(i).unbased_addr),
+                    &m_comments.at(i).filename[takefrom],
+                    m_comments.at(i).text);      
+         gdb_printf( "%s", text);
+     }
      else
      {
+        sprintf( text, "%d\t%10s\t%s\t%s\n", 
+                    (int)m_comments.at(i).type,
+                    paddress( gdbarch, m_comments.at(i).unbased_addr),
+                    m_comments.at(i).filename,
+                    m_comments.at(i).text);
         sz = write( fd, text, strlen( text));
         if( sz <= 0) { close( fd); return false; }
      }
@@ -540,6 +557,7 @@ bool tui_hooks_serialize_comments( bool onlyShow)
    
    return true;
 }
+
 
 
 
@@ -606,6 +624,14 @@ bool tui_hooks_deserialize_comments( void)
    
    gdb_printf( "Comments vector length = %lu", m_comments.size());
    return true;
+}
+
+
+
+static void
+info_comments_command (const char *args, int from_tty)
+{
+  tui_hooks_serialize_comments( true);
 }
 
 
@@ -952,4 +978,21 @@ _initialize_tui_hooks ()
   m_comments.clear();
   tui_hooks_deserialize_comments();
 
+  cmd_list_element *info_breakpoints_cmd = add_info ("comments", info_comments_command, _("\
+Status of specified breakpoints (all user-settable breakpoints if no argument).\n\
+The \"Type\" column indicates one of:\n\
+\tbreakpoint     - normal breakpoint\n\
+\twatchpoint     - watchpoint\n\
+The \"Disp\" column contains one of \"keep\", \"del\", or \"dis\" to indicate\n\
+the disposition of the breakpoint after it gets hit.  \"dis\" means that the\n\
+breakpoint will be disabled.  The \"Address\" and \"What\" columns indicate the\n\
+address and file/line number respectively.\n\
+\n\
+Convenience variable \"$_\" and default examine address for \"x\"\n\
+are set to the address of the last breakpoint listed unless the command\n\
+is prefixed with \"server \".\n\n\
+Convenience variable \"$bpnum\" contains the number of the last\n\
+breakpoint set."));
+
+  add_info_alias ("c", info_breakpoints_cmd, 1);
 }
