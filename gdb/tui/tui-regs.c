@@ -101,8 +101,12 @@ tui_register_format (frame_info_ptr frame, int regnum)
 
   /* Remove the possible \n.  */
   std::string str = stream.release ();
+
+
   if (!str.empty () && str.back () == '\n')
     str.resize (str.size () - 1);
+  // NS 19/10/2022 add something
+  str += "**";
 
   return str;
 }

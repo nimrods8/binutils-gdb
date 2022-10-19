@@ -60,8 +60,9 @@
 // NS 16/10
 static void tui_hooks_comment_all_command (const char *, int);
 static void tui_hooks_call_rename_command (const char *, int);
-bool tui_hooks_serialize_comments( void);
+bool tui_hooks_serialize_comments( bool);
 bool tui_hooks_deserialize_comments( void);
+std::vector<std::string> tui_hooks_split(const std::string& s, char seperator);
 
 
 
@@ -484,25 +485,35 @@ static int mem_region_callback( CORE_ADDR a, long unsigned int size, int read, i
 
 
 // SERIALIZING
-bool tui_hooks_serialize_comments( void)
+bool tui_hooks_serialize_comments( bool onlyShow)
 {
   char fn[100], text[1024];
 
   char *dir = getenv( "HOME");
   sprintf( fn, "/%s/.comments", dir);
-  gdb_printf( "%s\n", fn);
+  // DEBUG:: gdb_printf( "%s\n", fn);
 
-  int fd = open( fn, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR);
-  if( fd == 0)
-    return false;
+  int fd, sz;
 
-  sprintf( text, "type\taddr\tfile\tcomment\n");
-  int sz = write( fd, text, strlen( text));
-  if( sz <= 0)
+  if( !onlyShow)
   {
-    close( fd);
-    return false;
+     fd = open( fn, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR);
+     if( fd == 0)
+       return false;
   }
+  sprintf( text, "type\taddr\tfile\tcomment\n");
+
+  if( onlyShow)
+     gdb_printf( "%s", text);
+  else
+  {
+     sz = write( fd, text, strlen( text));
+     if( sz <= 0)
+     {
+       close( fd);
+       return false;
+     }
+  } // endif
 
   struct gdbarch *gdbarch = target_gdbarch();
 
@@ -513,10 +524,20 @@ bool tui_hooks_serialize_comments( void)
                     paddress( gdbarch, m_comments.at(i).unbased_addr),
                     m_comments.at(i).filename,
                     m_comments.at(i).text);
-     sz = write( fd, text, strlen( text));
-     if( sz <= 0) return false;
+
+     if( onlyShow)
+        gdb_printf( "%s", text);
+     else
+     {
+        sz = write( fd, text, strlen( text));
+        if( sz <= 0) { close( fd); return false; }
+     }
    } // endfor
    close( fd);
+
+   if( onlyShow)
+      gdb_printf( "\n");
+   
    return true;
 }
 
@@ -551,12 +572,31 @@ bool tui_hooks_deserialize_comments( void)
      rd = fgets( text, sizeof( text), file);
      if( rd != 0)
      {
+         //std::string tmpstr = std::string( text);
+         //std::vector<std::string> vecstr = tui_hooks_split( tmpstr, '\t');
+
+
          sscanf( text, "%d\t0x%x\t%s\t%s\n", 
                     &tempi, //&com.type,
                     (unsigned int *)&unb, //com.unbased_addr, 
                     com.filename,
                     com.text);
 
+         char *token;
+         const char s[2] = "\t";
+         token = strtok( text, s);  		// type
+         token = strtok( NULL, s);		// address
+         token = strtok( NULL, s);		// filename
+         token = strtok( NULL, s);		// text
+         
+         memcpy( com.text, token, sizeof( com.text));
+         com.text[sizeof( com.text) - 1] = 0;
+/*
+         tempi = (int)strtol( vecstr.at(0).c_str(), NULL, 10);
+         unb   = strtoul( vecstr.at(1).substr(2).c_str(), NULL, 16);
+         memcpy( com.filename, vecstr.at(3).c_str(), sizeof( com.filename));
+         memcpy( com.text, vecstr.at(4).c_str(), sizeof( com.text));
+*/
 	 com.type = (enum_tui_type)tempi;
          com.unbased_addr = (CORE_ADDR)unb;
          m_comments.push_back( com);
@@ -570,6 +610,28 @@ bool tui_hooks_deserialize_comments( void)
 
 
 
+std::vector<std::string> tui_hooks_split(const std::string& s, char seperator)
+{
+   std::vector<std::string> output;
+
+    std::string::size_type prev_pos = 0, pos = 0;
+
+    while((pos = s.find(seperator, pos)) != std::string::npos)
+    {
+        std::string substring( s.substr(prev_pos, pos-prev_pos) );
+
+        output.push_back(substring);
+
+        prev_pos = ++pos;
+    }
+
+    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+
+    return output;
+}
+
+
+
 
 static void
 tui_hooks_comment_all_command (const char *arg, int from_tty)
@@ -578,7 +640,7 @@ tui_hooks_comment_all_command (const char *arg, int from_tty)
    if( !memcmp( "save", arg, 4))
    {
        gdb_printf( "save comments\n");
-       tui_hooks_serialize_comments();
+       tui_hooks_serialize_comments( false);
        return;
    }
    if( !memcmp( "set ", arg, 4))
@@ -607,6 +669,12 @@ tui_hooks_comment_all_command (const char *arg, int from_tty)
       gdb_printf( "Comments vector length = %lu\n", m_comments.size());
 
    }
+   if( !memcmp( "show", arg, 4))
+   {
+       gdb_printf( "comments\n");
+       tui_hooks_serialize_comments( true);
+       return;
+   }
 }
 
 
@@ -617,7 +685,7 @@ tui_hooks_call_rename_command (const char *arg, int from_tty)
    if( !memcmp( "save", arg, 4))
    {
        gdb_printf( "save renames\n");
-       tui_hooks_serialize_comments();
+       tui_hooks_serialize_comments( false);
        return;
    }
    if( !memcmp( "set ", arg, 4))
@@ -648,17 +716,36 @@ tui_hooks_call_rename_command (const char *arg, int from_tty)
       std::string insn = gdb_dis_out.release ();
       gdb_printf( "instruction: %s", insn.c_str());
       
-      // find "0x" at the beginning of the  address
+      // find "0x" at the beginning of the address after the call or jump insturction
       int zero_x = insn.find( "0x");
       int end_x = insn.length();
-      int eee   = insn.find( " ", zero_x);
-      if( eee != std::string::npos)
-         end_x = eee;
-      std::string hexstr = insn.substr( zero_x, end_x); 
+      std::string hexstr = "0";
+      
+      // Found?
+      if( zero_x >= 0)
+      {
+         int eee   = insn.find( " ", zero_x);
+         if( eee != std::string::npos)
+             end_x = eee;
+         
+         hexstr = insn.substr( zero_x, end_x); 
+      }
+      CORE_ADDR call_to = 0;
 
-      CORE_ADDR call_to = strtoul( hexstr.c_str(), NULL, 16);
-
+      try 
+      {
+         call_to  = strtoul( hexstr.c_str(), NULL, 16);
+      }
+      catch( ...)
+      {
+      }
+      
       gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, pc), paddress( gdbarch, call_to), paddress( gdbarch, com.unbased_addr));
+
+      // if could not find an address in the instruction part
+      // use the PC as the call_to and rename that PC
+      if( call_to == 0)
+         call_to = pc;
 
       int inx = tui_hooks_get_index_of_maps( call_to); 
       if( inx >= 0)
@@ -760,7 +847,7 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
 
                // memcpy( ret_comment, m_comments.at(j).text, len);
                // ret_comment[len] = (char)NULL;
-               str_comment->append( m_comments.at(j).text); 
+               str_comment->insert( str_comment->size(), m_comments.at(j).text); 
            }
         } // endif
      } // endfor
