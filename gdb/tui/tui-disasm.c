@@ -109,6 +109,9 @@ tui_disassemble (struct gdbarch *gdbarch,
   /* Must start with an empty list.  */
   asm_lines.clear ();
 
+  // NS call notify to signal start...
+  gdb::observers::tui_next_instruction.notify( 0, NULL, NULL);
+
   /* Now construct each line.  */
   for (int i = 0; i < count; ++i)
     {
@@ -144,13 +147,12 @@ tui_disassemble (struct gdbarch *gdbarch,
 
       // NS 15/10
       {
-          char ret_comment[1025];
-          ret_comment[0] = 0;
+          std::string str_comment = "";
 
-          gdb::observers::tui_next_instruction.notify( orig_pc, ret_comment, sizeof( ret_comment), &tal.insn);
-          if( ret_comment[0] != 0) {
+          gdb::observers::tui_next_instruction.notify( orig_pc, &str_comment,  &tal.insn);
+          if( str_comment.size() > 0) {
 	     tal.insn += "\t\033[0;93m// ";
-             tal.insn += ret_comment;
+             tal.insn += str_comment;
              tal.insn += "\033[0m";
           } // endif have new comment
       }
@@ -172,7 +174,7 @@ tui_disassemble (struct gdbarch *gdbarch,
 
   // NS 17/10
   // notify observer that all lines have been formatted
-  gdb::observers::tui_next_instruction.notify( 0, NULL, 0, NULL);
+//  gdb::observers::tui_next_instruction.notify( 0, NULL, 0, NULL);
 
   return pc;
 }

@@ -198,8 +198,6 @@ tui_event_modify_breakpoint (struct breakpoint *b)
 }
 
 
-static bool before_prompt_called;
-
 /* This is set to true if the next window refresh should come from the
    current stack frame.  */
 static bool from_stack;
@@ -362,13 +360,12 @@ static void
 tui_before_prompt (const char *current_gdb_prompt)
 {
   // NS 16/10
-  tui_hooks_sort_maps( tui_location.addr ());
+  // tui_hooks_sort_maps( tui_location.addr ());
 
   tui_refresh_frame_and_register_information ();
   from_stack = false;
   from_source_symtab = false;
 
-  //before_prompt_called = true;
 }
 
 /***************************************************************************************/
@@ -690,36 +687,15 @@ tui_hooks_call_rename_command (const char *arg, int from_tty)
 
 
 static void
-tui_process_next_instruction( CORE_ADDR cur_inst_addr, char *ret_comment, int max_len, std::string *inst)
+tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment, std::string *inst)
 {
-/*
-char filename[100];
-
-   // target_ops *target = current_inferior()->top_target();
-
-   long pid = current_inferior()->pid;
-   sprintf( filename, "/proc/%lu/maps", pid);
-   gdb::unique_xmalloc_ptr<char> map = target_fileio_read_stralloc( NULL, filename);
-   gdb_printf( "hhh: %s\n\n\n", (char *)map.get());
-*/
-//   std::vector<mem_region> vec = target_memory_map();
-   // NOT USED... target->find_memory_regions( &mem_region_callback, NULL);
-
-   // printf( "Instruction: %s", a.c_str());
-
-  // gdb_printf( "Instruction: %s", s->c_str());
-
   // NS? tui_hooks_sort_maps( tui_location.addr());
 
   if( cur_inst_addr == 0L)
-   {
-     before_prompt_called = false;
-     return;
+  {
+      tui_hooks_sort_maps( tui_location.addr());
+      return;
   } 
-  if( !before_prompt_called)
-     tui_hooks_sort_maps( cur_inst_addr);
-
-  before_prompt_called = true;
 
   // NS: this should be executed only after a before_prompt was called and not everytime
   // the observer notify is called...
@@ -763,7 +739,7 @@ char filename[100];
   /* Translate PC address.  */
   // redeclared struct gdbarch *gdbarch = tui_location.gdbarch ();
   CORE_ADDR addr_pc = cur_inst_addr; //tui_location.addr ();
-  ret_comment[0] = (char)NULL;
+  // ret_comment[0] = (char)NULL;
   if( m_execMaps.size() > 0)
   {
      // assuming we are always running code inside .text or .so libs
@@ -779,16 +755,17 @@ char filename[100];
            if( m_comments.at(j).unbased_addr + m_execMaps.at(0).addr == addr_pc)
            {
                // DEBUG:: gdb_printf( "Found comment: %s\n", m_comments.at(j).text);
-               int len = strlen( m_comments.at(j).text);
-               if( len > max_len) len = max_len - 1;
+               // int len = strlen( m_comments.at(j).text);
+               // if( len > max_len) len = max_len - 1;
 
-               memcpy( ret_comment, m_comments.at(j).text, len);
-               ret_comment[len] = (char)NULL; 
+               // memcpy( ret_comment, m_comments.at(j).text, len);
+               // ret_comment[len] = (char)NULL;
+               str_comment->append( m_comments.at(j).text); 
            }
         } // endif
      } // endfor
    } // endif
-}
+} // endfunc
 
 
 /* Token associated with observers registered while TUI hooks are
