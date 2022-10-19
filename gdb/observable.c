@@ -82,6 +82,9 @@ DEFINE_OBSERVABLE (connection_removed);
 DEFINE_OBSERVABLE (target_pre_wait);
 DEFINE_OBSERVABLE (target_post_wait);
 
+// NS 15/10
+DEFINE_OBSERVABLE (tui_next_instruction);
+
 } /* namespace observers */
 } /* namespace gdb */
 

@@ -132,10 +132,28 @@ tui_disassemble (struct gdbarch *gdbarch,
       /* Capture the disassembled instruction.  */
       tal.insn = gdb_dis_out.release ();
 
+      // NS
+//      std::printf( "Instruction: %s", tal.insn.c_str()); 
+      // tal.insn += "\t\033[0;93m// this is a comment!!\033[0m";
+
       /* And capture the address the instruction is at.  */
       tal.addr = orig_pc;
       print_address (gdbarch, orig_pc, &gdb_dis_out);
       tal.addr_string = gdb_dis_out.release ();
+
+
+      // NS 15/10
+      {
+          char ret_comment[1025];
+          ret_comment[0] = 0;
+
+          gdb::observers::tui_next_instruction.notify( orig_pc, ret_comment, sizeof( ret_comment), &tal.insn);
+          if( ret_comment[0] != 0) {
+	     tal.insn += "\t\033[0;93m// ";
+             tal.insn += ret_comment;
+             tal.insn += "\033[0m";
+          } // endif have new comment
+      }
 
       if (addr_size != nullptr)
 	{
@@ -151,6 +169,11 @@ tui_disassemble (struct gdbarch *gdbarch,
 
       asm_lines.push_back (std::move (tal));
     }
+
+  // NS 17/10
+  // notify observer that all lines have been formatted
+  gdb::observers::tui_next_instruction.notify( 0, NULL, 0, NULL);
+
   return pc;
 }
 

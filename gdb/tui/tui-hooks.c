@@ -34,6 +34,12 @@
 #include "top.h"
 #include "observable.h"
 #include "source.h"
+
+#include "arch-utils.h"
+#include "frame.h"
+#include "disasm.h"
+
+
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -46,8 +52,94 @@
 #include "tui/tui-win.h"
 #include "tui/tui-stack.h"
 #include "tui/tui-winsource.h"
+#include "tui/tui-location.h"
 
 #include "gdb_curses.h"
+
+
+// NS 16/10
+static void tui_hooks_comment_all_command (const char *, int);
+static void tui_hooks_call_rename_command (const char *, int);
+bool tui_hooks_serialize_comments( void);
+bool tui_hooks_deserialize_comments( void);
+
+
+
+/* Data from one mapping from /proc/PID/maps.  */
+#define MAX_FN_TEXT	256
+#define MAX_COMMENT_LEN 256
+
+// struct to hold the mapping of all executable memory regions
+struct mapping
+{
+  ULONGEST addr;
+  ULONGEST endaddr;
+  gdb::string_view permissions;
+  ULONGEST offset;
+  gdb::string_view device;
+  ULONGEST inode;
+
+  /* This field is guaranteed to be NULL-terminated, hence it is not a
+     gdb::string_view.  */
+  char filename[MAX_FN_TEXT];
+};
+
+std::vector<mapping> m_execMaps;
+
+
+typedef enum
+{ 
+   TUI_TYPE_COMMENT,
+   TUI_TYPE_RENAME,
+   TUI_TYPE_END
+} enum_tui_type;
+
+// struct for all the comments
+struct comment
+{
+   enum_tui_type type;
+   char text[MAX_COMMENT_LEN];
+   char filename[MAX_FN_TEXT];
+   ULONGEST unbased_addr;
+};
+std::vector<comment> m_comments;
+
+
+/* Service function for corefiles and info proc.  */
+static mapping
+read_mapping (const char *line)
+{
+  struct mapping mapping;
+  const char *p = line;
+
+  mapping.addr = strtoulst (p, &p, 16);
+  if (*p == '-')
+    p++;
+  mapping.endaddr = strtoulst (p, &p, 16);
+
+  p = skip_spaces (p);
+  const char *permissions_start = p;
+  while (*p && !isspace (*p))
+    p++;
+  mapping.permissions = {permissions_start, (size_t) (p - permissions_start)};
+
+  mapping.offset = strtoulst (p, &p, 16);
+
+  p = skip_spaces (p);
+  const char *device_start = p;
+  while (*p && !isspace (*p))
+    p++;
+  mapping.device = {device_start, (size_t) (p - device_start)};
+
+  mapping.inode = strtoulst (p, &p, 10);
+
+  p = skip_spaces (p);
+  memcpy( mapping.filename, p, MAX_FN_TEXT - 1);
+  mapping.filename[MAX_FN_TEXT - 1] = (char)NULL;
+
+  return mapping;
+}
+
 
 static void
 tui_new_objfile_hook (struct objfile* objfile)
@@ -59,8 +151,8 @@ tui_new_objfile_hook (struct objfile* objfile)
 /* Prevent recursion of deprecated_register_changed_hook().  */
 static bool tui_refreshing_registers = false;
 
-/* Observer for the register_changed notification.  */
 
+/* Observer for the register_changed notification.  */
 static void
 tui_register_changed (frame_info_ptr frame, int regno)
 {
@@ -105,14 +197,15 @@ tui_event_modify_breakpoint (struct breakpoint *b)
   tui_update_all_breakpoint_info (nullptr);
 }
 
+
+static bool before_prompt_called;
+
 /* This is set to true if the next window refresh should come from the
    current stack frame.  */
-
 static bool from_stack;
 
 /* This is set to true if the next window refresh should come from the
    current source symtab.  */
-
 static bool from_source_symtab;
 
 /* Refresh TUI's frame and register information.  This is a hook intended to be
@@ -177,23 +270,195 @@ tui_inferior_exit (struct inferior *inf)
   tui_display_main ();
 }
 
+
+
+// NS 17/10
+/**
+ re-sorts the m_execMaps according to current PC
+**/
+static void tui_hooks_sort_maps( CORE_ADDR pc)
+{
+  struct mapping m;
+  
+  //gdbarch *gdbarch = target_gdbarch();
+  //gdb_printf( "PC= %s", paddress( gdbarch, pc));
+ 
+  for( int i = 0; i < m_execMaps.size(); i++)
+  {
+     m = m_execMaps.at( i);
+// DEBUG::
+/*
+		  gdb_printf ("  %18s %18s %10s %10s  %-5.*s  %s\n",
+			      paddress (gdbarch, m.addr),
+			      paddress (gdbarch, m.endaddr),
+			      hex_string (m.endaddr - m.addr),
+			      hex_string (m.offset),
+			      (int) m.permissions.size (),
+			      m.permissions.data (),
+			      m.filename);
+*/
+
+     if( m.addr <= pc && m.endaddr >= pc && i > 0)
+     {
+        // DEBUG:: gdb_printf( "In here: %s\n", m.filename);
+        m_execMaps.erase( m_execMaps.begin() + i);
+        m_execMaps.insert( m_execMaps.begin(), m);
+        //break;
+     }
+  } //endfor
+}
+
+/**
+ returns the index of pc inside m_execMaps
+ or -1 if not found
+**/
+static int tui_hooks_get_index_of_maps( CORE_ADDR pc)
+{
+  struct mapping m;
+  // DEBUG:: struct gdbarch *gdbarch = target_gdbarch();
+
+  for( int i = 0; i < m_execMaps.size(); i++)
+  {
+     m = m_execMaps.at( i);
+
+     if( m.addr <= pc && m.endaddr >= pc)
+     {
+        // DEBUG:: gdb_printf( "In here: %s\n", m.filename);
+        return i;
+     }
+  } //endfor
+  return -1;
+}
+
+
+/**
+ returns the index of pc inside m_execMaps
+ or -1 if not found
+**/
+static int tui_hooks_get_index_of_maps_by_filename( std::string &filename)
+{
+  struct mapping m;
+  // DEBUG:: struct gdbarch *gdbarch = target_gdbarch();
+
+  for( int i = 0; i < m_execMaps.size(); i++)
+  {
+     m = m_execMaps.at( i);
+
+     if( m.filename == filename)
+     {
+        // DEBUG:: gdb_printf( "In here: %s\n", m.filename);
+        return i;
+     }
+  } //endfor
+  return -1;
+}
+
+
+
+
 /* Observer for the before_prompt notification.  */
 
 static void
 tui_before_prompt (const char *current_gdb_prompt)
 {
+  // NS 16/10
+  tui_hooks_sort_maps( tui_location.addr ());
+
   tui_refresh_frame_and_register_information ();
   from_stack = false;
   from_source_symtab = false;
+
+  //before_prompt_called = true;
 }
 
-/* Observer for the normal_stop notification.  */
+/***************************************************************************************/
+// reads /proc/pid/maps from target and parses info into m_execMaps vector
+static void 
+tui_hooks_read_maps_info( void)
+{
+char filename[MAX_FN_TEXT];
 
+
+  // NS 15/10/22
+  long pid = current_inferior()->pid;
+  sprintf( filename, "/proc/%lu/maps", pid);
+  gdb::unique_xmalloc_ptr<char> map = target_fileio_read_stralloc( NULL, filename);
+  // debug::   gdb_printf( "hhh: %s\n\n\n", (char *)map.get());
+  
+  if( map == NULL)
+  {
+     m_execMaps.clear();
+     return;
+  }
+  struct gdbarch *gdbarch = target_gdbarch();
+
+  m_execMaps.clear();
+
+  /* Translate PC address.  */
+  // redeclared struct gdbarch *gdbarch = tui_location.gdbarch ();
+  CORE_ADDR addr = tui_location.addr ();
+  std::string pc_out (gdbarch
+		      ? paddress (gdbarch, addr)
+		      : "??");
+  // const char *pc_buf = pc_out.c_str ();
+  // int pc_width = pc_out.size ();
+
+	  char *saveptr, *line;
+	  for (line = strtok_r (map.get (), "\n", &saveptr);
+	       line;
+	       line = strtok_r (NULL, "\n", &saveptr))
+	    {
+	      struct mapping m = read_mapping (line);
+
+              // has x in permissions?
+              if( m.permissions.find ('x') !=  gdb::string_view::npos)
+              {
+                  // PC in here???
+                  if( m.addr <= addr && m.endaddr >= addr)
+                  {
+                     // DEBUG:: gdb_printf( "In here: %s\n", m.filename);
+                     m_execMaps.insert( m_execMaps.begin(), m);
+                  }
+                  else
+                     m_execMaps.push_back( m);
+
+/*
+		  gdb_printf ("  %18s %18s %10s %10s  %-5.*s  %s\n",
+			      paddress (gdbarch, m.addr),
+			      paddress (gdbarch, m.endaddr),
+			      hex_string (m.endaddr - m.addr),
+			      hex_string (m.offset),
+			      (int) m.permissions.size (),
+			      m.permissions.data (),
+			      m.filename);
+*/
+              } // endif exec permission
+	    } // endfor
+
+            // gdb_printf( "vector length = %lu", m_execMaps.size());
+}
+
+
+
+/* Observer for the normal_stop notification.  */
 static void
 tui_normal_stop (struct bpstat *bs, int print_frame)
 {
   from_stack = true;
 }
+
+
+/* This module's normal_stop observer.  */
+static void
+tui_hooks_solib_loaded_observer( struct so_list *so)
+{
+  /* The inferior execution has been resumed, and it just stopped
+     again.  This means that the list of shared libraries may have
+     evolved.  Reset our cached value.  */
+  
+   tui_hooks_read_maps_info();  
+}
+
 
 /* Observer for user_selected_context_changed.  */
 
@@ -210,6 +475,321 @@ tui_symtab_changed ()
 {
   from_source_symtab = true;
 }
+
+/*
+//find_memory_region_ftype mem_region_callback;
+static int mem_region_callback( CORE_ADDR a, long unsigned int size, int read, int write, int exec, int mod, bool tagged, void *data)
+{
+   return 1;
+}
+*/
+// NS
+
+
+// SERIALIZING
+bool tui_hooks_serialize_comments( void)
+{
+  char fn[100], text[1024];
+
+  char *dir = getenv( "HOME");
+  sprintf( fn, "/%s/.comments", dir);
+  gdb_printf( "%s\n", fn);
+
+  int fd = open( fn, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR);
+  if( fd == 0)
+    return false;
+
+  sprintf( text, "type\taddr\tfile\tcomment\n");
+  int sz = write( fd, text, strlen( text));
+  if( sz <= 0)
+  {
+    close( fd);
+    return false;
+  }
+
+  struct gdbarch *gdbarch = target_gdbarch();
+
+  for( int i = 0; i < m_comments.size(); i++)
+  {
+     sprintf( text, "%d\t%s\t%s\t%s\n", 
+                    (int)m_comments.at(i).type,
+                    paddress( gdbarch, m_comments.at(i).unbased_addr),
+                    m_comments.at(i).filename,
+                    m_comments.at(i).text);
+     sz = write( fd, text, strlen( text));
+     if( sz <= 0) return false;
+   } // endfor
+   close( fd);
+   return true;
+}
+
+
+
+// DESERIALIZING
+bool tui_hooks_deserialize_comments( void)
+{
+  char fn[100], text[1024];
+  unsigned int unb;
+  int tempi;
+
+  char *dir = getenv( "HOME");
+  sprintf( fn, "/%s/.comments", dir);
+  gdb_printf( "%s\n", fn);
+
+  FILE *file = fopen( fn, "rt");
+  if( file == NULL)
+    return false;
+
+  char *rd = fgets( text, sizeof( text), file);		// read the heaeder line
+
+  // sprintf( text, "inx\taddr\tfile\tcomment\n");
+
+  // struct gdbarch *gdbarch = target_gdbarch();
+  struct comment com;
+
+  m_comments.clear();
+  
+  while( rd != 0)
+  {
+     rd = fgets( text, sizeof( text), file);
+     if( rd != 0)
+     {
+         sscanf( text, "%d\t0x%x\t%s\t%s\n", 
+                    &tempi, //&com.type,
+                    (unsigned int *)&unb, //com.unbased_addr, 
+                    com.filename,
+                    com.text);
+
+	 com.type = (enum_tui_type)tempi;
+         com.unbased_addr = (CORE_ADDR)unb;
+         m_comments.push_back( com);
+     } // endif
+   } // endwhile
+   fclose( file);
+   
+   gdb_printf( "Comments vector length = %lu", m_comments.size());
+   return true;
+}
+
+
+
+
+static void
+tui_hooks_comment_all_command (const char *arg, int from_tty)
+{
+//   gdb_printf( "args=%s, %d %d %d %d\n", arg, (int)arg[3], (int)arg[4], (int)arg[5], (int)arg[6]);
+   if( !memcmp( "save", arg, 4))
+   {
+       gdb_printf( "save comments\n");
+       tui_hooks_serialize_comments();
+       return;
+   }
+   if( !memcmp( "set ", arg, 4))
+   {
+      struct comment com;
+      gdb_printf( "set comments\n");
+      memcpy( com.filename, m_execMaps.at(0).filename, MAX_FN_TEXT - 1);
+    
+      CORE_ADDR pc = tui_location.addr ();
+     
+
+      com.filename[MAX_FN_TEXT - 1] = (char)NULL;
+      memcpy( com.text, &arg[4], MAX_COMMENT_LEN - 1);
+      com.text[MAX_COMMENT_LEN - 1] = (char)NULL;
+
+      com.unbased_addr = pc - m_execMaps.at(0).addr;
+
+
+      //struct gdbarch *gdbarch = target_gdbarch();
+      //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, com.unbased_addr));
+
+
+      com.type = TUI_TYPE_COMMENT;
+
+      m_comments.push_back( com);
+      gdb_printf( "Comments vector length = %lu\n", m_comments.size());
+
+   }
+}
+
+
+static void
+tui_hooks_call_rename_command (const char *arg, int from_tty)
+{
+//   gdb_printf( "args=%s, %d %d %d %d\n", arg, (int)arg[3], (int)arg[4], (int)arg[5], (int)arg[6]);
+   if( !memcmp( "save", arg, 4))
+   {
+       gdb_printf( "save renames\n");
+       tui_hooks_serialize_comments();
+       return;
+   }
+   if( !memcmp( "set ", arg, 4))
+   {
+      struct comment com;
+      gdb_printf( "set renames\n");
+
+      bool term_out = true; //source_styling && gdb_stdout->can_emit_style_escape ();
+      string_file gdb_dis_out (term_out);
+      CORE_ADDR pc = tui_location.addr ();
+      struct gdbarch *gdbarch = target_gdbarch();
+ 
+      try
+      {
+	  gdb_print_insn (gdbarch, pc, &gdb_dis_out, NULL);
+      }
+      catch (const gdb_exception_error &except)
+      {
+	  /* If PC points to an invalid address then we'll catch a
+	     MEMORY_ERROR here, this should stop the disassembly, but
+	     otherwise is fine.  */
+	  if (except.error != MEMORY_ERROR)
+	    throw;
+	  return;
+      }
+
+      /* Capture the disassembled instruction.  */
+      std::string insn = gdb_dis_out.release ();
+      gdb_printf( "instruction: %s", insn.c_str());
+      
+      // find "0x" at the beginning of the  address
+      int zero_x = insn.find( "0x");
+      int end_x = insn.length();
+      int eee   = insn.find( " ", zero_x);
+      if( eee != std::string::npos)
+         end_x = eee;
+      std::string hexstr = insn.substr( zero_x, end_x); 
+
+      CORE_ADDR call_to = strtoul( hexstr.c_str(), NULL, 16);
+
+      gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, pc), paddress( gdbarch, call_to), paddress( gdbarch, com.unbased_addr));
+
+      int inx = tui_hooks_get_index_of_maps( call_to); 
+      if( inx >= 0)
+      {
+         memcpy( com.filename, m_execMaps.at(inx).filename, MAX_FN_TEXT - 1);
+         com.filename[MAX_FN_TEXT - 1] = (char)NULL;
+
+         memcpy( com.text, &arg[4], MAX_COMMENT_LEN - 1);
+         com.text[MAX_COMMENT_LEN - 1] = (char)NULL;
+
+         com.unbased_addr = call_to - m_execMaps.at(inx).addr;
+
+
+      //struct gdbarch *gdbarch = target_gdbarch();
+      //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, com.unbased_addr));
+
+
+         com.type = TUI_TYPE_RENAME;
+
+         m_comments.push_back( com);
+         gdb_printf( "Comments vector length = %lu\n", m_comments.size());
+      } //endif
+   }
+}
+
+
+
+static void
+tui_process_next_instruction( CORE_ADDR cur_inst_addr, char *ret_comment, int max_len, std::string *inst)
+{
+/*
+char filename[100];
+
+   // target_ops *target = current_inferior()->top_target();
+
+   long pid = current_inferior()->pid;
+   sprintf( filename, "/proc/%lu/maps", pid);
+   gdb::unique_xmalloc_ptr<char> map = target_fileio_read_stralloc( NULL, filename);
+   gdb_printf( "hhh: %s\n\n\n", (char *)map.get());
+*/
+//   std::vector<mem_region> vec = target_memory_map();
+   // NOT USED... target->find_memory_regions( &mem_region_callback, NULL);
+
+   // printf( "Instruction: %s", a.c_str());
+
+  // gdb_printf( "Instruction: %s", s->c_str());
+
+  // NS? tui_hooks_sort_maps( tui_location.addr());
+
+  if( cur_inst_addr == 0L)
+   {
+     before_prompt_called = false;
+     return;
+  } 
+  if( !before_prompt_called)
+     tui_hooks_sort_maps( cur_inst_addr);
+
+  before_prompt_called = true;
+
+  // NS: this should be executed only after a before_prompt was called and not everytime
+  // the observer notify is called...
+  int where;
+  struct gdbarch *gdbarch = target_gdbarch();
+  static int hooks_axa = -1;
+
+
+     for( int i = 0; i < m_comments.size();  i++)
+     {
+         if( m_comments.at(i).type == TUI_TYPE_RENAME)
+         {
+            if( true /*hooks_axa == -1 || before_prompt_called*/)
+            {
+               std::string filen = m_comments.at(i).filename;
+               // DEBUG gdb_printf( "Flne=%s, i = %d\n", filen.c_str(), i);
+               if((hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen)) >= 0)
+               {
+                   CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
+                   std::string froms = paddress( gdbarch, pow);
+                   if(( where = inst->find( froms)) > 0)
+                   {
+                      inst->replace( where, froms.length(), m_comments.at(i).text);
+                      break;
+                   }
+               } //endif
+            } 
+            else
+            { 
+                   CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
+                   std::string froms = paddress( gdbarch, pow);
+                   if(( where = inst->find( froms)) > 0)
+                   {
+                      inst->replace( where, froms.length(), m_comments.at(i).text);
+                      break;
+                   }
+            }
+         } // endif
+      } // endfor
+
+  /* Translate PC address.  */
+  // redeclared struct gdbarch *gdbarch = tui_location.gdbarch ();
+  CORE_ADDR addr_pc = cur_inst_addr; //tui_location.addr ();
+  ret_comment[0] = (char)NULL;
+  if( m_execMaps.size() > 0)
+  {
+     // assuming we are always running code inside .text or .so libs
+     // CORE_ADDR based = addr_pc + m_execMaps.at(0).addr;
+     for( int j = 0; j < m_comments.size(); j++)
+     {
+        if( /* m_comments.at(j).type == TUI_TYPE_COMMENT && */ !strcmp( m_comments.at(j).filename, m_execMaps.at(0).filename))
+        { 
+           //gdb_printf( "com unbased=%lx\n", m_comments.at(j).unbased_addr);
+           //struct gdbarch *gdbarch = target_gdbarch();
+           //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, addr_pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, m_comments.at(j).unbased_addr));
+
+           if( m_comments.at(j).unbased_addr + m_execMaps.at(0).addr == addr_pc)
+           {
+               // DEBUG:: gdb_printf( "Found comment: %s\n", m_comments.at(j).text);
+               int len = strlen( m_comments.at(j).text);
+               if( len > max_len) len = max_len - 1;
+
+               memcpy( ret_comment, m_comments.at(j).text, len);
+               ret_comment[len] = (char)NULL; 
+           }
+        } // endif
+     } // endfor
+   } // endif
+}
+
 
 /* Token associated with observers registered while TUI hooks are
    installed.  */
@@ -250,6 +830,13 @@ tui_attach_detach_observers (bool attach)
 		    tui_context_changed, attach);
   attach_or_detach (gdb::observers::current_source_symtab_and_line_changed,
 		    tui_symtab_changed, attach);
+
+// NS 15/10
+  attach_or_detach (gdb::observers::tui_next_instruction,
+                    tui_process_next_instruction, attach);
+  attach_or_detach (gdb::observers::solib_loaded,
+                    tui_hooks_solib_loaded_observer, attach);
+
 }
 
 /* Install the TUI specific hooks.  */
@@ -277,10 +864,28 @@ tui_remove_hooks (void)
   tui_attach_detach_observers (false);
 }
 
+
+
 void _initialize_tui_hooks ();
 void
 _initialize_tui_hooks ()
 {
   /* Install the permanent hooks.  */
   gdb::observers::new_objfile.attach (tui_new_objfile_hook, "tui-hooks");
+
+  // NS 16/10
+  struct cmd_list_element **tuicmd;
+
+  tuicmd = tui_get_cmd_list ();
+  add_cmd ( "comment", class_tui, tui_hooks_comment_all_command,
+	       _("Set, clear, load or save comments"),
+	       tuicmd);
+
+  add_cmd ( "rename", class_tui, tui_hooks_call_rename_command,
+	       _("Set, clear, load or save function call renames"),
+	       tuicmd);
+
+  m_comments.clear();
+  tui_hooks_deserialize_comments();
+
 }

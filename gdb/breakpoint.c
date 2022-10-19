@@ -997,7 +997,7 @@ set_breakpoint_condition (struct breakpoint *b, const char *exp,
       b->cond_string.reset ();
 
       if (is_watchpoint (b))
-	gdb::checked_static_cast<watchpoint *> (b)->cond_exp.reset ();
+	static_cast<watchpoint *> (b)->cond_exp.reset ();
       else
 	{
 	  int loc_num = 1;
@@ -1029,7 +1029,7 @@ set_breakpoint_condition (struct breakpoint *b, const char *exp,
 	  expression_up new_exp = parse_exp_1 (&arg, 0, 0, 0, &tracker);
 	  if (*arg != 0)
 	    error (_("Junk at end of expression"));
-	  watchpoint *w = gdb::checked_static_cast<watchpoint *> (b);
+	  watchpoint *w = static_cast<watchpoint *> (b);
 	  w->cond_exp = std::move (new_exp);
 	  w->cond_exp_valid_block = tracker.block ();
 	}
@@ -4837,8 +4837,11 @@ bpstat_print (bpstat *bs, target_waitkind kind)
 static bool
 breakpoint_cond_eval (expression *exp)
 {
-  scoped_value_mark mark;
-  return value_true (evaluate_expression (exp));
+  struct value *mark = value_mark ();
+  bool res = value_true (evaluate_expression (exp));
+
+  value_free_to_mark (mark);
+  return res;
 }
 
 /* Allocate a new bpstat.  Link it to the FIFO list by BS_LINK_POINTER.  */
@@ -5360,11 +5363,12 @@ bpstat_check_breakpoint_conditions (bpstat *bs, thread_info *thread)
       int within_current_scope = 1;
       struct watchpoint * w;
 
-      /* We use scoped_value_mark because it could be a long time
-	 before we return to the command level and call
-	 free_all_values.  We can't call free_all_values because we
-	 might be in the middle of evaluating a function call.  */
-      scoped_value_mark mark;
+      /* We use value_mark and value_free_to_mark because it could
+	 be a long time before we return to the command level and
+	 call free_all_values.  We can't call free_all_values
+	 because we might be in the middle of evaluating a
+	 function call.  */
+      struct value *mark = value_mark ();
 
       if (is_watchpoint (b))
 	w = (struct watchpoint *) b;
@@ -5423,6 +5427,7 @@ bpstat_check_breakpoint_conditions (bpstat *bs, thread_info *thread)
 	     watchpoint, unconditionally report it.  */
 	}
       /* FIXME-someday, should give breakpoint #.  */
+      value_free_to_mark (mark);
     }
 
   if (cond != nullptr && !condition_result)
@@ -8312,7 +8317,7 @@ code_breakpoint::code_breakpoint (struct gdbarch *gdbarch_,
   if (type == bp_static_tracepoint
       || type == bp_static_marker_tracepoint)
     {
-      auto *t = gdb::checked_static_cast<struct tracepoint *> (this);
+      auto *t = static_cast<struct tracepoint *> (this);
       struct static_tracepoint_marker marker;
 
       if (strace_marker_p (this))
@@ -9974,16 +9979,17 @@ watch_command_1 (const char *arg, int accessflag, int from_tty,
 	      /* We've found a "mask" token, which means the user wants to
 		 create a hardware watchpoint that is going to have the mask
 		 facility.  */
-	      struct value *mask_value;
+	      struct value *mask_value, *mark;
 
 	      if (use_mask)
 		error(_("You can specify only one mask."));
 
 	      use_mask = just_location = true;
 
-	      scoped_value_mark mark;
+	      mark = value_mark ();
 	      mask_value = parse_to_comma_and_eval (&value_start);
 	      mask = value_as_address (mask_value);
+	      value_free_to_mark (mark);
 	    }
 	  else
 	    /* We didn't recognize what we found.  We should stop here.  */
@@ -13502,8 +13508,7 @@ insert_single_step_breakpoint (struct gdbarch *gdbarch,
   sal.explicit_pc = 1;
 
   auto *ss_bp
-    = (gdb::checked_static_cast<momentary_breakpoint *>
-       (tp->control.single_step_breakpoints));
+    = static_cast<momentary_breakpoint *> (tp->control.single_step_breakpoints);
   ss_bp->add_location (sal);
 
   update_global_location_list (UGLL_INSERT);

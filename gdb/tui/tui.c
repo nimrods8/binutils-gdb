@@ -604,6 +604,14 @@ Usage: tui enable"),
 	   _("Disable TUI display mode.\n\
 Usage: tui disable"),
 	   tuicmd);
+ 
+// NS 16/10
+/*
+  add_cmd ("comment", class_tui, tui_enable_command,
+	   _("Enable TUI display mode.\n\
+Usage: tui comment"),
+	   tuicmd);
+*/
 
   /* Debug this tui internals.  */
   add_setshow_boolean_cmd ("tui", class_maintenance, &debug_tui,  _("\

@@ -1152,7 +1152,7 @@ write_cooked_index (cooked_index_vector *table,
 	      /* In order for the index to work when read back into
 		 gdb, it has to use the encoded name, with any
 		 suffixes stripped.  */
-	      std::string encoded = ada_encode (name, false);
+	      std::string encoded = ada_encode (name /*, false*/);				// NS 18/10/2022
 	      name = obstack_strdup (&symtab->m_string_obstack,
 				     encoded.c_str ());
 	    }
