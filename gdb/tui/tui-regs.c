@@ -105,8 +105,35 @@ tui_register_format (frame_info_ptr frame, int regnum)
 
   if (!str.empty () && str.back () == '\n')
     str.resize (str.size () - 1);
+
+#if 0
   // NS 19/10/2022 add something
-  str += "**";
+  try 
+  {
+      char xxx[32];
+      const char *name = gdbarch_register_name (gdbarch, regnum);
+      //str += std::string( name);
+
+      //gdb_printf( "reg=%s\n", name);
+
+      //str += std::string( name);
+
+      if (*name != '\0')
+      {
+         sprintf( xxx, "*(long *)$%s", name); 
+         //str += std::string( xxx);
+
+         struct value *val = parse_and_eval( xxx);
+         //str += std::string( name);
+         sprintf( xxx, " - %#lx", value_as_address( val)); 
+         str +=  std::string( xxx); // "%x %lu\n", *(unsigned int *)val, value_as_long( val));
+      }
+  }
+  catch( ...)
+  { 
+//     str += "**";
+  }
+#endif
 
   return str;
 }
