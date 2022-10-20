@@ -34,6 +34,7 @@ New functions added:
 `tui rename set <text>`: renames the current PC call address to <text>. Will also show as a comment at that address  
 `tui rename save`: saves all renames, similar to `tui comment save`.	  
 
+Use `info comments` to display all stored comments.
 	
 Notes:
 1. You may need to copy the gdb python libraries to /usr/share/gdb:  
