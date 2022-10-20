@@ -892,7 +892,7 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
 static void
 tui_hooks_next_reg( const char *regname, std::string *reg_str)
 {
-char xyz[32];
+char xyz[64];
 
 // QString:
 // ------------------------
@@ -918,29 +918,34 @@ char xyz[32];
   {
       if( regname != 0 && *regname != '\0')
       {
-         sprintf( xyz, "*(long *)$%s", regname); 
+         sprintf( xyz, "*(long *)(*(long *)$%s)", regname); 
          struct value *val0 = parse_and_eval( xyz);
          // now, value is the dereferenced value of the register
-         CORE_ADDR addr0 = value_as_addr( val0);
+         CORE_ADDR addr0 = value_as_address( val0);
 
-         sprintf( xyz, "*(long *)($%s + 0x18)", regname); 
+         sprintf( xyz, "*(long *)((*(long *)$%s) + 0x10)", regname); 
          struct value *val1 = parse_and_eval( xyz);
          // now, value is the dereferenced value of the register
-         CORE_ADDR addr1 = value_as_addr( val1);
+         CORE_ADDR addr1 = value_as_address( val1);
 
-         if( addr0  < 0xff && addr1 == 0x18)
+         if( (addr0 & 0x00000000ffffffff)  < 0xff && addr1 == 0x18)
          {
             // this is a QString or QByteArray!
-            reg_str->insert(  reg_str->size(), "\033[1;34mQt\033[0m");
+            reg_str->insert(  reg_str->size(), " <Qt>");
          }
+         /*
+         else
+            reg_str->insert(  reg_str->size(), "**");
+         */
          //sprintf( xxx, " - %#lx", value_as_address( val)); 
          //str +=  std::string( xxx); // "%x %lu\n", *(unsigned int *)val, value_as_long( val));
       }
   }
   catch( ...)
   { 
-//     str += "**";
-  }
+     //reg_str->insert(  reg_str->size(), "--");
+     //str += "\033[1;34m--\033[0m";
+  } 
 } // endfunc
 
 
