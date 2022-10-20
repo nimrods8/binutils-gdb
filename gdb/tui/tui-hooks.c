@@ -881,6 +881,69 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
 } // endfunc
 
 
+
+/**
+███    ██ ███████ ██   ██ ████████     ██████  ███████  ██████  ██ ███████ ████████ ███████ ██████  
+████   ██ ██       ██ ██     ██        ██   ██ ██      ██       ██ ██         ██    ██      ██   ██ 
+██ ██  ██ █████     ███      ██        ██████  █████   ██   ███ ██ ███████    ██    █████   ██████  
+██  ██ ██ ██       ██ ██     ██        ██   ██ ██      ██    ██ ██      ██    ██    ██      ██   ██ 
+██   ████ ███████ ██   ██    ██        ██   ██ ███████  ██████  ██ ███████    ██    ███████ ██   ██ 
+*/
+static void
+tui_hooks_next_reg( const char *regname, std::string *reg_str)
+{
+char xyz[32];
+
+// QString:
+// ------------------------
+// |refcnt    |    size   |
+// |capacity  |   alloc   |
+// |       offset         |
+// | wide char string     |
+// ------------------------
+// QByteArray - same as QString just with c_str instead of wide char string
+
+// QList:
+// ------------------------
+// |refcnt    |   alloc   |
+// |begin     |   end     |
+// |  [0] QString *       |
+// |  [1] QString *       |
+// |  [...]
+// ------------------------
+//
+// QList: size = d.end - e.begin
+
+  try
+  {
+      if( regname != 0 && *regname != '\0')
+      {
+         sprintf( xyz, "*(long *)$%s", regname); 
+         struct value *val0 = parse_and_eval( xyz);
+         // now, value is the dereferenced value of the register
+         CORE_ADDR addr0 = value_as_addr( val0);
+
+         sprintf( xyz, "*(long *)($%s + 0x18)", regname); 
+         struct value *val1 = parse_and_eval( xyz);
+         // now, value is the dereferenced value of the register
+         CORE_ADDR addr1 = value_as_addr( val1);
+
+         if( addr0  < 0xff && addr1 == 0x18)
+         {
+            // this is a QString or QByteArray!
+            reg_str->insert(  reg_str->size(), "\033[1;34mQt\033[0m");
+         }
+         //sprintf( xxx, " - %#lx", value_as_address( val)); 
+         //str +=  std::string( xxx); // "%x %lu\n", *(unsigned int *)val, value_as_long( val));
+      }
+  }
+  catch( ...)
+  { 
+//     str += "**";
+  }
+} // endfunc
+
+
 /* Token associated with observers registered while TUI hooks are
    installed.  */
 static const gdb::observers::token tui_observers_token {};
@@ -927,7 +990,15 @@ tui_attach_detach_observers (bool attach)
   attach_or_detach (gdb::observers::solib_loaded,
                     tui_hooks_solib_loaded_observer, attach);
 
+// NS 20/10
+  attach_or_detach (gdb::observers::tui_next_reg,
+                    tui_hooks_next_reg, attach);
 }
+
+
+
+
+
 
 /* Install the TUI specific hooks.  */
 void

@@ -106,6 +106,11 @@ tui_register_format (frame_info_ptr frame, int regnum)
   if (!str.empty () && str.back () == '\n')
     str.resize (str.size () - 1);
 
+
+  // NS 20/10
+  const char *regname = gdbarch_register_name (gdbarch, regnum);
+  gdb::observers::tui_next_reg.notify( regname,  &str);
+
 #if 0
   // NS 19/10/2022 add something
   try 

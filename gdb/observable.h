@@ -266,6 +266,9 @@ extern observable <ptid_t /* event_ptid */> target_post_wait;
 // NS 15/10
 extern observable <CORE_ADDR /* pc */, std::string * /* the comment returned */, std::string *> tui_next_instruction;
 
+// NS 20/10
+extern observable <const char */* reg name */, std::string * /* the reg printout */> tui_next_reg;
+
 } /* namespace observers */
 
 } /* namespace gdb */

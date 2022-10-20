@@ -83,7 +83,8 @@ DEFINE_OBSERVABLE (target_pre_wait);
 DEFINE_OBSERVABLE (target_post_wait);
 
 // NS 15/10
-DEFINE_OBSERVABLE (tui_next_instruction);
+DEFINE_OBSERVABLE (tui_next_instruction);       // in tui_disasm.c
+DEFINE_OBSERVABLE (tui_next_reg);               // in tui_regs.c
 
 } /* namespace observers */
 } /* namespace gdb */
