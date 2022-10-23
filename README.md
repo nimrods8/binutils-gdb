@@ -37,7 +37,7 @@ New functions added:
 Use `info comments` to display all stored comments.
 	
 Notes:
-1. You may need to copy the gdb python libraries to /usr/share/gdb:  
+1. You may need to copy the compiled gdb python libraries to /usr/share/gdb:  
 `cp -R ./gdb/data-directory/* /usr/share/gdb/`  
 	
 
