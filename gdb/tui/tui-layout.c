@@ -62,6 +62,10 @@ static tui_layout_split *applied_skeleton;
 static tui_layout_split *src_regs_layout;
 static tui_layout_split *asm_regs_layout;
 
+// NS 30/10
+static tui_layout_split *asm_ontop_layout;
+
+
 /* See tui-data.h.  */
 std::vector<tui_win_info *> tui_windows;
 
@@ -240,6 +244,14 @@ tui_prev_layout_command (const char *arg, int from_tty)
 }
 
 
+// NS 30/30
+void tui_ontop_layout()
+{
+  tui_set_layout ( asm_ontop_layout);
+}
+
+
+
 /* See tui-layout.h.  */
 
 void
@@ -262,6 +274,18 @@ tui_regs_layout_command (const char *arg, int from_tty)
   tui_enable ();
   tui_regs_layout ();
 }
+
+
+
+/* Implement the "layout ontop" command.  */
+
+static void
+tui_ontop_layout_command (const char *arg, int from_tty)
+{
+  tui_enable ();
+  tui_ontop_layout ();
+}
+
 
 /* See tui-layout.h.  */
 
@@ -393,6 +417,13 @@ initialize_known_windows ()
   known_window_types->emplace (STATUS_NAME,
 			       make_standard_window<STATUS_WIN,
 						    tui_locator_window>);
+
+// NS 30/10
+#if 1
+  known_window_types->emplace (DISASSEM_ONTOP_NAME,
+			       make_standard_window<DISASSEM_ONTOP_WIN,
+						    tui_disasm_ontop_window>);
+#endif
 }
 
 /* See tui-layout.h.  */
@@ -1174,6 +1205,16 @@ initialize_layouts ()
   layout->add_window (CMD_NAME, 1);
   add_layout_command ("split", layout);
 
+  // NS 30/10
+  layout = new tui_layout_split ();
+  layout->add_window (DATA_NAME, 2);
+  layout->add_window (DISASSEM_NAME, 2);
+  layout->add_window (DISASSEM_ONTOP_NAME, 0);
+  layout->add_window (STATUS_NAME, 0);
+  layout->add_window (CMD_NAME, 1);
+  asm_ontop_layout = layout;
+
+
   layout = new tui_layout_split ();
   layout->add_window (DATA_NAME, 1);
   layout->add_window (SRC_NAME, 1);
@@ -1314,6 +1355,12 @@ Usage: tui layout prev | next | LAYOUT-NAME"),
   add_cmd ("regs", class_tui, tui_regs_layout_command,
 	   _("Apply the TUI register layout."),
 	   &layout_list);
+
+// NS 30/10
+  add_cmd ("ontop", class_tui, tui_ontop_layout_command,
+	   _("Apply the TUI asm on-top layout."),
+	   &layout_list);
+
 
   add_cmd ("new-layout", class_tui, tui_new_layout_command,
 	   _("Create a new TUI layout.\n\

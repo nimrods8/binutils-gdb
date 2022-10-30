@@ -493,7 +493,7 @@ bool tui_hooks_serialize_comments( bool onlyShow)
   sprintf( fn, "/%s/.comments", dir);
   // DEBUG:: gdb_printf( "%s\n", fn);
 
-  int fd, sz;
+  int fd = 0, sz;
 
   if( !onlyShow)
   {
@@ -532,7 +532,7 @@ bool tui_hooks_serialize_comments( bool onlyShow)
          {
             takefrom = strlen( m_comments.at(i).filename)  - 50;
          }
-         sprintf( text, "%d\t%10s\t%-50s\t%s\n", 
+         sprintf( text, "%d\t%10s\t%-50s\t%s", 
                     (int)m_comments.at(i).type,
                     paddress( gdbarch, m_comments.at(i).unbased_addr),
                     &m_comments.at(i).filename[takefrom],
@@ -541,7 +541,7 @@ bool tui_hooks_serialize_comments( bool onlyShow)
      }
      else
      {
-        sprintf( text, "%d\t%10s\t%s\t%s\n", 
+        sprintf( text, "%d\t%10s\t%s\t%s", 
                     (int)m_comments.at(i).type,
                     paddress( gdbarch, m_comments.at(i).unbased_addr),
                     m_comments.at(i).filename,
@@ -550,7 +550,8 @@ bool tui_hooks_serialize_comments( bool onlyShow)
         if( sz <= 0) { close( fd); return false; }
      }
    } // endfor
-   close( fd);
+   if( !onlyShow)
+      close( fd);
 
    if( onlyShow)
       gdb_printf( "\n");
@@ -588,7 +589,7 @@ bool tui_hooks_deserialize_comments( void)
   while( rd != 0)
   {
      rd = fgets( text, sizeof( text), file);
-     if( rd != 0)
+     if( rd != 0 && strlen( rd) > 10)
      {
          //std::string tmpstr = std::string( text);
          //std::vector<std::string> vecstr = tui_hooks_split( tmpstr, '\t');
@@ -607,15 +608,22 @@ bool tui_hooks_deserialize_comments( void)
          token = strtok( NULL, s);		// filename
          token = strtok( NULL, s);		// text
          
-         memcpy( com.text, token, sizeof( com.text));
-         com.text[sizeof( com.text) - 1] = 0;
+         if( token != NULL)
+         {
+            memcpy( com.text, token, sizeof( com.text));
+            com.text[sizeof( com.text) - 1] = 0;
+         }
+         else
+         {
+            strcpy( com.text, "ERROR!");
+         }
 /*
          tempi = (int)strtol( vecstr.at(0).c_str(), NULL, 10);
          unb   = strtoul( vecstr.at(1).substr(2).c_str(), NULL, 16);
          memcpy( com.filename, vecstr.at(3).c_str(), sizeof( com.filename));
          memcpy( com.text, vecstr.at(4).c_str(), sizeof( com.text));
 */
-	 com.type = (enum_tui_type)tempi;
+	      com.type = (enum_tui_type)tempi;
          com.unbased_addr = (CORE_ADDR)unb;
          m_comments.push_back( com);
      } // endif
@@ -816,7 +824,7 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
   struct gdbarch *gdbarch = target_gdbarch();
   static int hooks_axa = -1;
 
-
+  // --- RENAME ---
      for( int i = 0; i < m_comments.size();  i++)
      {
          if( m_comments.at(i).type == TUI_TYPE_RENAME)
@@ -825,7 +833,7 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
             {
                std::string filen = m_comments.at(i).filename;
                // DEBUG gdb_printf( "Flne=%s, i = %d\n", filen.c_str(), i);
-               if((hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen)) >= 0)
+               if(( hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen)) >= 0)
                {
                    CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
                    std::string froms = paddress( gdbarch, pow);
@@ -848,6 +856,10 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
             }
          } // endif
       } // endfor
+
+
+  // --- COMMENTS ---
+
 
   /* Translate PC address.  */
   // redeclared struct gdbarch *gdbarch = tui_location.gdbarch ();
@@ -931,7 +943,7 @@ char xyz[64];
          if( (addr0 & 0x00000000ffffffff)  < 0xff && addr1 == 0x18)
          {
             // this is a QString or QByteArray!
-            reg_str->insert(  reg_str->size(), " <Qt>");
+            reg_str->insert(  reg_str->size(), " \033[92m<Qt>"); //\033[0m");
          }
          /*
          else

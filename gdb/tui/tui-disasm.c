@@ -547,3 +547,163 @@ tui_disasm_window::display_start_addr (struct gdbarch **gdbarch_p,
   *gdbarch_p = m_gdbarch;
   *addr_p = m_start_line_or_addr.u.addr;
 }
+
+
+//===========================
+// NS 30/10
+//===========================
+
+/* Scroll the disassembly forward or backward vertically.  */
+void
+tui_disasm_ontop_window::do_scroll_vertical (int num_to_scroll)
+{
+  if (!m_content.empty ())
+    {
+      CORE_ADDR pc;
+
+      pc = m_start_line_or_addr.u.addr;
+
+      symtab_and_line sal {};
+      sal.pspace = current_program_space;
+      sal.pc = tui_find_disassembly_address (m_gdbarch, pc, num_to_scroll);
+      update_source_window_as_is (m_gdbarch, sal);
+    }
+}
+
+bool
+tui_disasm_ontop_window::location_matches_p (struct bp_location *loc, int line_no)
+{
+  return (m_content[line_no].line_or_addr.loa == LOA_ADDRESS
+	  && m_content[line_no].line_or_addr.u.addr == loc->address);
+}
+
+bool
+tui_disasm_ontop_window::addr_is_displayed (CORE_ADDR addr) const
+{
+  if (m_content.size () < SCROLL_THRESHOLD)
+    return false;
+
+  for (size_t i = 0; i < m_content.size () - SCROLL_THRESHOLD; ++i)
+    {
+      if (m_content[i].line_or_addr.loa == LOA_ADDRESS
+	  && m_content[i].line_or_addr.u.addr == addr)
+	return true;
+    }
+
+  return false;
+}
+
+void
+tui_disasm_ontop_window::maybe_update (frame_info_ptr fi, symtab_and_line sal)
+{
+  CORE_ADDR low;
+
+  struct gdbarch *frame_arch = get_frame_arch (fi);
+
+  if (find_pc_partial_function (sal.pc, NULL, &low, NULL) == 0)
+    {
+      /* There is no symbol available for current PC.  There is no
+	 safe way how to "disassemble backwards".  */
+      low = sal.pc;
+    }
+  else
+    low = tui_get_low_disassembly_address (frame_arch, low, sal.pc);
+
+  struct tui_line_or_address a;
+
+  a.loa = LOA_ADDRESS;
+  a.u.addr = low;
+  if (!addr_is_displayed (sal.pc))
+    {
+      sal.pc = low;
+      update_source_window (frame_arch, sal);
+    }
+  else
+    {
+      a.u.addr = sal.pc;
+      set_is_exec_point_at (a);
+    }
+}
+
+void
+tui_disasm_ontop_window::display_start_addr (struct gdbarch **gdbarch_p,
+				       CORE_ADDR *addr_p)
+{
+  *gdbarch_p = m_gdbarch;
+  *addr_p = m_start_line_or_addr.u.addr;
+}
+
+
+/* Function to set the disassembly window's content.  */
+bool
+tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
+				 const struct symtab_and_line &sal)
+{
+  int i;
+  int max_lines;
+  CORE_ADDR cur_pc;
+  int tab_len = tui_tab_width;
+  int insn_pos;
+
+  CORE_ADDR pc = sal.pc;
+  if (pc == 0)
+    return false;
+
+  m_gdbarch = arch;
+  m_start_line_or_addr.loa = LOA_ADDRESS;
+  m_start_line_or_addr.u.addr = pc;
+  cur_pc = tui_location.addr ();
+
+
+  height = 10;
+  width = 40;
+  x = 30;
+  y = 20;
+
+
+  /* Window size, excluding highlight box.  */
+  max_lines = height - 2;
+
+  /* Get temporary table that will hold all strings (addr & insn).  */
+  std::vector<tui_asm_line> asm_lines;
+  size_t addr_size = 0;
+  tui_disassemble (m_gdbarch, asm_lines, pc, max_lines, &addr_size);
+
+  /* Align instructions to the same column.  */
+  insn_pos = (1 + (addr_size / tab_len)) * tab_len;
+
+  /* Now construct each line.  */
+  m_content.resize (max_lines);
+  m_max_length = -1;
+  for (i = 0; i < max_lines; i++)
+    {
+      tui_source_element *src = &m_content[i];
+
+      std::string line;
+      CORE_ADDR addr;
+
+      if (i < asm_lines.size ())
+	{
+	  line
+	    = (asm_lines[i].addr_string
+	       + n_spaces (insn_pos - asm_lines[i].addr_size)
+	       + asm_lines[i].insn);
+	  addr = asm_lines[i].addr;
+	}
+      else
+	{
+	  line = "";
+	  addr = 0;
+	}
+
+      const char *ptr = line.c_str ();
+      int line_len;
+      src->line = tui_copy_source_line (&ptr, &line_len);
+      m_max_length = std::max (m_max_length, line_len);
+
+      src->line_or_addr.loa = LOA_ADDRESS;
+      src->line_or_addr.u.addr = addr;
+      src->is_exec_point = (addr == cur_pc && line.size () > 0);
+    }
+  return true;
+}

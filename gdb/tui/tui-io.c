@@ -291,6 +291,11 @@ get_color_pair (int fg, int bg)
 }
 
 /* Apply STYLE to W.  */
+/**
+ * NS 23/10/2022
+ * To return to a previous? style, call this function with
+ * fg = NONE,bg =  NONE, no reverse.
+*/
 
 void
 tui_apply_style (WINDOW *w, ui_file_style style)

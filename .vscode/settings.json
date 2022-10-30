@@ -7,6 +7,9 @@
                 "functional": "c",
                 "tuple": "c",
                 "type_traits": "c",
-                "utility": "c"
+                "utility": "c",
+                "tui-data.h": "c",
+                "tui-io.h": "c",
+                "tui-file.h": "c"
         }
 }

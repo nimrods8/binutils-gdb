@@ -109,7 +109,7 @@ tui_register_format (frame_info_ptr frame, int regnum)
 
   // NS 20/10
   const char *regname = gdbarch_register_name (gdbarch, regnum);
-  gdb::observers::tui_next_reg.notify( regname,  &str);
+  gdb::observers::tui_next_reg.notify( regname,  &str);             // in tui_hooks.c
 
 #if 0
   // NS 19/10/2022 add something
@@ -526,9 +526,12 @@ tui_data_window::check_register_values (frame_info_ptr frame)
 
 /* Display a register in a window.  If hilite is TRUE, then the value
    will be displayed in reverse video.  */
+
+// NS 23/10
 void
 tui_data_item_window::rerender (WINDOW *handle, int field_width)
 {
+#if 0
   if (highlight)
     /* We ignore the return value, casting it to void in order to avoid
        a compiler warning.  The warning itself was introduced by a patch
@@ -548,6 +551,67 @@ tui_data_item_window::rerender (WINDOW *handle, int field_width)
        to code that causes the compiler to generate an unused-value
        warning.  */
     (void) wstandend (handle);
+#else
+
+  ui_file_style style = ui_file_style( ui_file_style::basic_color::WHITE,
+                                      ui_file_style::basic_color::BLACK, 
+                                      ui_file_style::intensity::NORMAL);
+  tui_apply_style( handle, style);
+
+
+  if (highlight) {
+    /* We ignore the return value, casting it to void in order to avoid
+       a compiler warning.  The warning itself was introduced by a patch
+       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
+       to code that causes the compiler to generate an unused-value
+       warning.  */
+       // (void) wstandout (handle);
+    	//wattron( handle,COLOR_PAIR(2));
+      
+      tui_set_reverse_mode( handle, true);
+  }
+  else 
+  {
+    /*
+    if( content.c_str()[0] == 'r')     
+  	   wattron( handle,COLOR_PAIR( color));
+    else
+    */
+//  	   wattron( handle,COLOR_PAIR( color));
+  }
+
+  //start_color();			/* Start color 			*/
+	//init_pair(1, COLOR_RED, COLOR_BLACK);
+
+	
+  wmove( handle, y, x);
+  tui_puts( content.c_str(), handle);
+  // mvwaddnstr (handle, y, x, content.c_str (), field_width - 1);
+  if (content.size () < field_width)
+    waddstr (handle, n_spaces (field_width - content.size ()));
+
+  if (highlight) {
+    /* We ignore the return value, casting it to void in order to avoid
+       a compiler warning.  The warning itself was introduced by a patch
+       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
+       to code that causes the compiler to generate an unused-value
+       warning.  */
+    ; //(void) wstandend (handle);
+    //wattroff( handle, COLOR_PAIR(2));
+      tui_set_reverse_mode( handle, false);
+  }
+  else 
+  { 
+     //  wattroff( handle,COLOR_PAIR(color));
+  }
+  #if 1
+  ui_file_style back_style = ui_file_style( ui_file_style::basic_color::NONE,
+                                            ui_file_style::basic_color::NONE, 
+                                            ui_file_style::intensity::NORMAL);
+  
+  tui_apply_style( handle, back_style);
+  #endif
+#endif
 }
 
 /* Helper for "tui reg next", returns the next register group after

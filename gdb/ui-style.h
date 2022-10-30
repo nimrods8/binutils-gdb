@@ -34,7 +34,8 @@ struct ui_file_style
     BLUE,
     MAGENTA,
     CYAN,
-    WHITE
+    WHITE,
+    LIGHT_GRAY
   };
 
   /* Representation of a terminal color.  */

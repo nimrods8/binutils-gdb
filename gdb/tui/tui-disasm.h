@@ -66,4 +66,46 @@ private:
 
 extern void tui_get_begin_asm_address (struct gdbarch **, CORE_ADDR *);
 
+
+// NS 30/10/2022
+/* A TUI disassembly on-top window.  */
+
+struct tui_disasm_ontop_window : public tui_source_window_base
+{
+  tui_disasm_ontop_window () = default;
+
+  DISABLE_COPY_AND_ASSIGN (tui_disasm_ontop_window);
+
+  const char *name () const override
+  {
+    return DISASSEM_ONTOP_NAME;
+  }
+
+  bool location_matches_p (struct bp_location *loc, int line_no) override;
+
+  void maybe_update (frame_info_ptr fi, symtab_and_line sal) override;
+
+  void erase_source_content () override
+  {
+    do_erase_source_content (_("[ No Assembly Available ]"));
+  }
+
+  void display_start_addr (struct gdbarch **gdbarch_p,
+			   CORE_ADDR *addr_p) override;
+
+protected:
+
+  void do_scroll_vertical (int num_to_scroll) override;
+
+  bool set_contents (struct gdbarch *gdbarch,
+		     const struct symtab_and_line &sal) override;
+
+private:
+  /* Answer whether a particular line number or address is displayed
+     in the current source window.  */
+  bool addr_is_displayed (CORE_ADDR addr) const;
+};
+
+
+
 #endif /* TUI_TUI_DISASM_H */

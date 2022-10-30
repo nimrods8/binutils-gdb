@@ -178,7 +178,11 @@ protected:
 #define CMD_NAME                "cmd"
 #define DATA_NAME               "regs"
 #define DISASSEM_NAME           "asm"
-#define STATUS_NAME		"status"
+#define STATUS_NAME		          "status"
+
+// NS 30/10
+#define DISASSEM_ONTOP_NAME     "asmot"
+
 
 /* Global Data.  */
 extern struct tui_win_info *tui_win_list[MAX_MAJOR_WINDOWS];
@@ -188,6 +192,11 @@ extern struct tui_win_info *tui_win_list[MAX_MAJOR_WINDOWS];
 #define TUI_DATA_WIN    ((tui_data_window *) tui_win_list[DATA_WIN])
 #define TUI_CMD_WIN     ((tui_cmd_window *) tui_win_list[CMD_WIN])
 #define TUI_STATUS_WIN  ((tui_locator_window *) tui_win_list[STATUS_WIN])
+
+// NS 30/10
+#define TUI_DISASMOT_WIN	((tui_disasm_ontop_window *) tui_win_list[DISASSEM_ONTOP_WIN])
+
+
 
 /* All the windows that are currently instantiated, in layout
    order.  */
