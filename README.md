@@ -35,6 +35,11 @@ New functions added:
 `tui rename save`: saves all renames, similar to `tui comment save`.	  
 
 Use `info comments` to display all stored comments.
+
+
+A new layout has been added. It is experimental! use:
+`layout ontop`
+
 	
 Notes:
 1. You may need to copy the compiled gdb python libraries to /usr/share/gdb:  

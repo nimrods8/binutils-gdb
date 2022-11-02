@@ -53,6 +53,7 @@ struct tui_disasm_window : public tui_source_window_base
 
 protected:
 
+  void click (int mouse_x, int mouse_y, int mouse_button) override;
   void do_scroll_vertical (int num_to_scroll) override;
 
   bool set_contents (struct gdbarch *gdbarch,
@@ -95,6 +96,7 @@ struct tui_disasm_ontop_window : public tui_source_window_base
 
 protected:
 
+//  void click (int mouse_x, int mouse_y, int mouse_button) override;
   void do_scroll_vertical (int num_to_scroll) override;
 
   bool set_contents (struct gdbarch *gdbarch,

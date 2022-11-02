@@ -41,6 +41,7 @@
 #include "objfiles.h"
 #include "cli/cli-style.h"
 #include "tui/tui-location.h"
+#include "gdbcmd.h"
 
 #include "gdb_curses.h"
 
@@ -84,6 +85,9 @@ len_without_escapes (const std::string &str)
     }
   return len;
 }
+
+
+
 
 /* Function to disassemble up to COUNT instructions starting from address
    PC into the ASM_LINES vector (which will be emptied of any previous
@@ -350,6 +354,9 @@ tui_disasm_window::set_contents (struct gdbarch *arch,
   int tab_len = tui_tab_width;
   int insn_pos;
 
+  // NS 02/11
+  bool found = false;
+
   CORE_ADDR pc = sal.pc;
   if (pc == 0)
     return false;
@@ -374,25 +381,25 @@ tui_disasm_window::set_contents (struct gdbarch *arch,
   m_content.resize (max_lines);
   m_max_length = -1;
   for (i = 0; i < max_lines; i++)
-    {
+  {
       tui_source_element *src = &m_content[i];
 
       std::string line;
       CORE_ADDR addr;
 
       if (i < asm_lines.size ())
-	{
-	  line
-	    = (asm_lines[i].addr_string
-	       + n_spaces (insn_pos - asm_lines[i].addr_size)
-	       + asm_lines[i].insn);
-	  addr = asm_lines[i].addr;
-	}
+	    {
+        line
+          = (asm_lines[i].addr_string
+            + n_spaces (insn_pos - asm_lines[i].addr_size)
+            + asm_lines[i].insn);
+        addr = asm_lines[i].addr;
+      }
       else
-	{
-	  line = "";
-	  addr = 0;
-	}
+      {
+        line = "";
+        addr = 0;
+      }
 
       const char *ptr = line.c_str ();
       int line_len;
@@ -402,8 +409,33 @@ tui_disasm_window::set_contents (struct gdbarch *arch,
       src->line_or_addr.loa = LOA_ADDRESS;
       src->line_or_addr.u.addr = addr;
       src->is_exec_point = (addr == cur_pc && line.size () > 0);
+    
+      // NS 01/11
+      if( asm_lines[i].insn.find( std::string( "xor")) != std::string::npos) 
+      {
+        found = true;
+        //gdb_printf( "have xor\n\n");
+        if( TUI_DISASMOT_WIN != nullptr) 
+        {
+           TUI_DISASMOT_WIN->isVisible = true;
+
+           //gdb_printf( "have resize\n\n");
+           //TUI_DISASMOT_WIN->resize( 20, 40, 20, 40);
+         //switch_to( "layout ontop");
+        }
+      }
+    
+    } // endfor all lines    
+
+
+    // NS 02/11
+    if( !found)
+    {
+      if( TUI_DISASMOT_WIN != nullptr) {
+        TUI_DISASMOT_WIN->isVisible = false;
+      }
     }
-  return true;
+    return true;
 }
 
 
@@ -646,8 +678,11 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
   int insn_pos;
 
   CORE_ADDR pc = sal.pc;
-  if (pc == 0)
+  if (pc == 0 || !isVisible)
     return false;
+
+
+  //gdb_printf( "now inside set contents\n");
 
   m_gdbarch = arch;
   m_start_line_or_addr.loa = LOA_ADDRESS;
@@ -655,11 +690,15 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
   cur_pc = tui_location.addr ();
 
 
-  height = 10;
-  width = 40;
-  x = 30;
-  y = 20;
+  // NS 01/11
+  //gdb_printf( "Prior height=%d, width=%d\n", height, width);
 
+/*
+  height = 20;
+  width = 60;
+  x = 60;
+  y = 20;
+*/
 
   /* Window size, excluding highlight box.  */
   max_lines = height - 2;
@@ -707,3 +746,30 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
     }
   return true;
 }
+
+
+
+  /* Called for each mouse click inside this window.  Coordinates MOUSE_X
+     and MOUSE_Y are 0-based relative to the window, and MOUSE_BUTTON can
+     be 1 (left), 2 (middle), or 3 (right).  */
+  void tui_disasm_window::click (int mouse_x, int mouse_y, int mouse_button)
+  {
+      execute_command( "b/100bx $ax", false);
+#if 0     
+      int _first_element_no = first_data_item_displayed ();
+      int _line_no = 0, i;
+
+      for( i = _first_element_no; i < m_regs_content.size(); i++)
+      {
+         _line_no = line_from_reg_element_no ( i);
+         if( _line_no == mouse_y) break;
+	    }
+      int per_line = ( i - _first_element_no + 1) / _line_no;
+      int separator = ( width - 2) / per_line;
+      i += mouse_x / separator;
+         
+      //gdb_printf( "mouse @%d:%d, %d, element=%d\n", mouse_x, mouse_y, mouse_button, i);
+  
+      execute_command( m_regs_content.at(i).cmd.c_str(), false);
+#endif  
+  }

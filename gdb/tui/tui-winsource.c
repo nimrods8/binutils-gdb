@@ -256,6 +256,10 @@ tui_source_window_base::refresh_window ()
   /* tui_win_info::refresh_window would draw the empty background window to
      the screen, potentially creating a flicker.  */
   wnoutrefresh (handle.get ());
+#if 0
+  // NS 01/11
+  gdb_printf( "x=%d, y=%d, w=%d, h=%d\n", x, y, width, height);
+#endif
 
   int pad_width = std::max (m_max_length, width);
   int left_margin = 1 + TUI_EXECINFO_SIZE + extra_margin ();
@@ -271,6 +275,12 @@ tui_source_window_base::refresh_window ()
 void
 tui_source_window_base::show_source_content ()
 {
+  // NS 02/11
+  if( TUI_DISASMOT_WIN != nullptr && m_content.empty())
+  {
+     werase (m_pad.get ());
+     return;
+  }
   gdb_assert (!m_content.empty ());
 
   check_and_display_highlight_if_needed ();

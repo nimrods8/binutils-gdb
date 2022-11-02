@@ -10,6 +10,15 @@
                 "utility": "c",
                 "tui-data.h": "c",
                 "tui-io.h": "c",
-                "tui-file.h": "c"
+                "tui-file.h": "c",
+                "deque": "c",
+                "forward_list": "c",
+                "list": "c",
+                "string": "c",
+                "vector": "c",
+                "hash_map": "c",
+                "hash_set": "c",
+                "mutex": "c",
+                "streambuf": "c"
         }
 }

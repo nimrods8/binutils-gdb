@@ -162,6 +162,9 @@ public:
   /* Is this window highlighted?  */
   bool is_highlighted = false;
 
+  // NS 01/11
+  bool isVisible = false;   // generally the only window this pertaons to is the ontop window
+
 protected:
 
   /* Scroll the contents vertically.  This is only called via

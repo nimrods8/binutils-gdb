@@ -47,6 +47,11 @@
 #include "pager.h"
 #include "gdbsupport/gdb-checked-static-cast.h"
 
+
+// NS 01/11
+#include "tui/tui-disasm.h"
+
+
 /* This redefines CTRL if it is not already defined, so it must come
    after terminal state releated include files like <term.h> and
    "gdb_curses.h".  */
@@ -177,6 +182,7 @@ tui_putc (char c)
 {
   do_tui_putc (TUI_CMD_WIN->handle.get (), c);
   update_cmdwin_start_line ();
+
 }
 
 /* This maps colors to their corresponding color index.  */
@@ -451,6 +457,10 @@ tui_write (const char *buf, size_t length)
 void
 tui_puts (const char *string, WINDOW *w)
 {
+bool dont = false;
+
+  if( w == nullptr) dont = true;
+
   if (w == nullptr)
     w = TUI_CMD_WIN->handle.get ();
 
@@ -504,7 +514,12 @@ tui_puts (const char *string, WINDOW *w)
     }
 
   if (TUI_CMD_WIN != nullptr && w == TUI_CMD_WIN->handle.get ())
-    update_cmdwin_start_line ();
+  {
+      update_cmdwin_start_line ();
+      // nS 01/11
+      if( !dont && TUI_DISASMOT_WIN != NULL && TUI_DISASMOT_WIN->is_visible())
+         TUI_DISASMOT_WIN->refill();
+  }
 }
 
 static void
@@ -550,6 +565,11 @@ tui_puts_internal (WINDOW *w, const char *string, int *height)
     update_cmdwin_start_line ();
   if (saw_nl)
     wrefresh (w);
+
+  // nS 01/11
+//  if( TUI_DISASMOT_WIN != NULL && TUI_DISASMOT_WIN->is_visible())
+//      TUI_DISASMOT_WIN->refill();
+
 }
 
 /* Readline callback.
@@ -640,6 +660,12 @@ tui_redisplay_readline (void)
 
   wrefresh (w);
   fflush(stdout);
+
+
+  // nS 01/11
+  if( TUI_DISASMOT_WIN != NULL && TUI_DISASMOT_WIN->is_visible())
+      TUI_DISASMOT_WIN->refill();
+
 }
 
 /* Readline callback to prepare the terminal.  It is called once each

@@ -54,6 +54,9 @@
 #include "tui/tui-winsource.h"
 #include "tui/tui-location.h"
 
+//NS 01/11
+#include "tui/tui-disasm.h"
+
 #include "gdb_curses.h"
 
 
@@ -356,6 +359,7 @@ static int tui_hooks_get_index_of_maps_by_filename( std::string &filename)
 
 
 /* Observer for the before_prompt notification.  */
+static bool prevVisibilty = false;
 
 static void
 tui_before_prompt (const char *current_gdb_prompt)
@@ -367,6 +371,12 @@ tui_before_prompt (const char *current_gdb_prompt)
   from_stack = false;
   from_source_symtab = false;
 
+
+  if( TUI_DISASMOT_WIN != nullptr && prevVisibilty != TUI_DISASMOT_WIN->isVisible)
+  {
+      prevVisibilty = TUI_DISASMOT_WIN->isVisible;
+      tui_apply_current_layout( true);
+  }
 }
 
 /***************************************************************************************/
