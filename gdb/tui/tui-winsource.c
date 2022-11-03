@@ -177,6 +177,24 @@ tui_source_window_base::update_source_window_as_is
 }
 
 
+
+/* Function to ensure that the source and/or disassemly windows
+   reflect the input address.  */
+void
+tui_update_ontop_windows_with_addr (struct gdbarch *gdbarch, CORE_ADDR addr)
+{
+  struct symtab_and_line sal {};
+  if (addr != 0)
+    sal = find_pc_line (addr, 0);
+
+  for (struct tui_source_window_base *win_info : tui_source_windows ())
+  {
+    if( !strcmp( win_info->name(), TUI_DISASMOT_WIN->name()))
+       win_info->update_source_window (gdbarch, sal);
+  }
+}
+
+
 /* Function to ensure that the source and/or disassemly windows
    reflect the input address.  */
 void

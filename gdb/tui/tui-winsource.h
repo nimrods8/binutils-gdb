@@ -283,6 +283,10 @@ extern void tui_update_all_breakpoint_info (struct breakpoint *being_deleted);
 
 /* Function to display the "main" routine.  */
 extern void tui_display_main (void);
+
+// NS 03/11
+extern void tui_update_ontop_windows_with_addr (struct gdbarch *gdbarch, CORE_ADDR addr);
+
 extern void tui_update_source_windows_with_addr (struct gdbarch *, CORE_ADDR);
 extern void tui_update_source_windows_with_line (struct symtab_and_line sal);
 

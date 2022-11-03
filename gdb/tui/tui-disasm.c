@@ -45,6 +45,10 @@
 
 #include "gdb_curses.h"
 
+
+static CORE_ADDR showAddr;
+
+
 struct tui_asm_line
 {
   CORE_ADDR addr;
@@ -355,7 +359,7 @@ tui_disasm_window::set_contents (struct gdbarch *arch,
   int insn_pos;
 
   // NS 02/11
-  bool found = false;
+  //bool found = false;
 
   CORE_ADDR pc = sal.pc;
   if (pc == 0)
@@ -409,7 +413,7 @@ tui_disasm_window::set_contents (struct gdbarch *arch,
       src->line_or_addr.loa = LOA_ADDRESS;
       src->line_or_addr.u.addr = addr;
       src->is_exec_point = (addr == cur_pc && line.size () > 0);
-    
+    #if 0
       // NS 01/11
       if( asm_lines[i].insn.find( std::string( "xor")) != std::string::npos) 
       {
@@ -424,10 +428,10 @@ tui_disasm_window::set_contents (struct gdbarch *arch,
          //switch_to( "layout ontop");
         }
       }
-    
+    #endif
     } // endfor all lines    
 
-
+#if 0
     // NS 02/11
     if( !found)
     {
@@ -435,6 +439,7 @@ tui_disasm_window::set_contents (struct gdbarch *arch,
         TUI_DISASMOT_WIN->isVisible = false;
       }
     }
+#endif
     return true;
 }
 
@@ -682,6 +687,8 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
     return false;
 
 
+  pc = showAddr;
+
   //gdb_printf( "now inside set contents\n");
 
   m_gdbarch = arch;
@@ -748,13 +755,68 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
 }
 
 
+// NS 03/11
 
   /* Called for each mouse click inside this window.  Coordinates MOUSE_X
      and MOUSE_Y are 0-based relative to the window, and MOUSE_BUTTON can
      be 1 (left), 2 (middle), or 3 (right).  */
   void tui_disasm_window::click (int mouse_x, int mouse_y, int mouse_button)
   {
-      execute_command( "b/100bx $ax", false);
+    
+      if( !m_content.empty() && m_content.size() >= mouse_y) 
+      {
+         // gdb_printf( "Line=%s", m_content[mouse_y].line.c_str());
+
+         std::string line = m_content[mouse_y].line;
+         std::size_t _found = line.find( "call");
+         if( _found != std::string::npos)
+         {
+            std::size_t fzerox = line.find( "0x", _found);
+            if( fzerox != std::string::npos)
+            {
+               std::size_t fspace = line.find( " ", fzerox);
+               std::string address = line.substr( fzerox + 2, fspace);
+               CORE_ADDR addr = std::stoul( address, nullptr, 16);
+               gdb_printf( "Line=%s %lx", /*m_content[mouse_y].line.c_str()*/address.c_str(), addr);
+
+               showAddr = addr;
+
+               if( TUI_DISASMOT_WIN != nullptr) 
+               {
+                  //gdb_printf( "have xor\n\n");
+                  struct gdbarch *gdbarch = get_current_arch ();
+
+                  int _x = TUI_DISASMOT_WIN->x;
+                  int _y = TUI_DISASMOT_WIN->y;
+                  int _w = TUI_DISASMOT_WIN->width;
+                  int _h = TUI_DISASMOT_WIN->height;
+                  _y = mouse_y;
+                  _x = mouse_x;
+
+                  TUI_DISASMOT_WIN->resize( _h, _w, _x, _y);
+                  //TUI_DISASMOT_WIN->make_visible( true);
+
+                  TUI_DISASMOT_WIN->isVisible = true;
+                  //TUI_DISASMOT_WIN->refill();
+                  tui_apply_current_layout( true);
+                  tui_update_ontop_windows_with_addr( gdbarch, addr);
+               }
+            } // endif
+         } // endif have "call" in line 
+         else {
+           if( TUI_DISASMOT_WIN != nullptr) 
+           {
+              //gdb_printf( "have xor\n\n");
+              TUI_DISASMOT_WIN->isVisible = false;
+              tui_apply_current_layout( true);
+              TUI_DISASMOT_WIN->make_visible( false);
+              TUI_DISASMOT_WIN->refill();
+           }
+         }
+      } // endif have content line
+
+
+      // execute_command( "x/100bx $ax", false);
 #if 0     
       int _first_element_no = first_data_item_displayed ();
       int _line_no = 0, i;

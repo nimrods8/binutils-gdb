@@ -836,6 +836,7 @@ tui_setup_io (int mode)
 {
   extern int _rl_echoing_p;
 
+
   if (mode)
     {
       /* Ensure that readline has been initialized before saving any

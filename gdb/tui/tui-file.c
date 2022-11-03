@@ -22,17 +22,38 @@
 #include "tui/tui-command.h"
 #include "tui.h"
 
+
+// NS 03/11
+#include <stdio.h>
+#include <stdlib.h>
+
+
 void
 tui_file::puts (const char *linebuffer)
 {
+    // NS 03.11
+//    FILE *fd = fopen( "/tmp/stdout0", "a+");
+//    fwrite( linebuffer, 1, strlen( linebuffer), fd);
+//    fclose( fd);
+
+//  tui_puts( "\033[1;33m");
+
+
   tui_puts (linebuffer);
   if (!m_buffered)
     tui_refresh_cmd_win ();
+
+//  tui_puts( "\033[0m");
 }
 
 void
 tui_file::write (const char *buf, long length_buf)
 {
+    // NS 03.11
+//   FILE *fd = fopen( "/tmp/stdout0", "a+");
+//    fwrite( buf, 1, length_buf, fd);
+//    fclose( fd);
+
   tui_write (buf, length_buf);
   if (!m_buffered)
     tui_refresh_cmd_win ();
