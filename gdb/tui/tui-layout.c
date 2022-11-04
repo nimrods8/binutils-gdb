@@ -452,6 +452,7 @@ tui_register_window (const char *name, window_factory &&factory)
     error (_("window name must start with a letter, not '%c'"), name_copy[0]);
 
   known_window_types->emplace (std::move (name_copy),
+  
              std::move (factory));
 }
 
@@ -464,7 +465,7 @@ tui_layout_window::clone () const
   return std::unique_ptr<tui_layout_base> (result);
 }
 
-/* See tui-layout.h.  */
+/* See tui-layout.h.  */   
 
 void
 tui_layout_window::apply (int x_, int y_, int width_, int height_,
@@ -472,7 +473,7 @@ tui_layout_window::apply (int x_, int y_, int width_, int height_,
 {
   x = x_;
   y = y_;
-  width = width_;
+  width = width_; 
   height = height_;
   gdb_assert (m_window != nullptr);
   m_window->resize (height, width, x, y);
@@ -1075,11 +1076,19 @@ tui_layout_split::apply (int x_, int y_, int width_, int height_,
 
         if( _isVisible)
         {
-           x = 30; y = 20; height = 20; width = 80;
+         //  x = 30; y = 20; height = 20; width = 80;
+          tui_win_info *win_info = TUI_DISASMOT_WIN;
+          
+          x = win_info->x;
+          y = win_info->y;
+          width = win_info->width;
+          height = win_info->height;
+
+          gdb_printf ("x = %d, y = %d, h = %d, w = %d", x, y, height, width);
         }
         else 
         {
-          x = 100; y = 10; height = 4; width = 4;
+          x = 0; y = 10; height = 2; width = 2;
           // m_splits[i].layout->apply( x, y, width, height, true);
           // continue;
           

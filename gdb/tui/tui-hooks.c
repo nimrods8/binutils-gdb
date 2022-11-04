@@ -56,16 +56,18 @@
 
 //NS 01/11
 #include "tui/tui-disasm.h"
-
+#include <sstream>
 #include "gdb_curses.h"
 
 
 // NS 16/10
 static void tui_hooks_comment_all_command (const char *, int);
 static void tui_hooks_call_rename_command (const char *, int);
+static void tui_hooks_break_command( const char *, int);
 bool tui_hooks_serialize_comments( bool);
 bool tui_hooks_deserialize_comments( void);
 std::vector<std::string> tui_hooks_split(const std::string& s, char seperator);
+std::string toHexFromDecimal(long long t);
 
 
 
@@ -675,7 +677,31 @@ std::vector<std::string> tui_hooks_split(const std::string& s, char seperator)
 }
 
 
+std::string toHexFromDecimal(long long t) 
+{
+    std::stringstream is;
+    is << std::hex << t;
+    return is.str();
+}
 
+static void tui_hooks_break_command( const char *arg, int from_tty)
+{
+   std::string sarg = std::string( arg);
+   int fnd1 = sarg.find( "+");
+   int fnd2 = sarg.find( "-");
+   if( fnd1 == std::string::npos && fnd2 == std::string::npos)
+   {
+      gdb_printf( "Need to add + or -");
+      return;
+   }
+   int v = strtoul( sarg.substr( fnd1 > 0 ? fnd1 + 1 : fnd2).c_str(), NULL, 10);
+   std::string name = sarg.substr( 0, (fnd1 > 0 ? fnd1 : fnd2));
+   struct value *val0 = parse_and_eval( name.c_str());
+   CORE_ADDR add = value_as_address( val0) + (fnd1 > 0 ? v : -v);
+   char cmd[64];
+   sprintf( cmd, "b *0x%s", toHexFromDecimal( add).c_str());
+   execute_command( cmd, false);
+}
 
 static void
 tui_hooks_comment_all_command (const char *arg, int from_tty)
@@ -1071,6 +1097,10 @@ _initialize_tui_hooks ()
 
   add_cmd ( "rename", class_tui, tui_hooks_call_rename_command,
 	       _("Set, clear, load or save function call renames"),
+	       tuicmd);
+
+  add_cmd ( "break", class_tui, tui_hooks_break_command,
+	       _("Set a break using a symbol (e.g. main) and a displacement. For example:\ntui break main+11"),
 	       tuicmd);
 
   m_comments.clear();

@@ -56,6 +56,9 @@
 #include "source.h"
 #include "cli/cli-style.h"
 
+// NS 03/11
+#include "tui/tui.h"
+
 /* Local functions: */
 
 static void until_next_command (int);
@@ -407,6 +410,28 @@ run_command_1 (const char *args, int from_tty, enum run_how run_how)
 
   gdb::unique_xmalloc_ptr<char> stripped = strip_bg_char (args, &async_exec);
   args = stripped.get ();
+
+  // NS 03/11
+  gdb::unique_xmalloc_ptr<char> _concat;
+  if( tui_active)
+  {
+     // FIFO file path
+     const char *myfifo = "/tmp/myfifo";
+
+    // Creating the named file(FIFO)
+    // mkfifo(<pathname>, <permission>)
+     //mkfifo( myfifo, 0666);
+
+     //gdb_printf( "tui on %s", args);
+     if( args == NULL)
+        _concat = xstrprintf("%s 1>%s", "", myfifo);
+     else
+        _concat = xstrprintf("%s 1>%s", args, myfifo);
+     args = _concat.get();
+     //gdb_printf( "tui on %s", args);
+  
+   }
+
 
   /* Do validation and preparation before possibly changing anything
      in the inferior.  */

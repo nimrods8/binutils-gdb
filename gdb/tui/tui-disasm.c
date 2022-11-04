@@ -48,6 +48,8 @@
 
 static CORE_ADDR showAddr;
 
+// NS 04/11 should be list per arch
+static std::vector<std::string> calls = { "call", "bl", "blr", "jmp" };
 
 struct tui_asm_line
 {
@@ -418,6 +420,7 @@ tui_disasm_window::set_contents (struct gdbarch *arch,
       if( asm_lines[i].insn.find( std::string( "xor")) != std::string::npos) 
       {
         found = true;
+
         //gdb_printf( "have xor\n\n");
         if( TUI_DISASMOT_WIN != nullptr) 
         {
@@ -604,6 +607,7 @@ tui_disasm_ontop_window::do_scroll_vertical (int num_to_scroll)
       sal.pspace = current_program_space;
       sal.pc = tui_find_disassembly_address (m_gdbarch, pc, num_to_scroll);
       update_source_window_as_is (m_gdbarch, sal);
+
     }
 }
 
@@ -762,57 +766,66 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
      be 1 (left), 2 (middle), or 3 (right).  */
   void tui_disasm_window::click (int mouse_x, int mouse_y, int mouse_button)
   {
-    
+  bool found = false;
+
       if( !m_content.empty() && m_content.size() >= mouse_y) 
       {
          // gdb_printf( "Line=%s", m_content[mouse_y].line.c_str());
 
          std::string line = m_content[mouse_y].line;
-         std::size_t _found = line.find( "call");
-         if( _found != std::string::npos)
+         for( int q = 0; q < calls.size(); q++) 
          {
-            std::size_t fzerox = line.find( "0x", _found);
-            if( fzerox != std::string::npos)
+             std::size_t _found = line.find( calls.at(q));
+              //std::size_t _found = line.find( "call");
+              if( _found != std::string::npos)
+              {
+                
+                  std::size_t fzerox = line.find( "0x", _found);
+                  if( fzerox != std::string::npos)
+                  {
+                    std::size_t fspace = line.find( " ", fzerox);
+                    std::string address = line.substr( fzerox + 2, fspace);
+                    CORE_ADDR addr = std::stoul( address, nullptr, 16);
+                    gdb_printf( "Line=%s %lx", /*m_content[mouse_y].line.c_str()*/address.c_str(), addr);
+
+                    showAddr = addr;
+
+                    if( TUI_DISASMOT_WIN != nullptr) 
+                    {
+                        //gdb_printf( "have xor\n\n");
+                        struct gdbarch *gdbarch = get_current_arch ();
+
+                        int _x = TUI_DISASMOT_WIN->x;
+                        int _y = TUI_DISASMOT_WIN->y;
+                        int _w = TUI_DISASMOT_WIN->width;
+                        int _h = TUI_DISASMOT_WIN->height;
+                        _y = mouse_y + TUI_DISASM_WIN->y;
+                        _x = mouse_x + TUI_DISASM_WIN->x;
+                        _w = 100;
+                        _h = 20;
+
+                        TUI_DISASMOT_WIN->resize( _h, _w, _x, _y);
+                        TUI_DISASMOT_WIN->make_visible( true);
+                        TUI_DISASMOT_WIN->isVisible = true;
+                        //TUI_DISASMOT_WIN->refill();
+                        tui_apply_current_layout( true);
+                        tui_update_ontop_windows_with_addr( gdbarch, addr);
+
+                        found = true;
+                        // gdb_printf( "wnd at %d %d", _x, _y);
+                    }
+                    break;
+                  } // endif found zero x
+              } // found one of calls
+            } // endfor scan all "calls" in line 
+            if( !found && TUI_DISASMOT_WIN != nullptr) 
             {
-               std::size_t fspace = line.find( " ", fzerox);
-               std::string address = line.substr( fzerox + 2, fspace);
-               CORE_ADDR addr = std::stoul( address, nullptr, 16);
-               gdb_printf( "Line=%s %lx", /*m_content[mouse_y].line.c_str()*/address.c_str(), addr);
-
-               showAddr = addr;
-
-               if( TUI_DISASMOT_WIN != nullptr) 
-               {
-                  //gdb_printf( "have xor\n\n");
-                  struct gdbarch *gdbarch = get_current_arch ();
-
-                  int _x = TUI_DISASMOT_WIN->x;
-                  int _y = TUI_DISASMOT_WIN->y;
-                  int _w = TUI_DISASMOT_WIN->width;
-                  int _h = TUI_DISASMOT_WIN->height;
-                  _y = mouse_y;
-                  _x = mouse_x;
-
-                  TUI_DISASMOT_WIN->resize( _h, _w, _x, _y);
-                  //TUI_DISASMOT_WIN->make_visible( true);
-
-                  TUI_DISASMOT_WIN->isVisible = true;
-                  //TUI_DISASMOT_WIN->refill();
-                  tui_apply_current_layout( true);
-                  tui_update_ontop_windows_with_addr( gdbarch, addr);
-               }
-            } // endif
-         } // endif have "call" in line 
-         else {
-           if( TUI_DISASMOT_WIN != nullptr) 
-           {
-              //gdb_printf( "have xor\n\n");
-              TUI_DISASMOT_WIN->isVisible = false;
-              tui_apply_current_layout( true);
-              TUI_DISASMOT_WIN->make_visible( false);
-              TUI_DISASMOT_WIN->refill();
-           }
-         }
+                //gdb_printf( "have xor\n\n");
+                TUI_DISASMOT_WIN->isVisible = false;
+                tui_apply_current_layout( true);
+                TUI_DISASMOT_WIN->make_visible( false);
+                TUI_DISASMOT_WIN->refill();
+            }
       } // endif have content line
 
 

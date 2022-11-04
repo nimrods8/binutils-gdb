@@ -36,6 +36,8 @@ static struct tui_win_info *win_with_focus = NULL;
 
 static bool win_resized = false;
 
+static std::vector<std::string> calls = { "call", "bl", "blr" };
+
 /* Answer a whether the terminal window has been resized or not.  */
 bool
 tui_win_resized ()

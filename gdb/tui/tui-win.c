@@ -60,6 +60,10 @@
 static void tui_set_tab_width_command (const char *, int);
 static void tui_refresh_all_command (const char *, int);
 static void tui_all_windows_info (const char *, int);
+
+// NS 04/11
+static void tui_emulate_click_command (const char *, int);
+
 static void tui_scroll_forward_command (const char *, int);
 static void tui_scroll_backward_command (const char *, int);
 static void tui_scroll_left_command (const char *, int);
@@ -594,6 +598,25 @@ tui_initialize_win (void)
 }
 
 
+// NS 04/11
+
+static void
+tui_emulate_click_command (const char *arg, int from_tty)
+{
+  int where = 1;
+  struct tui_win_info *win_to_scroll;
+
+  /* Make sure the curses mode is enabled.  */
+  tui_enable ();
+  if (arg == NULL)
+    parse_scrolling_args (arg, &win_to_scroll, NULL);
+  else
+    parse_scrolling_args (arg, &win_to_scroll, &where);
+
+  win_to_scroll->click ( 10, where, 1); // left mouse button
+}
+
+
 static void
 tui_scroll_forward_command (const char *arg, int from_tty)
 {
@@ -1121,6 +1144,14 @@ Scroll window text to the right.\n\
 Usage: > [N] [WIN]\n\
 Scroll window WIN N characters right.  Both WIN and N are optional, N\n\
 defaults to 1, and WIN defaults to the currently focused window."));
+
+// NS 04/11
+  add_com ("click", class_tui, tui_emulate_click_command, _("\
+Emulates a mouse click on window.\n\
+Usage: click [N] [WIN]\n\
+Clicks WIN at linr N.  Both WIN and N are optional, N\n\
+defaults to 1, and WIN defaults to the currently focused window."));
+
 
   /* Define the tui control variables.  */
   add_setshow_enum_cmd ("border-kind", no_class, tui_border_kind_enums,

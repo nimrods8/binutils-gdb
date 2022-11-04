@@ -39,12 +39,24 @@ Use `info comments` to display all stored comments.
 
 A new layout has been added. It is experimental! use:
 `layout ontop`
+This new layout allows to expand calls/branches without actually jumping into them. By clicking the opcode
+a new floating window is opened that shows the disassembled jump-to. 
+
+New break point type:
+`tui break <where>+/-<val>`: set a break point given a symbol. For example: 
+`tui break main+11` places a break point at the address of main + 11.
 
 	
 Notes:
 1. You may need to copy the compiled gdb python libraries to /usr/share/gdb:  
 `cp -R ./gdb/data-directory/* /usr/share/gdb/`  
 	
+
+2DO
+---
+* add break at opcodes by arch
+* add tui break into comments file to save/load automatically
+* read the list of renames/comments from ida and set it automatically in gdb tui
 
 -------------------------------------------------------------------------------------------------------------------------------
 This directory contains various GNU compilers, assemblers, linkers, 
