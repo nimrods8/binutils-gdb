@@ -1,5 +1,5 @@
 **README for GNU development tools**
-
+ 
 The main idea of this fork is to add Ida-like functionality of comments and function renames for the layout asm in the gdb tui.
 
 
