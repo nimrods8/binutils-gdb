@@ -1,4 +1,4 @@
-/* Disassembly display.
+/*Disassembly display.
 
    Copyright (C) 1998-2022 Free Software Foundation, Inc.
 
@@ -45,12 +45,20 @@
 
 #include "gdb_curses.h"
 
+#include <fstream>
 
 static CORE_ADDR showAddr;
 
 // NS 04/11 should be list per arch
 static std::vector<std::string> calls = { "call", "bl", "blr", "jmp" };
+static std::vector<std::string> loads = { "lea", "mov" };
 
+
+
+
+/********************************************************/
+/*      P R I V A T E      D A T A S T R U C T S        */
+/********************************************************/
 struct tui_asm_line
 {
   CORE_ADDR addr;
@@ -58,6 +66,23 @@ struct tui_asm_line
   size_t addr_size;
   std::string insn;
 };
+
+
+/********************************************************/
+/*      P R I V A T E     F U N C T I O N S             */
+/********************************************************/
+bool tui_disasm_str_replace( std::string& str, const std::string& from, const std::string &to);
+CORE_ADDR tui_disasm_parse_line( std::string asm_line);
+std::string tui_diasm_remove_ansi_colors( std::string _line);
+CORE_ADDR tui_disasm_find_maybe_end_of_func( CORE_ADDR from);
+std::vector<std::string> tui_disasm_find_funcnames( CORE_ADDR, CORE_ADDR);
+std::string tui_disasm_parse_for_funcnames( std::string asm_line);
+CORE_ADDR tui_disasm_is_abs( std::string line, int fopcode);
+CORE_ADDR tui_disasm_check_load_add( std::vector<tui_asm_line> asmlines);
+//static void tui_disasm_value_as_string (char *dest, struct value *val, int length);
+inline std::string tui_disasm_format(const char* fmt, ...);
+
+
 
 /* Helper function to find the number of characters in STR, skipping
    any ANSI escape sequences.  */
@@ -165,6 +190,39 @@ tui_disassemble (struct gdbarch *gdbarch,
              tal.insn += str_comment;
              tal.insn += "\033[0m";
           } // endif have new comment
+
+          std::vector<tui_asm_line> asml;
+          asml.push_back( tal);
+          CORE_ADDR lea = tui_disasm_check_load_add( asml);
+          if( lea != 0L) {
+             //char dest[13];
+
+    	     gdb_byte byte_buf[300];
+             int g = target_read_memory( lea, byte_buf, sizeof( byte_buf));
+            //gdb_printf( "target =%d", g);
+             if( g == 0) 
+             {
+                bool drop = false;
+                for( int w = 0; w < 12; w++)
+                {
+                    if( byte_buf[w] == 0x00) break;
+                    if( byte_buf[w] >= 0x80 || byte_buf[w] < 0x20)
+                    {
+ 		       drop = true; 
+                       break;
+                    }
+                }
+                byte_buf[12] = 0x00;
+
+
+                //std::string comm = tui_disasm_format( "x/s 0x%lx", lea);
+                //struct value *val = parse_and_eval( comm.c_str());
+                //tui_disasm_value_as_string( dest, val, 12);
+                //gdb_printf( "%s", byte_buf);
+                if( !drop) { tal.insn += " \"" + std::string( (char *)byte_buf) + "\""; }
+             } // endif
+          } // endif
+
       }
 
       if (addr_size != nullptr)
@@ -690,6 +748,9 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
   if (pc == 0 || !isVisible)
     return false;
 
+//////////////////
+  //return false;
+//////////////////
 
   pc = showAddr;
 
@@ -725,6 +786,24 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
   /* Now construct each line.  */
   m_content.resize (max_lines);
   m_max_length = -1;
+
+// NS 11/11
+#if 0
+  // NS 11/11 read from /tmp/decompiler.out
+  std::ifstream inf;
+  inf.open( "/tmp/decompiler.txt"); 
+  std::vector<std::string>decomp;
+  if( inf.is_open())
+  {
+     std::string l1;
+     while( getline( inf, l1))
+     {
+        decomp.push_back( l1);
+     }
+     inf.close();
+  }
+#endif
+
   for (i = 0; i < max_lines; i++)
     {
       tui_source_element *src = &m_content[i];
@@ -734,10 +813,14 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
 
       if (i < asm_lines.size ())
 	{
+    // NS 11/11
+    // std::string addstr = (i < decomp.size() ? decomp.at(i) : "");
+
+
 	  line
 	    = (asm_lines[i].addr_string
 	       + n_spaces (insn_pos - asm_lines[i].addr_size)
-	       + asm_lines[i].insn);
+	       + asm_lines[i].insn /*+ addstr*/);
 	  addr = asm_lines[i].addr;
 	}
       else
@@ -764,61 +847,110 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
   /* Called for each mouse click inside this window.  Coordinates MOUSE_X
      and MOUSE_Y are 0-based relative to the window, and MOUSE_BUTTON can
      be 1 (left), 2 (middle), or 3 (right).  */
-  void tui_disasm_window::click (int mouse_x, int mouse_y, int mouse_button)
-  {
-  bool found = false;
+void tui_disasm_window::click (int mouse_x, int mouse_y, int mouse_button)
+{
+bool found = false;
 
       if( !m_content.empty() && m_content.size() >= mouse_y) 
       {
          // gdb_printf( "Line=%s", m_content[mouse_y].line.c_str());
 
-         std::string line = m_content[mouse_y].line;
-         for( int q = 0; q < calls.size(); q++) 
+         std::string line2 = m_content[mouse_y].line;
+         CORE_ADDR addr;
+
+	       addr = tui_disasm_parse_line( line2);			// return jump to address
+
+         // NS 11/11 try to get the address AT the line instead
+         if( addr == 0L)
          {
-             std::size_t _found = line.find( calls.at(q));
-              //std::size_t _found = line.find( "call");
-              if( _found != std::string::npos)
-              {
-                
-                  std::size_t fzerox = line.find( "0x", _found);
-                  if( fzerox != std::string::npos)
+            std::string line3 =  tui_diasm_remove_ansi_colors( line2);
+            std::size_t frip = line3.find( "0x");
+            std::size_t fripend = line3.find( " ", frip);
+            addr = std::stoul( line3.substr( frip, fripend - frip), nullptr, 16);
+            //gdb_printf( "0x%lx", addr);
+         }
+
+         if( addr != 0L && !TUI_DISASMOT_WIN->isVisible)
+         {
+		  // read this memory to array
+		  gdb_byte byte_buf[300];
+                  /*int g =*/ target_read_code( addr, byte_buf, sizeof( byte_buf));
+                  
+		              CORE_ADDR end_addr = tui_disasm_find_maybe_end_of_func( addr) + 1;   // to add the ret
+                  long take = sizeof( byte_buf);
+                  if( end_addr > 0L)
                   {
-                    std::size_t fspace = line.find( " ", fzerox);
-                    std::string address = line.substr( fzerox + 2, fspace);
-                    CORE_ADDR addr = std::stoul( address, nullptr, 16);
-                    gdb_printf( "Line=%s %lx", /*m_content[mouse_y].line.c_str()*/address.c_str(), addr);
+                     take = end_addr - addr + 1;
+                     //gdb_printf( "take=%lx::%lx", take, end_addr);
+                  }
 
-                    showAddr = addr;
+                  // gdb_printf( "ret=%d", g);
+                  FILE *fil;
+                  fil = fopen( "/tmp/data000", "w");
+                  fprintf( fil, "\"0x%lx\"\n", addr);
 
-                    if( TUI_DISASMOT_WIN != nullptr) 
-                    {
-                        //gdb_printf( "have xor\n\n");
-                        struct gdbarch *gdbarch = get_current_arch ();
+                  for( int iz  = 0; iz < take /*sizeof( byte_buf)*/; iz++)
+                  {
+                      fprintf( fil, "%02x", byte_buf[iz]);
+                  }
+                  fprintf( fil, "\n");
 
-                        int _x = TUI_DISASMOT_WIN->x;
-                        int _y = TUI_DISASMOT_WIN->y;
-                        int _w = TUI_DISASMOT_WIN->width;
-                        int _h = TUI_DISASMOT_WIN->height;
-                        _y = mouse_y + TUI_DISASM_WIN->y;
-                        _x = mouse_x + TUI_DISASM_WIN->x;
-                        _w = 100;
-                        _h = 20;
 
-                        TUI_DISASMOT_WIN->resize( _h, _w, _x, _y);
-                        TUI_DISASMOT_WIN->make_visible( true);
-                        TUI_DISASMOT_WIN->isVisible = true;
-                        //TUI_DISASMOT_WIN->refill();
-                        tui_apply_current_layout( true);
-                        tui_update_ontop_windows_with_addr( gdbarch, addr);
+                  std::vector<std::string>comVec = tui_disasm_find_funcnames( addr, end_addr);
+                  for( int ii = 0; ii < comVec.size(); ii++)
+                  {
+                     fprintf( fil, "%s\n", comVec.at(ii).c_str());
+                  }
+		              fclose( fil);
+		              if( mouse_button == 3)
+                  {
+                      int p = system( "/home/nstoler/projects/rz-ghidra/ghidra/ghidra/Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_test_dbg -sleighpath /home/nstoler/projects/rz-ghidra/ghidra -path /home/nstoler/projects/datatests datatests > /dev/null");
+                      if( p != 0) gdb_printf( "problms!");
+                  }
+                  showAddr = addr;
+                  
+#if 0
+                  // just dump pit for now on the cmd window
+		  fil = fopen( "/tmp/decompiler.txt", "r");
+                  if( fil != NULL)
+                  {
+                     char l[1024];
+                     while( fgets( l, sizeof( l), fil)) {
+                         gdb_printf( "%s\n", l);
+                     } // endwhile
+                     fclose( fil);
+                  }
+#endif
 
-                        found = true;
-                        // gdb_printf( "wnd at %d %d", _x, _y);
+
+                  if( TUI_DISASMOT_WIN != nullptr) 
+                  {
+                      //gdb_printf( "have xor\n\n");
+                      struct gdbarch *gdbarch = get_current_arch ();
+
+                      int _x = TUI_DISASMOT_WIN->x;
+                      int _y = TUI_DISASMOT_WIN->y;
+                      int _w = TUI_DISASMOT_WIN->width;
+                      int _h = TUI_DISASMOT_WIN->height;
+                      _y = mouse_y + TUI_DISASM_WIN->y + 1;
+                      _x = mouse_x + TUI_DISASM_WIN->x + 1;
+                      _w = 100;
+                      _h = 20;
+
+                      TUI_DISASMOT_WIN->resize( _h, _w, _x, _y);
+                      TUI_DISASMOT_WIN->make_visible( true);
+                      TUI_DISASMOT_WIN->isVisible = true;
+                      //TUI_DISASMOT_WIN->refill();
+                      tui_apply_current_layout( true);
+                      tui_update_ontop_windows_with_addr( gdbarch, addr);
+                     
+                      found = true;
                     }
-                    break;
-                  } // endif found zero x
-              } // found one of calls
-            } // endfor scan all "calls" in line 
-            if( !found && TUI_DISASMOT_WIN != nullptr) 
+//                    break;
+          } // found one of calls
+        } // if have enough lines in y
+
+            if( TUI_DISASMOT_WIN != nullptr && (!found)) 
             {
                 //gdb_printf( "have xor\n\n");
                 TUI_DISASMOT_WIN->isVisible = false;
@@ -826,8 +958,6 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
                 TUI_DISASMOT_WIN->make_visible( false);
                 TUI_DISASMOT_WIN->refill();
             }
-      } // endif have content line
-
 
       // execute_command( "x/100bx $ax", false);
 #if 0     
@@ -847,4 +977,347 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
   
       execute_command( m_regs_content.at(i).cmd.c_str(), false);
 #endif  
-  }
+} // endfunc
+
+
+
+
+/**************************************************************/
+std::string tui_diasm_remove_ansi_colors( std::string _line)
+{
+   const char *lineptr = _line.c_str();
+
+   /* Init the line with the line number.  */
+   std::string line;
+
+   char c;
+   do
+   {
+       int skip_bytes;
+
+       c = *lineptr;
+       if (c == '\033' && skip_ansi_escape( lineptr, &skip_bytes))
+ 	{
+ 	  /* We always have to preserve escapes.  */
+ 	  //result.append (lineptr, lineptr + skip_bytes);
+ 	  lineptr += skip_bytes;
+ 	  continue;
+ 	}
+       if (c == '\0')
+ 	break;
+
+       line.push_back( c);
+
+       ++lineptr;
+   }   while (c != '\0' && c != '\n' && c != '\r');
+   return line;
+}  //endfunc remove ansu
+
+
+/******************************************************/
+// parses an asm line for calls/branches and returns
+// the target address
+/******************************************************/
+CORE_ADDR tui_disasm_parse_line( std::string asm_line)
+{
+CORE_ADDR addr = 0L;
+
+         for( int q = 0; q < calls.size(); q++) 
+         {
+             std::size_t _found = asm_line.find( calls.at(q));
+
+              if( _found != std::string::npos)
+              {
+                  std::string line =  tui_diasm_remove_ansi_colors( asm_line);
+
+                  //gdb_printf( "line=%s", line.c_str());
+
+                  // find current address of asm line for jumps with rip
+ // this will not work because the address is somewhere else...
+                  std::size_t frip = line.find( "0x");
+                  std::size_t fripend = line.find( " ", frip);
+		  std::string rip_str = line.substr( frip, fripend - frip + 1);
+// unused                  value *rip = parse_and_eval( rip_str.c_str());
+
+                  // find the opcode's action
+                  std::size_t __found = line.find( calls.at(q));
+                  std::size_t freg = line.find( "*", __found);		// in att disassembly flavor of x86
+                  
+                  // indirect e.g. *rax
+                  if( freg != std::string::npos)
+                  {
+                     std::size_t fpar = line.find( ")", freg);
+                     std::size_t fper = line.find( "%", freg);
+                     std::size_t fspc = line.find( " ", freg);
+
+                     std::string regjump;
+
+                     if( fpar == std::string::npos && fper != std::string::npos && fspc > fper) 	// jmp *%rax ---- for example
+                     {
+                        regjump = "$" + line.substr( fper + 1, fspc - fper - 1 + 1);     	// jump over the * and %
+                     }
+                     else if( fpar != std::string::npos && fspc > fpar)				// jmp *0x44(%rip) --- for example
+                     {
+                        regjump = "$" + line.substr( fper + 1, fpar - 1 - fper - 1 + 1) + " + " + line.substr( freg + 1, fper - 2 - freg - 1 + 1);
+                        tui_disasm_str_replace( regjump, "$rip", rip_str);
+                     }
+  	             struct value *val = parse_and_eval( regjump.c_str());
+	             addr  = value_as_address( val); 
+                     gdb_printf( ">>>2 parse: %s=%lx", regjump.c_str(), addr);
+ 		  } // endif found indirect jump
+
+		  // ----- just a const jump with address -----
+                  else
+                  {
+                     std::size_t __found2 = line.find( calls.at(q));
+                     std::size_t fzerox = line.find( "0x", __found2);
+                     if( fzerox != std::string::npos)
+                     {
+                        std::size_t fspace = line.find( " ", fzerox);
+                        std::string address = line.substr( fzerox + 2, fspace);
+                        addr = std::stoul( address, nullptr, 16);
+                     }
+                  } // endelse
+            } // endnif !found
+      } // endfor
+   return addr;
+} // endfunc
+
+
+/******************************************************/
+/* A short and good string replace function	      */
+/* should be moved to some tui utils		      */
+/******************************************************/
+bool tui_disasm_str_replace( std::string& str, const std::string& from, const std::string &to)
+{
+    size_t start_pos = str.find( from);
+    if( start_pos == std::string::npos)
+        return false;
+    str.replace( start_pos, (size_t)from.length(), to);
+    return true;
+} // endfunc **replace**
+
+
+
+
+CORE_ADDR tui_disasm_find_maybe_end_of_func( CORE_ADDR from)
+{
+std::vector<tui_asm_line> asmlines;
+struct gdbarch *gdbarch = get_current_arch ();
+
+
+    tui_disassemble ( gdbarch, asmlines, from, 300);
+    for( int i = 0; i < asmlines.size(); i++)
+    {
+        // just a silly search for now
+        std::string disas = asmlines.at(i).insn;
+
+        size_t f = disas.find( "ret");
+        if( f != std::string::npos)
+           return asmlines.at(i + 1).addr;
+    }
+    return 0L;
+} // endfunc
+
+
+/////////////////////////////////////////////////////////////////////////
+std::vector<std::string> tui_disasm_find_funcnames( CORE_ADDR from, CORE_ADDR to)
+{
+std::vector<std::string> retVec;
+std::vector<tui_asm_line> asmlines;
+struct gdbarch *gdbarch = get_current_arch ();
+CORE_ADDR addr;
+int iq;
+
+    CORE_ADDR pc = from;
+
+
+    //! gdb_printf( "find %lu %lu", from , to);
+
+    for( iq = 0; iq < 300; iq++) {
+        pc = tui_disassemble ( gdbarch, asmlines, pc, 1);
+
+        if( pc > to && to > 0L) { 
+           break;
+        }
+    } // endfor
+    tui_disassemble ( gdbarch, asmlines, from, iq);
+
+    // just testing
+    addr = tui_disasm_check_load_add( asmlines);
+
+
+    // gdb_printf( "asmline=%ld", asmlines.size());
+
+    for( int i = 0; i < asmlines.size(); i++)
+    {
+        // just a silly search for now
+        std::string disas = asmlines.at(i).insn;
+
+        // check for function call names in instructions
+        std::string funcname = tui_disasm_parse_for_funcnames( disas);
+        if( funcname != "")
+        { 
+           char str[100];
+
+           for( int q = 0; q < calls.size(); q++) 
+           {
+               std::size_t _found = disas.find( calls.at(q));
+ 
+               if( _found != std::string::npos)
+               {
+                     std::size_t fzerox = disas.find( "0x", _found);
+                     if( fzerox != std::string::npos)
+                     {
+                        std::size_t fspace = disas.find( " ", fzerox);
+                        std::string address = disas.substr( fzerox + 2, fspace);
+                        addr = std::stoul( address, nullptr, 16);
+                     }
+                     break;
+               } // endif found
+           } // endfor
+
+           sprintf( str, "<symbol space=\"ram\" offset=\"0x%lx\" name=\"%s\"/>\n", addr, funcname.c_str());
+           retVec.push_back( std::string( str));
+
+        } // endif found funcname
+    } // endfor all asm lines
+    return retVec;
+} // endfunc
+
+#if 1
+///////////////////////////////////////////////////////////////////////////////////
+std::string tui_disasm_parse_for_funcnames( std::string asm_line)
+{
+   std::string result = "";
+
+   std::string line =  tui_diasm_remove_ansi_colors( asm_line);
+
+   std::size_t ad = line.find( "0x");
+   std::size_t adsp = line.find( " ", ad);
+   std::size_t adss = line.find( "<", adsp);
+   if( adss == adsp + 1)
+   {
+	   // check if have @plt address
+	   std::size_t plt = adss;
+	   if( plt > 0) 
+	   {
+	      std::size_t plt2 = line.find( ">", plt);
+	      if( plt2 > 0)
+	         result = line.substr( plt + 1, plt2 - 1 - plt);
+	   }
+   }
+   return result;
+} //endfunc
+#endif
+
+#if 1
+/***************************************************************/
+CORE_ADDR tui_disasm_check_load_add( std::vector<tui_asm_line> asmlines)
+{
+std::vector<std::string> retVec;
+tui_asm_line _asm;
+std::string _asmstr;
+
+   for( int i = 0; i < asmlines.size(); i++)
+   {
+      _asm = asmlines.at(i);
+      _asmstr = _asm.insn;
+
+
+      for( int q = 0; q < loads.size(); q++) 
+      {
+          std::size_t _found = _asmstr.find( loads.at(q));
+          if( _found != std::string::npos)
+          {
+              std::string line =  tui_diasm_remove_ansi_colors( _asmstr);
+              std::size_t _found2 = line.find( loads.at(q));
+              std::size_t _found3 = line.find( "# ", _found2);
+              if( _found3 != std::string::npos)
+              {
+                  std::size_t _foundZeroX = line.find( "0x", _found3);
+                  std::size_t _found4 = line.find( " ", _foundZeroX);
+                  std::string adds = line.substr( _foundZeroX, _found4 - _foundZeroX + 1);
+
+                  struct value *val = parse_and_eval( adds.c_str());
+	                CORE_ADDR addr  = value_as_address( val); 
+                  //gdb_printf( "))) found %lx", addr);
+		  return( addr);
+              }
+          } // endif
+      }
+   } // endfor all asmlines
+   return 0L;
+
+} // endfunc
+#endif
+
+#if 0
+/////////////////////////////////////////////////////////
+CORE_ADDR tui_disasm_is_abs( std::string line, int fopcode)
+{
+CORE_ADDR addr = 0L;
+
+
+          std::size_t frip = line.find( "0x", fopcode);
+//          std::size_t fripend = line.find( " ", frip);
+//	  std::string rip_str = line.substr( frip, fripend - frip + 1);
+
+          std::size_t freg = line.find( "*", fopcode);		// in att disassembly flavor of x86
+          
+          // indirect e.g. *rax
+          if( freg != std::string::npos)
+          {
+             return 0L;
+	  } // endif found indirect jump
+
+	  // ----- just a const with address -----
+          else
+          {
+             std::size_t fzerox = frip;
+             if( fzerox != std::string::npos)
+             {
+                std::size_t fspace = line.find( " ", fzerox);
+                std::string address = line.substr( fzerox + 2, fspace);
+                addr = std::stoul( address, nullptr, 16);
+             }
+          } // endelse
+	return addr;
+} // endfunc
+#endif
+
+/*********************************************************/
+//missing string printf
+//this is safe and convenient but not exactly efficient
+/*********************************************************/
+inline std::string tui_disasm_format(const char* fmt, ...)
+{
+    int size = 512;
+    char* buffer = 0;
+    buffer = new char[size];
+    va_list vl;
+    va_start(vl, fmt);
+    int nsize = vsnprintf(buffer, size, fmt, vl);
+    if(size<=nsize){ //fail delete buffer and try again
+        delete[] buffer;
+        buffer = 0;
+        buffer = new char[nsize+1]; //+1 for /0
+        nsize = vsnprintf(buffer, size, fmt, vl);
+    }
+    std::string ret(buffer);
+    va_end(vl);
+    delete[] buffer;
+    return ret;
+}
+
+
+/* Extract the contents of the value as a string whose length is LENGTH,
+   and store the result in DEST.  */
+#if 0
+static void
+tui_disasm_value_as_string (char *dest, struct value *val, int length)
+{
+  memcpy (dest, value_contents (val).data (), length);
+  dest[length] = '\0';
+}
+#endif

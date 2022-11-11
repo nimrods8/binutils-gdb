@@ -377,7 +377,7 @@ tui_before_prompt (const char *current_gdb_prompt)
   if( TUI_DISASMOT_WIN != nullptr && prevVisibilty != TUI_DISASMOT_WIN->isVisible)
   {
       prevVisibilty = TUI_DISASMOT_WIN->isVisible;
-      tui_apply_current_layout( true);
+      //NS 11/11 tui_apply_current_layout( true);
   }
 }
 

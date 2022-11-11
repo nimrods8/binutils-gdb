@@ -85,6 +85,10 @@ box_win (struct tui_win_info *win_info,
   WINDOW *win;
   int attrs;
 
+  // NS 11/11
+  if( !win_info->isVisible && !strcmp( win_info->name(),  DISASSEM_ONTOP_NAME))
+     return;
+
   win = win_info->handle.get ();
   if (highlight_flag)
     attrs = tui_active_border_attrs;

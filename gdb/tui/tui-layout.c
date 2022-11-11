@@ -1083,12 +1083,15 @@ tui_layout_split::apply (int x_, int y_, int width_, int height_,
           y = win_info->y;
           width = win_info->width;
           height = win_info->height;
+          win_info->isVisible = true;
 
           gdb_printf ("x = %d, y = %d, h = %d, w = %d", x, y, height, width);
         }
         else 
         {
-          x = 0; y = 10; height = 2; width = 2;
+          tui_win_info *win_info = TUI_DISASMOT_WIN;
+          win_info->isVisible = false;
+          x = 5; y = 10; height = 2; width = 2;
           // m_splits[i].layout->apply( x, y, width, height, true);
           // continue;
           

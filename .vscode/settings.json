@@ -20,5 +20,6 @@
                 "hash_set": "c",
                 "mutex": "c",
                 "streambuf": "c"
-        }
+        },
+        "cmake.sourceDirectory": "${workspaceFolder}/zlib"
 }
