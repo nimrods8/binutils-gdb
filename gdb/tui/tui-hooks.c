@@ -56,6 +56,7 @@
 
 //NS 01/11
 #include "tui/tui-disasm.h"
+#include "tui/tui-console.h"
 #include <sstream>
 #include "gdb_curses.h"
 
@@ -379,6 +380,12 @@ tui_before_prompt (const char *current_gdb_prompt)
       prevVisibilty = TUI_DISASMOT_WIN->isVisible;
       //NS 11/11 tui_apply_current_layout( true);
   }
+  
+  if( TUI_CONSOLE_WIN != nullptr)
+  {
+     TUI_CONSOLE_WIN->rerender();
+  }
+   
 }
 
 /***************************************************************************************/

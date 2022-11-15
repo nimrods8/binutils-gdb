@@ -19,7 +19,11 @@
                 "hash_map": "c",
                 "hash_set": "c",
                 "mutex": "c",
-                "streambuf": "c"
+                "streambuf": "c",
+                "tui-console.h": "c",
+                "memory": "c",
+                "future": "c",
+                "istream": "c"
         },
         "cmake.sourceDirectory": "${workspaceFolder}/zlib"
 }

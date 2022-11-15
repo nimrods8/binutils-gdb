@@ -194,6 +194,9 @@ tui_disassemble (struct gdbarch *gdbarch,
           std::vector<tui_asm_line> asml;
           asml.push_back( tal);
           CORE_ADDR lea = tui_disasm_check_load_add( asml);
+
+                  //    gdb_printf( "target =0x%lx", lea);
+
           if( lea != 0L) {
              //char dest[13];
 
@@ -655,6 +658,7 @@ tui_disasm_window::display_start_addr (struct gdbarch **gdbarch_p,
 void
 tui_disasm_ontop_window::do_scroll_vertical (int num_to_scroll)
 {
+    gdb_printf( "now scrolling!");
   if (!m_content.empty ())
     {
       CORE_ADDR pc;
@@ -1056,6 +1060,7 @@ CORE_ADDR addr = 0L;
                      {
                         regjump = "$" + line.substr( fper + 1, fspc - fper - 1 + 1);     	// jump over the * and %
                      }
+                    // NS 11/11 !!FIX THIS
                      else if( fpar != std::string::npos && fspc > fpar)				// jmp *0x44(%rip) --- for example
                      {
                         regjump = "$" + line.substr( fper + 1, fpar - 1 - fper - 1 + 1) + " + " + line.substr( freg + 1, fper - 2 - freg - 1 + 1);
@@ -1063,7 +1068,7 @@ CORE_ADDR addr = 0L;
                      }
   	             struct value *val = parse_and_eval( regjump.c_str());
 	             addr  = value_as_address( val); 
-                     gdb_printf( ">>>2 parse: %s=%lx", regjump.c_str(), addr);
+                     //gdb_printf( ">>>2 parse: %s=%lx", regjump.c_str(), addr);
  		  } // endif found indirect jump
 
 		  // ----- just a const jump with address -----

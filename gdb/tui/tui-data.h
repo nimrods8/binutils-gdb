@@ -187,6 +187,9 @@ protected:
 // NS 30/10
 #define DISASSEM_ONTOP_NAME     "asmot"
 
+// NS 12/11
+#define CONSOLE_NAME            "console"
+
 
 /* Global Data.  */
 extern struct tui_win_info *tui_win_list[MAX_MAJOR_WINDOWS];
@@ -199,6 +202,9 @@ extern struct tui_win_info *tui_win_list[MAX_MAJOR_WINDOWS];
 
 // NS 30/10
 #define TUI_DISASMOT_WIN	((tui_disasm_ontop_window *) tui_win_list[DISASSEM_ONTOP_WIN])
+
+// NS 12/11
+#define TUI_CONSOLE_WIN	((tui_console_window *) tui_win_list[CONSOLE_WIN])
 
 
 

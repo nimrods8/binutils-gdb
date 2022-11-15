@@ -46,6 +46,10 @@
 #include "gdb_curses.h"
 #include "safe-ctype.h"
 
+// NS 12/11
+#include "tui/tui-console.h"
+#include "top.h"
+
 static void extract_display_start_addr (struct gdbarch **, CORE_ADDR *);
 
 /* The layouts.  */
@@ -63,7 +67,7 @@ static tui_layout_split *src_regs_layout;
 static tui_layout_split *asm_regs_layout;
 
 // NS 30/10
-static tui_layout_split *asm_ontop_layout;
+static tui_layout_split *asm_ontop_layout, *asm_console_layout;
 
 
 /* See tui-data.h.  */
@@ -87,9 +91,8 @@ tui_apply_current_layout (bool preserve_cmd_win_size_p)
 
   /* Keep the list of internal windows up-to-date.  */
   for (int win_type = SRC_WIN; (win_type < MAX_MAJOR_WINDOWS); win_type++)
-    if (tui_win_list[win_type] != nullptr
-  && !tui_win_list[win_type]->is_visible ())
-      tui_win_list[win_type] = nullptr;
+    if (tui_win_list[win_type] != nullptr && !tui_win_list[win_type]->is_visible ())
+       tui_win_list[win_type] = nullptr;
 
   /* This should always be made visible by a layout.  */
   gdb_assert (TUI_CMD_WIN != nullptr);
@@ -253,6 +256,16 @@ void tui_ontop_layout()
 }
 
 
+// NS 30/30
+void tui_console_layout()
+{
+  // NS 13/11
+  execute_command( "tui new-layout console {-horizontal regs 1 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
+
+  tui_set_layout ( asm_console_layout);
+  tui_set_layout ( asm_console_layout);
+}
+
 
 /* See tui-layout.h.  */
 
@@ -287,6 +300,15 @@ tui_ontop_layout_command (const char *arg, int from_tty)
   tui_enable ();
   tui_ontop_layout ();
 }
+
+
+static void
+tui_console_layout_command (const char *arg, int from_tty)
+{
+  tui_enable ();
+  tui_console_layout ();
+}
+
 
 
 /* See tui-layout.h.  */
@@ -422,9 +444,13 @@ initialize_known_windows ()
 
 // NS 30/10
 #if 1
-  known_window_types->emplace (DISASSEM_ONTOP_NAME,
+  known_window_types->emplace( DISASSEM_ONTOP_NAME,
              make_standard_window<DISASSEM_ONTOP_WIN,
                 tui_disasm_ontop_window>);
+
+// NS 12/11
+  known_window_types->emplace( CONSOLE_NAME,
+             make_standard_window<CONSOLE_WIN, tui_console_window>);
 #endif
 }
 
@@ -436,7 +462,7 @@ tui_register_window (const char *name, window_factory &&factory)
   std::string name_copy = name;
 
   if (name_copy == SRC_NAME || name_copy == CMD_NAME || name_copy == DATA_NAME
-      || name_copy == DISASSEM_NAME || name_copy == STATUS_NAME)
+      || name_copy == DISASSEM_NAME || name_copy == STATUS_NAME || name_copy == CONSOLE_NAME)
     error (_("Window type \"%s\" is built-in"), name);
 
   for (const char &c : name_copy)
@@ -831,6 +857,11 @@ tui_layout_split::apply (int x_, int y_, int width_, int height_,
 {
   TUI_SCOPED_DEBUG_ENTER_EXIT;
 
+
+  // NS 12/11
+  preserve_cmd_win_size_p = false;
+
+
   x = x_;
   y = y_;
   width = width_;
@@ -883,10 +914,10 @@ tui_layout_split::apply (int x_, int y_, int width_, int height_,
              &info[i].max_size);
 
       if (preserve_cmd_win_size_p
-    && cmd_win_already_exists
-    && m_splits[i].layout->get_name () != nullptr
-    && strcmp (m_splits[i].layout->get_name (), "cmd") == 0)
-  {
+            && cmd_win_already_exists
+            && m_splits[i].layout->get_name () != nullptr
+            && strcmp (m_splits[i].layout->get_name (), "cmd") == 0)
+      {
     /* Save the old cmd window information, in case we need to
        restore it later.  */
           old_cmd_info.emplace (i, info[i].min_size, info[i].max_size);
@@ -897,19 +928,19 @@ tui_layout_split::apply (int x_, int y_, int width_, int height_,
        same.  Setting the min and max sizes this way ensures
        that the resizing step, below, does the right thing with
        this window.  */
-    info[i].min_size = (m_vertical
-            ? TUI_CMD_WIN->height
-            : TUI_CMD_WIN->width);
-    info[i].max_size = info[i].min_size;
-  }
+         info[i].min_size = (m_vertical
+              ? TUI_CMD_WIN->height
+              : TUI_CMD_WIN->width);
+         info[i].max_size = info[i].min_size;
+      }
 
       if (info[i].min_size == info[i].max_size)
-  available_size -= info[i].min_size;
+         available_size -= info[i].min_size;
       else
-  {
-    last_index = i;
-    total_weight += m_splits[i].weight;
-  }
+      {
+         last_index = i;
+         total_weight += m_splits[i].weight;
+      }
 
       /* Two adjacent boxed windows will share a border, making a bit
    more size available.  */
@@ -1059,9 +1090,11 @@ tui_layout_split::apply (int x_, int y_, int width_, int height_,
   const int maximum = m_vertical ? height : width;
   for (int i = 0; i < m_splits.size (); ++i)
     {
+#if 1        
       // NS 01/11
       // dont show ontop window currently
-      if( !strcmp( m_splits[i].layout->get_name(), DISASSEM_ONTOP_NAME))
+      if( m_splits[i].layout->get_name() != nullptr && 
+           !strcmp( m_splits[i].layout->get_name(), DISASSEM_ONTOP_NAME))
       {
         std::vector<tui_win_info *> tui_windows;
         m_splits[i].layout->get_windows (&tui_windows);
@@ -1078,28 +1111,43 @@ tui_layout_split::apply (int x_, int y_, int width_, int height_,
         {
          //  x = 30; y = 20; height = 20; width = 80;
           tui_win_info *win_info = TUI_DISASMOT_WIN;
-          
-          x = win_info->x;
-          y = win_info->y;
-          width = win_info->width;
-          height = win_info->height;
-          win_info->isVisible = true;
-
-          gdb_printf ("x = %d, y = %d, h = %d, w = %d", x, y, height, width);
+          if( TUI_DISASMOT_WIN != NULL)
+          {
+            x = win_info->x;
+            y = win_info->y;
+            width = win_info->width;
+            height = win_info->height;
+            win_info->isVisible = true;
+          }
+          // gdb_printf ("x = %d, y = %d, h = %d, w = %d", x, y, height, width);
         }
         else 
         {
+         // set to not visible
           tui_win_info *win_info = TUI_DISASMOT_WIN;
-          win_info->isVisible = false;
-          x = 5; y = 10; height = 2; width = 2;
-          // m_splits[i].layout->apply( x, y, width, height, true);
-          // continue;
-          
+          if( win_info != NULL)
+          {
+            //gdb_printf( "wnd name1=%s", m_splits[i].layout->get_name());
+             win_info->isVisible = false;
+             int prev_x = x;
+             int prev_y = y; 
+             int prev_w = width;
+             int prev_h = height;
+             x = 5; y = 10; height = 2; width = 2;
+            m_splits[i].layout->apply( x, y, width, height, true);
+           x = prev_x;
+           y = prev_y; 
+           width = prev_w;
+           height = prev_h;
+           continue;
+         }
         }
-         m_splits[i].layout->apply( x, y, width, height, true);
-         continue; 
+        if( TUI_DISASMOT_WIN != NULL) {
+           m_splits[i].layout->apply( x, y, width, height, true);
+        }
+        continue; 
       }
-
+#endif
       /* If we fall off the bottom, just make allocations overlap.
    GIGO.  */
       if (size_accum + info[i].size > maximum)
@@ -1211,6 +1259,8 @@ tui_layout_command (const char *args, int from_tty)
   help_list (layout_list, "tui layout ", all_commands, gdb_stdout);
 }
 
+
+
 /* Add a "layout" command with name NAME that switches to LAYOUT.  */
 
 static struct cmd_list_element *
@@ -1290,9 +1340,39 @@ initialize_layouts ()
   layout->add_window (CMD_NAME, 1);
   layouts.emplace_back (layout);
   asm_regs_layout = layout;
+
+// NS 12/11
+ 
+  tui_layout_split *layout_horiz;
+  layout_horiz = new tui_layout_split ( false);     // horizontal split
+  layout_horiz->add_window (DATA_NAME, 1);
+  layout_horiz->add_window (CONSOLE_NAME, 1);
+  std::unique_ptr<tui_layout_split> last_split = 
+          std::make_unique<tui_layout_split>( layout_horiz);
+  
+  layout = new tui_layout_split ();
+
+  //layout->add_window (DATA_NAME, 1);
+  //layout->add_window (CONSOLE_NAME, 1);
+  //std::unique_ptr<tui_layout_split> last_split = std::make_unique<tui_layout_split>( layout);
+  
+  layout->add_split( std::move( last_split), 2);
+
+  layout->add_window (DISASSEM_NAME, 2);
+  layout->add_window (STATUS_NAME, 0);
+  layout->add_window (CMD_NAME, 1);
+  layout->add_window (DISASSEM_ONTOP_NAME, 0);
+  layouts.emplace_back (layout);
+  asm_console_layout = layout;
+
+
+  // NS 13/11
+  //execute_command( "tui new-layout console {-horizontal regs 1 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
+
+
 }
 
-
+
 
 /* A helper function that returns true if NAME is the name of an
    available window.  */
@@ -1324,57 +1404,57 @@ tui_new_layout_command (const char *spec, int from_tty)
   splits.emplace_back (new tui_layout_split (is_vertical));
   std::unordered_set<std::string> seen_windows;
   while (true)
-    {
+  {
       spec = skip_spaces (spec);
       if (spec[0] == '\0')
-  break;
+      break;
 
       if (spec[0] == '{')
-  {
-    is_vertical = true;
-    spec = skip_spaces (spec + 1);
-    if (check_for_argument (&spec, "-horizontal"))
-      is_vertical = false;
-    splits.emplace_back (new tui_layout_split (is_vertical));
-    continue;
-  }
+      {
+          is_vertical = true;
+          spec = skip_spaces (spec + 1);
+          if (check_for_argument (&spec, "-horizontal"))
+             is_vertical = false;
+          
+          splits.emplace_back (new tui_layout_split (is_vertical));
+          continue;
+      }
 
       bool is_close = false;
       std::string name;
       if (spec[0] == '}')
-  {
-    is_close = true;
-    ++spec;
-    if (splits.size () == 1)
-      error (_("Extra '}' in layout specification"));
-  }
+      {
+         is_close = true;
+         ++spec;
+         if (splits.size () == 1)
+            error (_("Extra '}' in layout specification"));
+      }
       else
-  {
-    name = extract_arg (&spec);
-    if (name.empty ())
-      break;
-    if (!validate_window_name (name))
-      error (_("Unknown window \"%s\""), name.c_str ());
-    if (seen_windows.find (name) != seen_windows.end ())
-      error (_("Window \"%s\" seen twice in layout"), name.c_str ());
-  }
+      {
+         name = extract_arg (&spec);
+         if (name.empty ())
+            break;
+         if (!validate_window_name (name))
+            error (_("Unknown window \"%s\""), name.c_str ());
+         if (seen_windows.find (name) != seen_windows.end ())
+            error (_("Window \"%s\" seen twice in layout"), name.c_str ());
+      }
 
       ULONGEST weight = get_ulongest (&spec, '}');
       if ((int) weight != weight)
-  error (_("Weight out of range: %s"), pulongest (weight));
+         error (_("Weight out of range: %s"), pulongest (weight));
       if (is_close)
-  {
-    std::unique_ptr<tui_layout_split> last_split
-      = std::move (splits.back ());
-    splits.pop_back ();
-    splits.back ()->add_split (std::move (last_split), weight);
-  }
+      {
+         std::unique_ptr<tui_layout_split> last_split = std::move (splits.back ());
+         splits.pop_back ();
+         splits.back ()->add_split (std::move (last_split), weight);
+      }
       else
-  {
-    splits.back ()->add_window (name.c_str (), weight);
-    seen_windows.insert (name);
+      {
+         splits.back ()->add_window (name.c_str (), weight);
+         seen_windows.insert (name);
+      }
   }
-    }
   if (splits.size () > 1)
     error (_("Missing '}' in layout specification"));
   if (seen_windows.empty ())
@@ -1390,7 +1470,8 @@ tui_new_layout_command (const char *spec, int from_tty)
   cmd->name_allocated = 1;
   cmd_name.release ();
   new_layout.release ();
-}
+
+} // endfunc
 
 /* Function to initialize gdb commands, for tui window layout
    manipulation.  */
@@ -1420,6 +1501,12 @@ Usage: tui layout prev | next | LAYOUT-NAME"),
   add_cmd ("ontop", class_tui, tui_ontop_layout_command,
      _("Apply the TUI asm on-top layout."),
      &layout_list);
+// NS 12/11
+
+// NS 30/10
+  add_cmd ("console", class_tui, tui_console_layout_command,
+     _("Apply the TUI asm on-top+console layout."),
+     &layout_list);
 
 
   add_cmd ("new-layout", class_tui, tui_new_layout_command,
@@ -1436,5 +1523,9 @@ to be allocated to the window."),
      tui_get_cmd_list ());
 
   initialize_layouts ();
-  initialize_known_windows ();
+  initialize_known_windows (); 
+  
+  // NS 13/11
+  //execute_command( "tui new-layout console {-horizontal regs 1 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
+
 }

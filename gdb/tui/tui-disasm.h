@@ -88,7 +88,11 @@ struct tui_disasm_ontop_window : public tui_source_window_base
 
   void erase_source_content () override
   {
+    #if 0
     do_erase_source_content (_("[ No Assembly Available ]"));
+    #else
+    do_erase_source_content (_(""));
+    #endif
   }
 
   void display_start_addr (struct gdbarch **gdbarch_p,

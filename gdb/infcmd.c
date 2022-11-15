@@ -58,6 +58,7 @@
 
 // NS 03/11
 #include "tui/tui.h"
+#include "tui/tui-console.h"
 
 /* Local functions: */
 
@@ -420,7 +421,8 @@ run_command_1 (const char *args, int from_tty, enum run_how run_how)
 
     // Creating the named file(FIFO)
     // mkfifo(<pathname>, <permission>)
-     //mkfifo( myfifo, 0666);
+     mkfifo( myfifo, 0666);
+     initialize_tui_console();
 
      //gdb_printf( "tui on %s", args);
      if( args == NULL)

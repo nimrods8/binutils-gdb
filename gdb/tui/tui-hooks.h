@@ -22,5 +22,6 @@
 
 extern void tui_install_hooks (void);
 extern void tui_remove_hooks (void);
+std::vector<std::string> tui_hooks_split(const std::string& s, char seperator);
 
 #endif /* TUI_TUI_HOOKS_H */
