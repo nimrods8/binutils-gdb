@@ -89,6 +89,10 @@ tui_register_format (frame_info_ptr frame, int regnum)
 {
   struct gdbarch *gdbarch = get_frame_arch (frame);
 
+
+  //gdb_printf( "next reg\n");
+
+
   /* Expand tabs into spaces, since ncurses on MS-Windows doesn't.  */
   tab_expansion_file stream;
 
@@ -99,6 +103,10 @@ tui_register_format (frame_info_ptr frame, int regnum)
 
   gdbarch_print_registers_info (gdbarch, &stream, frame, regnum, 1);
 
+
+//  gdb_printf( "next reg 1\n");
+
+
   /* Remove the possible \n.  */
   std::string str = stream.release ();
 
@@ -107,9 +115,14 @@ tui_register_format (frame_info_ptr frame, int regnum)
     str.resize (str.size () - 1);
 
 
+  //gdb_printf( "next reg 2\n");
+
   // NS 20/10
   const char *regname = gdbarch_register_name (gdbarch, regnum);
   gdb::observers::tui_next_reg.notify( regname,  &str);             // in tui_hooks.c
+
+
+  //gdb_printf( "next reg 3\n");
 
 #if 0
   // NS 19/10/2022 add something

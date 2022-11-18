@@ -67,7 +67,6 @@ static void tui_hooks_call_rename_command (const char *, int);
 static void tui_hooks_break_command( const char *, int);
 bool tui_hooks_serialize_comments( bool);
 bool tui_hooks_deserialize_comments( void);
-std::vector<std::string> tui_hooks_split(const std::string& s, char seperator);
 std::string toHexFromDecimal(long long t);
 
 
@@ -92,6 +91,7 @@ struct mapping
 };
 
 std::vector<mapping> m_execMaps;
+std::vector<mapping> m_rwMaps;
 
 
 typedef enum
@@ -388,6 +388,34 @@ tui_before_prompt (const char *current_gdb_prompt)
    
 }
 
+
+
+/**
+ returns the type of memory block or the filenae (if
+ so lib or executable are found) of addr inside m_rwMaps
+ or -1 if not found
+**/
+std::string tui_hooks_get_name_of_rwMaps( CORE_ADDR addr)
+{
+  struct mapping m;
+  // DEBUG:: struct gdbarch *gdbarch = target_gdbarch();
+
+  for( int i = 0; i < m_rwMaps.size(); i++)
+  {
+     m = m_rwMaps.at( i);
+
+     if( m.addr <= addr && m.endaddr >= addr)
+     {
+        // DEBUG:: gdb_printf( "In here: %s\n", m.filename);
+        return std::string( m.filename);
+     }
+  } //endfor
+  return std::string();
+}
+
+
+
+
 /***************************************************************************************/
 // reads /proc/pid/maps from target and parses info into m_execMaps vector
 static void 
@@ -402,14 +430,16 @@ char filename[MAX_FN_TEXT];
   gdb::unique_xmalloc_ptr<char> map = target_fileio_read_stralloc( NULL, filename);
   // debug::   gdb_printf( "hhh: %s\n\n\n", (char *)map.get());
   
-  if( map == NULL)
-  {
-     m_execMaps.clear();
-     return;
-  }
   struct gdbarch *gdbarch = target_gdbarch();
 
   m_execMaps.clear();
+  m_rwMaps.clear();        // NS 16/11
+
+  if( map == NULL)
+  {
+     return;
+  }
+
 
   /* Translate PC address.  */
   // redeclared struct gdbarch *gdbarch = tui_location.gdbarch ();
@@ -450,10 +480,15 @@ char filename[MAX_FN_TEXT];
 			      m.filename);
 */
               } // endif exec permission
-	    } // endfor
 
-            // gdb_printf( "vector length = %lu", m_execMaps.size());
-}
+               // has r/w in permissions?
+              if( m.permissions.find ('r') !=  gdb::string_view::npos ||
+                   m.permissions.find ('w') !=  gdb::string_view::npos)
+              {
+                     m_rwMaps.push_back( m);
+              } // endif exec permission
+	    } // endfor
+} // endfunc
 
 
 
@@ -936,6 +971,17 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
 } // endfunc
 
 
+////////////////////////////////////////////////////////////////////
+// turns filename string to color
+std::vector<std::string>FileNames = { "[stack]", "[heap]" };
+
+static std::string tui_hooks_filename2color( std::string filename)
+{
+   if( filename == "[stack]") return( std::string( "\033[92m")); // green
+   if( filename == "[heap]") return( std::string( "\033[94m")); // blue
+   return( std::string("\033[91m"));
+}
+
 
 /**
 ███    ██ ███████ ██   ██ ████████     ██████  ███████  ██████  ██ ███████ ████████ ███████ ██████  
@@ -967,12 +1013,54 @@ char xyz[64];
 // |  [...]
 // ------------------------
 //
-// QList: size = d.end - e.begin
+// QList: size = d.end - d.begin
 
   try
   {
       if( regname != 0 && *regname != '\0')
       {
+         // NS 18/11 check with m_rwMaps to see where this register is pointintg at
+         sprintf( xyz, "$%s", regname); 
+         struct value *val9 = parse_and_eval( xyz);
+         //gdb_printf( "Ref %s = %lx", xyz, value_as_address( val9));
+         std::string xstr = tui_hooks_get_name_of_rwMaps( value_as_address( val9));
+         if( !xstr.empty())
+         {
+            // gdb_printf( "Found @ %s", xstr.c_str());
+            size_t zerox = reg_str->find( "0x");
+            if( zerox != std::string::npos) 
+            {
+               size_t zeroxsp = reg_str->find( " ", zerox);
+               reg_str->insert(  zeroxsp, "\033[0m");
+               reg_str->insert(  zerox, tui_hooks_filename2color( xstr)); //\033[0m");
+
+         	   gdb_byte byte_buf[300];
+               int g = target_read_memory( value_as_address( val9), byte_buf, sizeof( byte_buf));
+            
+               if( g == 0) 
+               {
+                  bool drop = false;
+                  for( int w = 0; w < 12; w++)
+                  {
+                      if( byte_buf[w] == 0x00) break;
+                      if( byte_buf[w] >= 0x80 || byte_buf[w] < 0x20)
+                      {
+ 		                   drop = true; 
+                         break;
+                      }
+                  } // endfor
+                  byte_buf[12] = 0x00;
+
+
+                  //std::string comm = tui_disasm_format( "x/s 0x%lx", lea);
+                  //struct value *val = parse_and_eval( comm.c_str());
+                  //tui_disasm_value_as_string( dest, val, 12);
+                  //gdb_printf( "%s", byte_buf);
+                  if( !drop) { reg_str->insert(  reg_str->size(), " \"" + std::string( (char *)byte_buf) + "\""); }
+               }
+            }
+         }
+
          sprintf( xyz, "*(long *)(*(long *)$%s)", regname); 
          struct value *val0 = parse_and_eval( xyz);
          // now, value is the dereferenced value of the register

@@ -23,7 +23,8 @@
                 "tui-console.h": "c",
                 "memory": "c",
                 "future": "c",
-                "istream": "c"
+                "istream": "c",
+                "tui-hooks.h": "c"
         },
         "cmake.sourceDirectory": "${workspaceFolder}/zlib"
 }

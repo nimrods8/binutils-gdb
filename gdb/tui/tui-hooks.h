@@ -24,4 +24,7 @@ extern void tui_install_hooks (void);
 extern void tui_remove_hooks (void);
 std::vector<std::string> tui_hooks_split(const std::string& s, char seperator);
 
+std::string tui_hooks_get_name_of_rwMaps( CORE_ADDR addr);
+
+
 #endif /* TUI_TUI_HOOKS_H */
