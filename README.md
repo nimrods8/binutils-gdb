@@ -42,9 +42,14 @@ A new layout has been added. It is experimental! use:
 This new layout allows to expand calls/branches without actually jumping into them. By clicking the opcode
 a new floating window is opened that shows the disassembled jump-to. 
 
+**tui break**
 New break point type:
 `tui break <where>+/-<val>`: set a break point given a symbol. For example: 
 `tui break main+11` places a break point at the address of main + 11.
+
+Another new layout split has been added:
+`layout console` with a console window which shows the STDOUT of the inferior,
+when running the inferior from the beginning, i.e. not by attaching to it.
 
 	
 Notes:
@@ -57,6 +62,7 @@ Notes:
 * add break at opcodes by arch
 * add tui break into comments file to save/load automatically
 * read the list of renames/comments from ida and set it automatically in gdb tui
+
 
 -------------------------------------------------------------------------------------------------------------------------------
 This directory contains various GNU compilers, assemblers, linkers, 

@@ -1034,13 +1034,14 @@ char xyz[64];
                reg_str->insert(  zeroxsp, "\033[0m");
                reg_str->insert(  zerox, tui_hooks_filename2color( xstr)); //\033[0m");
 
-         	   gdb_byte byte_buf[300];
+         	   gdb_byte byte_buf[32];
                int g = target_read_memory( value_as_address( val9), byte_buf, sizeof( byte_buf));
             
                if( g == 0) 
                {
                   bool drop = false;
-                  for( int w = 0; w < 12; w++)
+                  int w, stoptaking = 16;
+                  for( w = 0; w < stoptaking; w++)
                   {
                       if( byte_buf[w] == 0x00) break;
                       if( byte_buf[w] >= 0x80 || byte_buf[w] < 0x20)
@@ -1049,14 +1050,18 @@ char xyz[64];
                          break;
                       }
                   } // endfor
-                  byte_buf[12] = 0x00;
+                  byte_buf[stoptaking] = 0x00;
+                  std::string dots = "";
+                  if( w == stoptaking && !drop)
+                     dots = "...";
+
 
 
                   //std::string comm = tui_disasm_format( "x/s 0x%lx", lea);
                   //struct value *val = parse_and_eval( comm.c_str());
                   //tui_disasm_value_as_string( dest, val, 12);
                   //gdb_printf( "%s", byte_buf);
-                  if( !drop) { reg_str->insert(  reg_str->size(), " \"" + std::string( (char *)byte_buf) + "\""); }
+                  if( !drop) { reg_str->insert(  reg_str->size(), " \"" + std::string( (char *)byte_buf) + dots +  "\""); }
                }
             }
          }

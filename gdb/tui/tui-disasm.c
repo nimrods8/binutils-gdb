@@ -206,23 +206,28 @@ tui_disassemble (struct gdbarch *gdbarch,
              if( g == 0) 
              {
                 bool drop = false;
-                for( int w = 0; w < 12; w++)
+                int w, takeupto = 12;
+                for( w = 0; w < takeupto; w++)
                 {
                     if( byte_buf[w] == 0x00) break;
                     if( byte_buf[w] >= 0x80 || byte_buf[w] < 0x20)
                     {
- 		       drop = true; 
+ 		               drop = true; 
                        break;
                     }
                 }
-                byte_buf[12] = 0x00;
-
+                byte_buf[takeupto] = 0x00;
+                std::string dots = "";
+                if( w == takeupto && !drop)
+                {
+                    dots = "...";
+                }
 
                 //std::string comm = tui_disasm_format( "x/s 0x%lx", lea);
                 //struct value *val = parse_and_eval( comm.c_str());
                 //tui_disasm_value_as_string( dest, val, 12);
                 //gdb_printf( "%s", byte_buf);
-                if( !drop) { tal.insn += " \"" + std::string( (char *)byte_buf) + "\""; }
+                if( !drop) { tal.insn += " \"" + std::string( (char *)byte_buf) + dots + "\""; }
              } // endif
           } // endif
 
@@ -658,7 +663,7 @@ tui_disasm_window::display_start_addr (struct gdbarch **gdbarch_p,
 void
 tui_disasm_ontop_window::do_scroll_vertical (int num_to_scroll)
 {
-    gdb_printf( "now scrolling!");
+    //gdb_printf( "now scrolling!");
   if (!m_content.empty ())
     {
       CORE_ADDR pc;
@@ -736,6 +741,7 @@ tui_disasm_ontop_window::display_start_addr (struct gdbarch **gdbarch_p,
   *addr_p = m_start_line_or_addr.u.addr;
 }
 
+static bool isDecompiler = false;
 
 /* Function to set the disassembly window's content.  */
 bool
@@ -792,11 +798,13 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
   m_max_length = -1;
 
 // NS 11/11
-#if 0
+#if 1
+std::vector<std::string>decomp;
+if( isDecompiler) 
+{
   // NS 11/11 read from /tmp/decompiler.out
   std::ifstream inf;
   inf.open( "/tmp/decompiler.txt"); 
-  std::vector<std::string>decomp;
   if( inf.is_open())
   {
      std::string l1;
@@ -805,7 +813,9 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
         decomp.push_back( l1);
      }
      inf.close();
-  }
+  } // endif open OK
+} // endif decompiler
+
 #endif
 
   for (i = 0; i < max_lines; i++)
@@ -816,16 +826,23 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
       CORE_ADDR addr;
 
       if (i < asm_lines.size ())
-	{
-    // NS 11/11
-    // std::string addstr = (i < decomp.size() ? decomp.at(i) : "");
-
-
-	  line
-	    = (asm_lines[i].addr_string
-	       + n_spaces (insn_pos - asm_lines[i].addr_size)
-	       + asm_lines[i].insn /*+ addstr*/);
-	  addr = asm_lines[i].addr;
+	  {
+         // NS 11/11
+         std::string addstr;         
+         if( isDecompiler)
+         {
+            addstr = (i < decomp.size() ? decomp.at(i) : "");
+            line = n_spaces (insn_pos - asm_lines[i].addr_size) + addstr;
+            addr = asm_lines[i].addr;
+         }
+         else 
+         {
+            line
+                = (asm_lines[i].addr_string
+                + n_spaces (insn_pos - asm_lines[i].addr_size)
+                + asm_lines[i].insn /*+ addstr*/);
+            addr = asm_lines[i].addr;
+         }
 	}
       else
 	{
@@ -854,6 +871,8 @@ tui_disasm_ontop_window::set_contents (struct gdbarch *arch,
 void tui_disasm_window::click (int mouse_x, int mouse_y, int mouse_button)
 {
 bool found = false;
+
+      isDecompiler = false;
 
       if( !m_content.empty() && m_content.size() >= mouse_y) 
       {
@@ -905,14 +924,15 @@ bool found = false;
                   {
                      fprintf( fil, "%s\n", comVec.at(ii).c_str());
                   }
-		              fclose( fil);
-		              if( mouse_button == 3)
+		          fclose( fil);
+		          if( mouse_button == 3)
                   {
                       int p = system( "/home/nstoler/projects/rz-ghidra/ghidra/ghidra/Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_test_dbg -sleighpath /home/nstoler/projects/rz-ghidra/ghidra -path /home/nstoler/projects/datatests datatests > /dev/null");
-                      if( p != 0) gdb_printf( "problms!");
+                      if( p != 0) gdb_printf( "problemos!");
+                      isDecompiler = true;
                   }
                   showAddr = addr;
-                  
+                
 #if 0
                   // just dump pit for now on the cmd window
 		  fil = fopen( "/tmp/decompiler.txt", "r");
@@ -936,7 +956,7 @@ bool found = false;
                       int _y = TUI_DISASMOT_WIN->y;
                       int _w = TUI_DISASMOT_WIN->width;
                       int _h = TUI_DISASMOT_WIN->height;
-                      _y = mouse_y + TUI_DISASM_WIN->y + 1;
+                      _y = mouse_y + TUI_DISASM_WIN->y + 2;
                       _x = mouse_x + TUI_DISASM_WIN->x + 1;
                       _w = 100;
                       _h = 20;
