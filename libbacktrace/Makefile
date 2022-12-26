@@ -137,14 +137,14 @@ am__append_4 = allocfail.sh
 #	edtest.dSYM edtest_alloc.dSYM
 am__append_6 = b2test
 am__append_7 = b2test_buildid
-#am__append_8 = b3test
-#am__append_9 = b3test_dwz_buildid
+am__append_8 = b3test
+am__append_9 = b3test_dwz_buildid
 am__append_10 = btest_lto
 am__append_11 = btest_alloc stest stest_alloc
-#am__append_12 = btest_dwz
-#am__append_13 = btest_dwz_gnudebuglink
-#am__append_14 = -lz
-#am__append_15 = -lz
+am__append_12 = btest_dwz
+am__append_13 = btest_dwz_gnudebuglink
+am__append_14 = -lz
+am__append_15 = -lz
 am__append_16 = ztest ztest_alloc
 am__append_17 = edtest edtest_alloc
 am__append_18 = ttest ttest_alloc
@@ -162,8 +162,8 @@ am__append_22 = dwarf5 dwarf5_alloc
 am__append_24 = mtest
 #am__append_25 = mtest.dSYM
 am__append_26 = mtest_minidebug
-#am__append_27 = -llzma
-#am__append_28 = -llzma
+am__append_27 = -llzma
+am__append_28 = -llzma
 am__append_29 = xztest xztest_alloc
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -222,7 +222,7 @@ libbacktrace_noformat_la_OBJECTS =  \
 am_libbacktrace_noformat_la_rpath =
 am__EXEEXT_1 = allocfail$(EXEEXT)
 am__EXEEXT_2 = b2test$(EXEEXT)
-#am__EXEEXT_3 = b3test$(EXEEXT)
+am__EXEEXT_3 = b3test$(EXEEXT)
 am__EXEEXT_4 = test_elf_32$(EXEEXT) test_elf_64$(EXEEXT) \
 	test_macho$(EXEEXT) test_xcoff_32$(EXEEXT) \
 	test_xcoff_64$(EXEEXT) test_pecoff$(EXEEXT) \
@@ -267,9 +267,9 @@ b2test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(b2test_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_3 = b3test-btest.$(OBJEXT) \
 	b3test-testlib.$(OBJEXT)
-#am_b3test_OBJECTS = $(am__objects_3)
+am_b3test_OBJECTS = $(am__objects_3)
 b3test_OBJECTS = $(am_b3test_OBJECTS)
-#b3test_DEPENDENCIES = libbacktrace_elf_for_test.la
+b3test_DEPENDENCIES = libbacktrace_elf_for_test.la
 b3test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(b3test_CFLAGS) $(CFLAGS) \
 	$(b3test_LDFLAGS) $(LDFLAGS) -o $@
@@ -804,15 +804,15 @@ TEST_LOGS = $(am__test_logs2:.test.log=.log)
 TEST_LOG_DRIVER = $(SHELL) $(top_srcdir)/../test-driver
 TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
 	$(TEST_LOG_FLAGS)
-ACLOCAL = ${SHELL} /home/nstoler/projects/binutils-gdb/missing aclocal-1.15
+ACLOCAL = ${SHELL} /home/cyberark/projects/binutils-gdb/missing aclocal-1.15
 ALLOC_FILE = mmap.lo
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
-AR = ar 
-AUTOCONF = ${SHELL} /home/nstoler/projects/binutils-gdb/missing autoconf
-AUTOHEADER = ${SHELL} /home/nstoler/projects/binutils-gdb/missing autoheader
-AUTOMAKE = ${SHELL} /home/nstoler/projects/binutils-gdb/missing automake-1.15
-AWK = mawk
+AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+AUTOCONF = ${SHELL} /home/cyberark/projects/binutils-gdb/missing autoconf
+AUTOHEADER = ${SHELL} /home/cyberark/projects/binutils-gdb/missing autoheader
+AUTOMAKE = ${SHELL} /home/cyberark/projects/binutils-gdb/missing automake-1.15
+AWK = gawk
 BACKTRACE_FILE = backtrace.lo simple.lo
 BACKTRACE_SUPPORTED = 1
 BACKTRACE_SUPPORTS_DATA = 1
@@ -829,16 +829,16 @@ CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DSYMUTIL = dsymutil
 DUMPBIN = 
-DWZ = 
+DWZ = dwz
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /bin/grep -E
+EGREP = /usr/bin/grep -E
 EXEEXT = 
 EXTRA_FLAGS = -funwind-tables -frandom-seed=$@
-FGREP = /bin/grep -F
+FGREP = /usr/bin/grep -F
 FORMAT_FILE = elf.lo
-GREP = /bin/grep
+GREP = /usr/bin/grep
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -854,7 +854,7 @@ LN_S = ln -s
 LTLIBOBJS = 
 MAINT = #
 MAKEINFO = makeinfo
-MKDIR_P = /bin/mkdir -p
+MKDIR_P = /usr/bin/mkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = 
 OBJCOPY = objcopy
@@ -872,9 +872,9 @@ PACKAGE_VERSION = version-unused
 PATH_SEPARATOR = :
 PIC_FLAG = 
 PTHREAD_CFLAGS = -pthread
-RANLIB = ranlib  --plugin /usr/lib/gcc/x86_64-linux-gnu/8/liblto_plugin.so
+RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
 READELF = readelf
-SED = /bin/sed
+SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/bash
 STRIP = strip
@@ -882,10 +882,10 @@ VERSION = version-unused
 VIEW_FILE = mmapio.lo
 WARN_FLAGS = -W -Wall -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes -Wold-style-definition -Wmissing-format-attribute -Wcast-qual
 XZ = xz
-abs_builddir = /home/nstoler/projects/binutils-gdb/libbacktrace
-abs_srcdir = /home/nstoler/projects/binutils-gdb/libbacktrace
-abs_top_builddir = /home/nstoler/projects/binutils-gdb/libbacktrace
-abs_top_srcdir = /home/nstoler/projects/binutils-gdb/libbacktrace
+abs_builddir = /home/cyberark/projects/binutils-gdb/libbacktrace
+abs_srcdir = /home/cyberark/projects/binutils-gdb/libbacktrace
+abs_top_builddir = /home/cyberark/projects/binutils-gdb/libbacktrace
+abs_top_srcdir = /home/cyberark/projects/binutils-gdb/libbacktrace
 ac_ct_CC = 
 ac_ct_DUMPBIN = 
 am__leading_dot = .
@@ -911,7 +911,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/nstoler/projects/binutils-gdb/install-sh
+install_sh = ${SHELL} /home/cyberark/projects/binutils-gdb/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 libtool_VERSION = 1:0:0
@@ -1055,10 +1055,10 @@ b2test_SOURCES = $(btest_SOURCES)
 b2test_CFLAGS = $(libbacktrace_TEST_CFLAGS)
 b2test_LDFLAGS = -Wl,--build-id
 b2test_LDADD = libbacktrace_elf_for_test.la
-#b3test_SOURCES = $(btest_SOURCES)
-#b3test_CFLAGS = $(libbacktrace_TEST_CFLAGS)
-#b3test_LDFLAGS = -Wl,--build-id
-#b3test_LDADD = libbacktrace_elf_for_test.la
+b3test_SOURCES = $(btest_SOURCES)
+b3test_CFLAGS = $(libbacktrace_TEST_CFLAGS)
+b3test_LDFLAGS = -Wl,--build-id
+b3test_LDADD = libbacktrace_elf_for_test.la
 btest_SOURCES = btest.c testlib.c
 btest_CFLAGS = $(libbacktrace_TEST_CFLAGS) -O
 btest_LDADD = libbacktrace.la
@@ -2429,17 +2429,17 @@ instrumented_alloc.lo: alloc.c
 
 allocfail.sh: allocfail
 
-#%_dwz: %
-#	rm -f $@ $@_common.debug
-#	cp $< $@_1
-#	cp $< $@_2
-#	if $(DWZ) -m $@_common.debug $@_1 $@_2; then \
-#	  rm -f $@_2; \
-#	  mv $@_1 $@; \
-#	else \
-#	  echo "Ignoring dwz errors, assuming that test passes"; \
-#	  cp $< $@; \
-#	fi
+%_dwz: %
+	rm -f $@ $@_common.debug
+	cp $< $@_1
+	cp $< $@_2
+	if $(DWZ) -m $@_common.debug $@_1 $@_2; then \
+	  rm -f $@_2; \
+	  mv $@_1 $@; \
+	else \
+	  echo "Ignoring dwz errors, assuming that test passes"; \
+	  cp $< $@; \
+	fi
 
 edtest2_build.c: gen_edtest2_build; @true
 gen_edtest2_build: $(srcdir)/edtest2.c

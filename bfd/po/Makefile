@@ -34,9 +34,9 @@ MKINSTALLDIRS = $(top_builddir)/./../mkinstalldirs
 
 CC = gcc
 GENCAT = gencat
-GMSGFMT = PATH=../src:$$PATH :
-MSGFMT = :
-XGETTEXT = PATH=../src:$$PATH :
+GMSGFMT = PATH=../src:$$PATH /usr/bin/msgfmt
+MSGFMT = /usr/bin/msgfmt
+XGETTEXT = PATH=../src:$$PATH /usr/bin/xgettext
 MSGMERGE = PATH=../src:$$PATH msgmerge
 
 DEFS = -DHAVE_CONFIG_H
@@ -447,7 +447,7 @@ BLD-POTFILES = \
 	../pex64igen.c \
 	../targmatch.h 
 
-CATALOGS =  da.gmo es.gmo fi.gmo fr.gmo hr.gmo id.gmo ja.gmo pt.gmo ro.gmo ru.gmo rw.gmo sr.gmo sv.gmo tr.gmo uk.gmo vi.gmo zh_CN.gmo
+CATALOGS =  da.gmo es.gmo fi.gmo fr.gmo hr.gmo id.gmo ja.gmo pt.gmo ro.gmo ru.gmo rw.gmo sr.gmo sv.gmo tr.gmo uk.gmo vi.gmo zh_CN.gmo da.gmo es.gmo fi.gmo fr.gmo hr.gmo id.gmo ja.gmo pt.gmo ro.gmo ru.gmo rw.gmo sr.gmo sv.gmo tr.gmo uk.gmo vi.gmo zh_CN.gmo
 CATOBJEXT = .gmo
 INSTOBJEXT = .mo
 

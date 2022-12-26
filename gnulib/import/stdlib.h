@@ -731,7 +731,7 @@ _GL_WARN_ON_USE (_Exit, "_Exit is unportable - "
 
 
 #if 1
-# if 1
+# if 0
 #  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
 #   undef free
 #   define free rpl_free

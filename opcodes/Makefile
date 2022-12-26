@@ -269,18 +269,18 @@ ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
 DIST_SUBDIRS = $(SUBDIRS)
-ACLOCAL = ${SHELL} /home/nstoler/projects/binutils-gdb/missing aclocal-1.15
+ACLOCAL = ${SHELL} /home/cyberark/projects/binutils-gdb/missing aclocal-1.15
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
-AR = ar 
-AUTOCONF = ${SHELL} /home/nstoler/projects/binutils-gdb/missing autoconf
-AUTOHEADER = ${SHELL} /home/nstoler/projects/binutils-gdb/missing autoheader
-AUTOMAKE = ${SHELL} /home/nstoler/projects/binutils-gdb/missing automake-1.15
-AWK = mawk
-BFD_MACHINES =  i386-dis.lo i386-opc.lo arm-dis.lo aarch64-asm.lo aarch64-dis.lo aarch64-opc.lo aarch64-asm-2.lo aarch64-dis-2.lo aarch64-opc-2.lo
+AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+AUTOCONF = ${SHELL} /home/cyberark/projects/binutils-gdb/missing autoconf
+AUTOHEADER = ${SHELL} /home/cyberark/projects/binutils-gdb/missing autoheader
+AUTOMAKE = ${SHELL} /home/cyberark/projects/binutils-gdb/missing automake-1.15
+AWK = gawk
+BFD_MACHINES =  i386-dis.lo i386-opc.lo aarch64-asm.lo aarch64-dis.lo aarch64-opc.lo aarch64-asm-2.lo aarch64-dis-2.lo aarch64-opc-2.lo arm-dis.lo
 BUILD_LIBS = ../libiberty/libiberty.a 
 BUILD_LIB_DEPS = ../libiberty/libiberty.a 
-CATALOGS =  da.gmo de.gmo es.gmo fi.gmo fr.gmo ga.gmo id.gmo it.gmo nl.gmo pt_BR.gmo ro.gmo sr.gmo sv.gmo tr.gmo uk.gmo vi.gmo zh_CN.gmo
+CATALOGS =  da.gmo de.gmo es.gmo fi.gmo fr.gmo ga.gmo id.gmo it.gmo nl.gmo pt_BR.gmo ro.gmo sr.gmo sv.gmo tr.gmo uk.gmo vi.gmo zh_CN.gmo da.gmo de.gmo es.gmo fi.gmo fr.gmo ga.gmo id.gmo it.gmo nl.gmo pt_BR.gmo ro.gmo sr.gmo sv.gmo tr.gmo uk.gmo vi.gmo zh_CN.gmo
 CATOBJEXT = .gmo
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -297,13 +297,13 @@ DUMPBIN =
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /bin/grep -E
+EGREP = /usr/bin/grep -E
 EXEEXT = 
 EXEEXT_FOR_BUILD = $(EXEEXT)
-FGREP = /bin/grep -F
+FGREP = /usr/bin/grep -F
 GENCAT = gencat
-GMSGFMT = :
-GREP = /bin/grep
+GMSGFMT = /usr/bin/msgfmt
+GREP = /usr/bin/grep
 HDEFINES = 
 INCINTL = 
 INSTALL = /usr/bin/install -c
@@ -325,10 +325,10 @@ LN_S = ln -s
 LTLIBOBJS = 
 MAINT = #
 MAKEINFO = makeinfo
-MKDIR_P = /bin/mkdir -p
+MKDIR_P = /usr/bin/mkdir -p
 MKINSTALLDIRS = $(top_builddir)/./../mkinstalldirs
-MSGFMT = :
-MSGMERGE = :
+MSGFMT = /usr/bin/msgfmt
+MSGMERGE = /usr/bin/msgmerge
 NM = /usr/bin/nm -B
 NMEDIT = 
 NO_WERROR = -Wno-error
@@ -345,8 +345,8 @@ PACKAGE_URL =
 PACKAGE_VERSION = 2.39.50
 PATH_SEPARATOR = :
 POSUB = po
-RANLIB = ranlib  --plugin /usr/lib/gcc/x86_64-linux-gnu/8/liblto_plugin.so
-SED = /bin/sed
+RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+SED = /usr/bin/sed
 SET_MAKE = 
 SHARED_DEPENDENCIES = 
 SHARED_LDFLAGS = 
@@ -358,11 +358,11 @@ VERSION = 2.39.50
 WARN_CFLAGS = -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wstack-usage=262144 -Werror
 WARN_CFLAGS_FOR_BUILD = -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wstack-usage=262144 -Werror
 WARN_WRITE_STRINGS = -Wwrite-strings
-XGETTEXT = :
-abs_builddir = /home/nstoler/projects/binutils-gdb/opcodes
-abs_srcdir = /home/nstoler/projects/binutils-gdb/opcodes
-abs_top_builddir = /home/nstoler/projects/binutils-gdb/opcodes
-abs_top_srcdir = /home/nstoler/projects/binutils-gdb/opcodes
+XGETTEXT = /usr/bin/xgettext
+abs_builddir = /home/cyberark/projects/binutils-gdb/opcodes
+abs_srcdir = /home/cyberark/projects/binutils-gdb/opcodes
+abs_top_builddir = /home/cyberark/projects/binutils-gdb/opcodes
+abs_top_srcdir = /home/cyberark/projects/binutils-gdb/opcodes
 ac_ct_CC = 
 ac_ct_DUMPBIN = 
 am__include = include
@@ -370,7 +370,7 @@ am__leading_dot = .
 am__quote = 
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
-archdefs =  -DARCH_i386 -DARCH_iamcu -DARCH_arm -DARCH_aarch64
+archdefs =  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm
 #bfdincludedir = 
 bfdincludedir = $(includedir)
 # Empty these so that the respective installation directories will not be created.
@@ -398,7 +398,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/nstoler/projects/binutils-gdb/install-sh
+install_sh = ${SHELL} /home/cyberark/projects/binutils-gdb/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -692,7 +692,7 @@ CFILES = \
 
 ALL32_MACHINES = $(TARGET32_LIBOPCODES_CFILES:.c=.lo)
 ALL64_MACHINES = $(TARGET64_LIBOPCODES_CFILES:.c=.lo)
-OFILES =  i386-dis.lo i386-opc.lo arm-dis.lo aarch64-asm.lo aarch64-dis.lo aarch64-opc.lo aarch64-asm-2.lo aarch64-dis-2.lo aarch64-opc-2.lo
+OFILES =  i386-dis.lo i386-opc.lo aarch64-asm.lo aarch64-dis.lo aarch64-opc.lo aarch64-asm-2.lo aarch64-dis-2.lo aarch64-opc-2.lo arm-dis.lo
 
 # development.sh is used to determine -Werror default.
 CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/development.sh
@@ -1368,11 +1368,11 @@ uninstall-am: uninstall-bfdincludeDATA uninstall-bfdlibLTLIBRARIES
 
 
 disassemble.lo: disassemble.c
-	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_arm -DARCH_aarch64 $(srcdir)/disassemble.c
+	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm $(srcdir)/disassemble.c
 	$(AM_V_at)mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 #	source='disassemble.c' object='$@' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC)$(LTCOMPILE) -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_arm -DARCH_aarch64 $(srcdir)/disassemble.c
+#	$(AM_V_CC)$(LTCOMPILE) -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm $(srcdir)/disassemble.c
 
 stamp-lib: libopcodes.la
 	libtooldir=`$(LIBTOOL) --config | sed -n -e 's/^objdir=//p'`; \
@@ -1597,11 +1597,11 @@ mips-dis.lo: mips-dis.c
 #	$(AM_V_CC)$(LTCOMPILE) -c -o $@ $(MIPS_DEFS) $<
 
 sh-dis.lo: sh-dis.c
-	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_arm -DARCH_aarch64 $(srcdir)/sh-dis.c
+	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm $(srcdir)/sh-dis.c
 	$(AM_V_at)mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 #	source='sh-dis.c' object='$@' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC)$(LTCOMPILE) -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_arm -DARCH_aarch64 $(srcdir)/sh-dis.c
+#	$(AM_V_CC)$(LTCOMPILE) -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm $(srcdir)/sh-dis.c
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

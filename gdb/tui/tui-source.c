@@ -119,8 +119,7 @@ tui_source_window::set_contents (struct gdbarch *arch,
 
 /* Answer whether the source is currently displayed in the source
    window.  */
-bool
-tui_source_window::showing_source_p (const char *fullname) const
+bool tui_source_window::showing_source_p (const char *fullname) const
 {
   return (!m_content.empty ()
 	  && (filename_cmp (tui_location.full_name ().c_str (),

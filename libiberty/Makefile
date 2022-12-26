@@ -50,17 +50,17 @@ mkinstalldirs = $(SHELL) $(libiberty_topdir)/mkinstalldirs
 # Some compilers can't handle cc -c blah.c -o foo/blah.o.
 OUTPUT_OPTION = -o $@
 
-AR = ar  
+AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
 AR_FLAGS = rc
 
 CC = gcc
 CFLAGS = -g -O2  
 CPPFLAGS = 
-RANLIB = ranlib  
+RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
 MAKEINFO = makeinfo
 PERL = perl
 
-PICFLAG = -fpic
+PICFLAG = 
 NOASANFLAG = 
 
 MAKEOVERRIDES =
@@ -109,7 +109,7 @@ check: check-subdir
 installcheck: installcheck-subdir
 
 # Warning: this fragment is automatically generated
-enable_shared = yes
+enable_shared = no
 
 INCDIR=$(srcdir)/$(MULTISRCTOP)../include
 

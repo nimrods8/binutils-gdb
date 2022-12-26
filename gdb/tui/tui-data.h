@@ -191,7 +191,7 @@ protected:
 #define CONSOLE_NAME            "console"
 
 // NS 11/12
-#define MEMDUMP_NAME            "dump"
+#define MEMDUMP_NAME            "memdump"
 
 
 /* Global Data.  */
@@ -209,7 +209,7 @@ extern struct tui_win_info *tui_win_list[MAX_MAJOR_WINDOWS];
 // NS 12/11
 #define TUI_CONSOLE_WIN	((tui_console_window *) tui_win_list[CONSOLE_WIN])
 // NS 12/11
-#define TUI_MEMDUMP_WIN	((tui_data_window *) tui_win_list[MEMDUMP_WIN])
+#define TUI_MEMDUMP_WIN	((tui_memdump_window *) tui_win_list[MEMDUMP_WIN])
 
 
 

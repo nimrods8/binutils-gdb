@@ -375,14 +375,14 @@ distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/nstoler/projects/binutils-gdb/missing aclocal-1.15
+ACLOCAL = ${SHELL} /home/cyberark/projects/binutils-gdb/missing aclocal-1.15
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
-AR = ar 
-AUTOCONF = ${SHELL} /home/nstoler/projects/binutils-gdb/missing autoconf
-AUTOHEADER = ${SHELL} /home/nstoler/projects/binutils-gdb/missing autoheader
-AUTOMAKE = ${SHELL} /home/nstoler/projects/binutils-gdb/missing automake-1.15
-AWK = mawk
+AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+AUTOCONF = ${SHELL} /home/cyberark/projects/binutils-gdb/missing autoconf
+AUTOHEADER = ${SHELL} /home/cyberark/projects/binutils-gdb/missing autoheader
+AUTOMAKE = ${SHELL} /home/cyberark/projects/binutils-gdb/missing automake-1.15
+AWK = gawk
 CATALOGS = 
 CATOBJEXT = .gmo
 CC = gcc
@@ -390,7 +390,7 @@ CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2  
 CPP = gcc -E
 CPPFLAGS = 
-CTF_LIBADD = -L/home/nstoler/projects/binutils-gdb/libctf/../libiberty -liberty 
+CTF_LIBADD = -L/home/cyberark/projects/binutils-gdb/libctf/../libiberty -liberty 
 CYGPATH_W = echo
 DATADIRNAME = share
 DEFS = -DHAVE_CONFIG_H
@@ -400,15 +400,15 @@ DUMPBIN =
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /bin/grep -E
+EGREP = /usr/bin/grep -E
 EXEEXT = 
 
 # Setup the testing framework, if you have one
 EXPECT = expect
-FGREP = /bin/grep -F
+FGREP = /usr/bin/grep -F
 GENCAT = gencat
-GMSGFMT = :
-GREP = /bin/grep
+GMSGFMT = /usr/bin/msgfmt
+GREP = /usr/bin/grep
 INCINTL = 
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
@@ -421,14 +421,14 @@ LDFLAGS =
 LIBINTL = 
 LIBINTL_DEP = 
 LIBOBJS = 
-LIBS = -ldl 
+LIBS = 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS = 
 MAINT = #
 MAKEINFO = makeinfo
-MKDIR_P = /bin/mkdir -p
+MKDIR_P = /usr/bin/mkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = 
 OBJDUMP = objdump
@@ -443,12 +443,12 @@ PACKAGE_TARNAME = libctf
 PACKAGE_URL = 
 PACKAGE_VERSION = 1.2.0
 PATH_SEPARATOR = :
-PKG_CONFIG = 
+PKG_CONFIG = /usr/bin/x86_64-pc-linux-gnu-pkg-config
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
 POSUB = po
-RANLIB = ranlib  --plugin /usr/lib/gcc/x86_64-linux-gnu/8/liblto_plugin.so
-SED = /bin/sed
+RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+SED = /usr/bin/sed
 SET_MAKE = 
 SHARED_LDFLAGS = 
 SHELL = /bin/bash
@@ -459,13 +459,13 @@ VERSION_FLAGS = -Wl,--version-script='./libctf.ver'
 VERSION_FLAGS_NOBFD = -Wl,--version-script='./libctf.ver'
 WARN_PEDANTIC = -pedantic -Wno-long-long
 WERROR = 
-XGETTEXT = :
+XGETTEXT = /usr/bin/xgettext
 ZSTD_CFLAGS = 
 ZSTD_LIBS = 
-abs_builddir = /home/nstoler/projects/binutils-gdb/libctf
-abs_srcdir = /home/nstoler/projects/binutils-gdb/libctf
-abs_top_builddir = /home/nstoler/projects/binutils-gdb/libctf
-abs_top_srcdir = /home/nstoler/projects/binutils-gdb/libctf
+abs_builddir = /home/cyberark/projects/binutils-gdb/libctf
+abs_srcdir = /home/cyberark/projects/binutils-gdb/libctf
+abs_top_builddir = /home/cyberark/projects/binutils-gdb/libctf
+abs_top_srcdir = /home/cyberark/projects/binutils-gdb/libctf
 ac_ct_AR = 
 ac_ct_CC = 
 ac_ct_DUMPBIN = 
@@ -497,7 +497,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/nstoler/projects/binutils-gdb/install-sh
+install_sh = ${SHELL} /home/cyberark/projects/binutils-gdb/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -547,7 +547,7 @@ lib_LTLIBRARIES = libctf.la libctf-nobfd.la
 #include_HEADERS = 
 include_HEADERS = $(INCDIR)/ctf.h $(INCDIR)/ctf-api.h
 #noinst_LTLIBRARIES = libctf.la libctf-nobfd.la
-libctf_nobfd_la_LIBADD = -L/home/nstoler/projects/binutils-gdb/libctf/../libiberty -liberty  $(ZLIB)
+libctf_nobfd_la_LIBADD = -L/home/cyberark/projects/binutils-gdb/libctf/../libiberty -liberty  $(ZLIB)
 libctf_ldflags_nover = -version-info 0:0:0 
 libctf_nobfd_la_LDFLAGS = $(libctf_ldflags_nover) -Wl,--version-script='./libctf.ver'
 libctf_nobfd_la_CPPFLAGS = $(AM_CPPFLAGS) -DNOBFD=1
@@ -556,11 +556,11 @@ libctf_nobfd_la_SOURCES = ctf-archive.c ctf-dump.c ctf-create.c \
 	ctf-link.c ctf-lookup.c ctf-open.c ctf-serialize.c ctf-sha1.c \
 	ctf-string.c ctf-subr.c ctf-types.c ctf-util.c $(am__append_1)
 
-# -L/home/nstoler/projects/binutils-gdb/libctf/../libiberty -liberty  appears here twice: once, to force libiberty to get searched before
+# -L/home/cyberark/projects/binutils-gdb/libctf/../libiberty -liberty  appears here twice: once, to force libiberty to get searched before
 # install-time libbfd adds a -L to the install dir (possibly pointing at an
 # incompatible libiberty), and once via lictf_nobfd_la_LIBADD so that the
 # references in there get picked up.
-libctf_la_LIBADD = -L/home/nstoler/projects/binutils-gdb/libctf/../libiberty -liberty  ../bfd/libbfd.la $(libctf_nobfd_la_LIBADD)
+libctf_la_LIBADD = -L/home/cyberark/projects/binutils-gdb/libctf/../libiberty -liberty  ../bfd/libbfd.la $(libctf_nobfd_la_LIBADD)
 libctf_la_CPPFLAGS = $(AM_CPPFLAGS) -DNOBFD=0
 libctf_la_LDFLAGS = $(libctf_ldflags_nover) -Wl,--version-script='./libctf.ver'
 libctf_la_SOURCES = $(libctf_nobfd_la_SOURCES) ctf-open-bfd.c

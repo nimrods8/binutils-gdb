@@ -35,7 +35,6 @@
 #include "tui/tui-win.h"
 #include "tui/tui-wingeneral.h"
 #include "tui/tui-file.h"
-#include "tui/tui-console.h"
 #include "tui/tui-io.h"
 #include "reggroups.h"
 #include "valprint.h"
@@ -45,14 +44,12 @@
 #include <pthread.h>
 #include "tui/tui-hooks.h"
 
+#include "tui/tui-memdump.h"
 
 #include "gdb_curses.h"
 
 
-// NS 12/11
-/*thread function definition*/
-void* threadFunction(void* args);
-std::vector<std::string>contents;
+std::vector<std::string>mem_contents;
 
 #if 0
 /* A subclass of string_file that expands tab characters.  */
@@ -403,6 +400,25 @@ tui_console_window::delete_data_content_windows ()
 }
 #endif
 
+//////////////////////////////////
+// MEMDUMP FORMATTING
+void tui_memdump_window::tui_memdump_format( CORE_ADDR watchaddr, size_t watchSize)
+{
+	   gdb_byte *byte_buf = (gdb_byte *)malloc( watchSize);
+     target_read_memory( watchaddr, byte_buf, watchSize);
+
+     while( true)
+     {
+        for( int i = 0; i < 16; i++)
+        {
+            m_content += "0xdd "; //byte_buf[i];
+        } // endfor
+        break;
+     }            
+}
+
+
+
 void
 tui_memdump_window::erase_data_content (const char *prompt)
 {
@@ -430,8 +446,8 @@ tui_memdump_window::rerender ()
 
   //check_and_display_highlight_if_needed ();
 
-  if (contents.empty ())
-    erase_data_content (_("[ Values Unavailable ]"));
+  if (mem_contents.empty ())
+    erase_data_content (_("[ Watch Unavailable ]"));
   else
     {
       erase_data_content (NULL);
@@ -439,12 +455,18 @@ tui_memdump_window::rerender ()
       display_memdump_from (-1);
     }
     #endif
+    
+   refresh_window ();
+
 }
 
 // -1 = show terminal type screen, so that last line is at bottom of window
 void tui_memdump_window::display_memdump_from( int fromline)
 {
   int cur_y = 1, i = fromline; //fromline;
+
+  title = "@$reg";
+
 
 #if 0
   if (highlight)
@@ -459,9 +481,9 @@ void tui_memdump_window::display_memdump_from( int fromline)
   //werase (handle.get ());
 
 
-  if( contents.size() > height - 2 && fromline == -1)
+  if( mem_contents.size() > height - 2 && fromline == -1)
   {
-     i = contents.size() - (height - 2);
+     i = mem_contents.size() - (height - 2);
   }
   else if( fromline == -1) i = 0;
 
@@ -473,11 +495,11 @@ void tui_memdump_window::display_memdump_from( int fromline)
   }
 */
 
-  while (i < contents.size () && cur_y <= height - 2)
+  while (i < mem_contents.size () && cur_y <= height - 2)
   {
         // gdb_printf( "i=%d, %d %s", i, cur_y, contents.at(i).c_str());      
 	int x_pos = 5;
-        mvwaddstr (handle.get (), cur_y, x_pos, (char *) contents.at(i).c_str());
+        mvwaddstr (handle.get (), cur_y, x_pos, (char *) mem_contents.at(i).c_str());
  
 #if 0
         wmove (handle.get (), cur_y, 0);
@@ -507,7 +529,7 @@ void tui_memdump_window::display_memdump_from( int fromline)
     (void) wstandend (handle);
 #endif
 
-  //refresh_window ();
+  refresh_window ();
 
 } // endfunc
 
@@ -520,13 +542,13 @@ tui_memdump_window::do_scroll_vertical (int num_to_scroll)
     {
       top_line += num_to_scroll;
       if( top_line < 0) top_line = 0;
-      if( top_line > contents.size() - height + 2)
-          top_line = contents.size() - (height - 2);
+      if( top_line > mem_contents.size() - height + 2)
+          top_line = mem_contents.size() - (height - 2);
 
 
       erase_data_content (NULL);
       //delete_data_content_windows ();
-      display_console_from ( top_line);
+      display_memdump_from ( top_line);
     }
 
     
@@ -712,18 +734,23 @@ void* threadFunction(void* args)
 
 
 
-/* Implement the 'tui reg' command.  Changes the register group displayed
-   in the tui register window.  Displays the tui register window if it is
-   not already on display.  */
+/* Implement the 'tui watch' command */
 
 static void
 tui_watch_command (const char *args, int from_tty)
 {
-  struct gdbarch *gdbarch = get_current_arch ();
+  // struct gdbarch *gdbarch = get_current_arch ();
 
   if (args != NULL)
     {
-      size_t len = strlen (args);
+      //size_t len = strlen (args);
+
+      struct value *val = parse_and_eval( args);
+      CORE_ADDR watchFromAddr = value_as_address(val);
+      size_t watchLength   = 100;
+      TUI_MEMDUMP_WIN->tui_memdump_format( watchFromAddr, watchLength);
+      //rerender();
+
 
       /* Make sure the curses mode is enabled.  */
       tui_enable ();
@@ -733,30 +760,8 @@ tui_watch_command (const char *args, int from_tty)
 	 appropriate layout.  We need to do this before trying to run the
 	 'next' or 'prev' commands.  */
       if( TUI_MEMDUMP_WIN == NULL || !TUI_MEMDUMP_WIN->is_visible ())
-	        tui_regs_layout ();
+	        tui_console_layout ();
 
-      const reggroup *match = nullptr;
-      const reggroup *current_group = TUI_DATA_WIN->get_current_group ();
-      
-	{
-	  /* This loop matches on the initial part of a register group
-	     name.  If this initial part in ARGS matches only one register
-	     group then the switch is made.  */
-	  for (const struct reggroup *group : gdbarch_reggroups (gdbarch))
-	  {
-	      if (strncmp (group->name (), args, len) == 0)
-		{
-		  if (match != NULL)
-		    error (_("ambiguous register group name '%s'"), args);
-		  match = group;
-		}
-	  }
-	}
-
-      if (match == NULL)
-	error (_("unknown register group '%s'"), args);
-
-      TUI_DATA_WIN->show_registers (match);
     }
   else
     {
@@ -780,14 +785,14 @@ void _initialize_tui_memdump ();
 void
 _initialize_tui_memdump ()
 {
-  struct cmd_list_element **tuicmd, *cmd;
+  struct cmd_list_element **tuicmd /*, *cmd*/;
 
   tuicmd = tui_get_cmd_list ();
 
-  cmd = add_cmd ("watch", class_tui, tui_watch_command, _("\
+  /*cmd =*/ add_cmd ("watch", class_tui, tui_watch_command, _("\
 TUI command to control the memdump window.\n\
 Usage: tui watch NAME\n\
 NAME is the name of the register or address to display"), tuicmd);
-  set_cmd_completer (cmd, tui_reggroup_completer);
+  //set_cmd_completer (cmd, tui_reggroup_completer);
 
 }

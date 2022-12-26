@@ -48,6 +48,7 @@
 
 // NS 12/11
 #include "tui/tui-console.h"
+#include "tui/tui-memdump.h"
 #include "top.h"
 
 static void extract_display_start_addr (struct gdbarch **, CORE_ADDR *);
@@ -233,7 +234,7 @@ void
 tui_set_initial_layout ()
 {
   tui_set_layout (layouts[0].get ());
-  execute_command( "tui new-layout console {-horizontal regs 3 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
+  execute_command( "tui new-layout console {-horizontal regs 3 console 1} 2 memdump 1 asm 3 cmd 1 asmot 0 status 0", false);
 }
 
 /* Implement the "layout prev" command.  */
@@ -450,6 +451,10 @@ initialize_known_windows ()
 // NS 12/11
   known_window_types->emplace( CONSOLE_NAME,
              make_standard_window<CONSOLE_WIN, tui_console_window>);
+
+// NS 26/12
+  known_window_types->emplace( MEMDUMP_NAME,
+             make_standard_window<MEMDUMP_WIN, tui_memdump_window>);
 #endif
 }
 

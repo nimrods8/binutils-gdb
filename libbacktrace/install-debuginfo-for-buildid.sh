@@ -37,12 +37,12 @@
 
 set -e
 
-sed=/bin/sed
-awk=mawk
-grep=/bin/grep
+sed=/usr/bin/sed
+awk=gawk
+grep=/usr/bin/grep
 objcopy=objcopy
 readelf=readelf
-mkdir_p="/bin/mkdir -p"
+mkdir_p="/usr/bin/mkdir -p"
 
 build_id_dir="$1"
 src="$2"

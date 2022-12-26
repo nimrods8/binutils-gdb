@@ -90,7 +90,7 @@ MAINTAINER_MODE_TRUE = #
 # -------------------------------------------------
 
 # The gcc driver likes to know the arguments it was configured with.
-TOPLEVEL_CONFIGURE_ARGUMENTS=./configure --enable-targets=arm-linux-gnueabi,x86_64-pc-linux-gnu,aarch64-linux --enable-tui --disable-ld --disable-gas --disable-sim
+TOPLEVEL_CONFIGURE_ARGUMENTS=./configure --enable-targets=aarch64-linux-gnu,x86_64-pc-linux-gnu --enable-tui --with-python=/usr/bin/python3 --disable-ld --disable-gas --disable-sim --disable-gdbserver
 
 tooldir = ${exec_prefix}/x86_64-pc-linux-gnu
 build_tooldir = ${exec_prefix}/x86_64-pc-linux-gnu
@@ -111,7 +111,7 @@ host_shared = no
 BUILD_SUBDIR = build-x86_64-pc-linux-gnu
 # This is set by the configure script to the arguments to use when configuring
 # directories built for the build system.
-BUILD_CONFIGARGS =  --cache-file=./config.cache '--enable-targets=arm-linux-gnueabi,x86_64-pc-linux-gnu,aarch64-linux' '--enable-tui' '--disable-ld' '--disable-gas' '--disable-sim' --program-transform-name='s,y,y,' --disable-option-checking --disable-year2038 --with-build-subdir="$(BUILD_SUBDIR)"
+BUILD_CONFIGARGS =  --cache-file=./config.cache '--enable-targets=aarch64-linux-gnu,x86_64-pc-linux-gnu' '--enable-tui' '--with-python=/usr/bin/python3' '--disable-ld' '--disable-gas' '--disable-sim' '--disable-gdbserver' --program-transform-name='s,y,y,' --disable-option-checking --disable-year2038 --with-build-subdir="$(BUILD_SUBDIR)"
 
 # Linker flags to use on the host, for stage1 or when not
 # bootstrapping.
@@ -174,11 +174,11 @@ EXTRA_BUILD_FLAGS = \
 	LDFLAGS="$(LDFLAGS_FOR_BUILD)"
 
 # This is the list of directories to built for the host system.
-SUBDIRS =  intl libiberty opcodes bfd readline zlib libbacktrace libdecnumber libctf binutils gdb gdbserver gprof etc gprofng gnulib gdbsupport
+SUBDIRS =  intl libiberty opcodes bfd readline zlib libbacktrace libdecnumber libctf binutils gdb gprof etc gprofng gnulib gdbsupport
 TARGET_CONFIGDIRS = 
 # This is set by the configure script to the arguments to use when configuring
 # directories built for the host system.
-HOST_CONFIGARGS =  --cache-file=./config.cache  '--enable-targets=arm-linux-gnueabi,x86_64-pc-linux-gnu,aarch64-linux' '--enable-tui' '--disable-ld' '--disable-gas' '--disable-sim' --program-transform-name='s,y,y,' --disable-option-checking --disable-year2038
+HOST_CONFIGARGS =  --cache-file=./config.cache  '--enable-targets=aarch64-linux-gnu,x86_64-pc-linux-gnu' '--enable-tui' '--with-python=/usr/bin/python3' '--disable-ld' '--disable-gas' '--disable-sim' '--disable-gdbserver' --program-transform-name='s,y,y,' --disable-option-checking --disable-year2038
 # Host programs are put under this directory, which is . except if building
 # with srcdir=..
 HOST_SUBDIR = .
@@ -266,7 +266,7 @@ POSTSTAGE1_HOST_EXPORTS = \
 TARGET_SUBDIR = x86_64-pc-linux-gnu
 # This is set by the configure script to the arguments to use when configuring
 # directories built for the target.
-TARGET_CONFIGARGS = --cache-file=./config.cache --enable-multilib   '--enable-targets=arm-linux-gnueabi,x86_64-pc-linux-gnu,aarch64-linux' '--enable-tui' '--disable-ld' '--disable-gas' '--disable-sim' --program-transform-name='s,y,y,' --disable-option-checking --disable-year2038 --with-target-subdir="$(TARGET_SUBDIR)"
+TARGET_CONFIGARGS = --cache-file=./config.cache --enable-multilib   '--enable-targets=aarch64-linux-gnu,x86_64-pc-linux-gnu' '--enable-tui' '--with-python=/usr/bin/python3' '--disable-ld' '--disable-gas' '--disable-sim' '--disable-gdbserver' --program-transform-name='s,y,y,' --disable-option-checking --disable-year2038 --with-target-subdir="$(TARGET_SUBDIR)"
 # This is the list of variables to export in the environment when
 # configuring subdirectories for the target system.
 BASE_TARGET_EXPORTS = \
@@ -366,8 +366,8 @@ BOOT_CFLAGS= -g -O2
 BOOT_LDFLAGS=
 BOOT_ADAFLAGS= -gnatpg
 
-AWK = mawk
-SED = /bin/sed
+AWK = gawk
+SED = /usr/bin/sed
 BISON = bison
 YACC = bison -y
 FLEX = flex
@@ -390,7 +390,7 @@ MAKEINFOFLAGS = --split-size=5000000
 # ---------------------------------------------
 
 AS = as
-AR = ar 
+AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
 AR_FLAGS = rc
 CC = gcc
 CXX = g++
@@ -401,7 +401,7 @@ LIPO = lipo
 NM = nm
 OBJDUMP = objdump
 OTOOL = otool
-RANLIB = ranlib 
+RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
 READELF = readelf
 STRIP = strip
 WINDRES = windres
@@ -9608,7 +9608,7 @@ configure-libiberty:
 	  $$s/$$module_srcdir/configure \
 	  --srcdir=$${topdir}/$$module_srcdir \
 	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
-	  --target=${target_alias} --enable-shared \
+	  --target=${target_alias}  \
 	  || exit 1
 
 
@@ -12407,28 +12407,6 @@ maintainer-clean-gdbsupport:
 
 .PHONY: configure-gdbserver maybe-configure-gdbserver
 maybe-configure-gdbserver:
-maybe-configure-gdbserver: configure-gdbserver
-configure-gdbserver: 
-	@: $(MAKE); $(unstage)
-	@r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	test ! -f $(HOST_SUBDIR)/gdbserver/Makefile || exit 0; \
-	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gdbserver; \
-	$(HOST_EXPORTS)  \
-	echo Configuring in $(HOST_SUBDIR)/gdbserver; \
-	cd "$(HOST_SUBDIR)/gdbserver" || exit 1; \
-	case $(srcdir) in \
-	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
-	  *) topdir=`echo $(HOST_SUBDIR)/gdbserver/ | \
-		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
-	esac; \
-	module_srcdir=gdbserver; \
-	$(SHELL) \
-	  $$s/$$module_srcdir/configure \
-	  --srcdir=$${topdir}/$$module_srcdir \
-	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
-	  --target=${target_alias}  \
-	  || exit 1
 
 
 
@@ -12436,396 +12414,62 @@ configure-gdbserver:
 
 .PHONY: all-gdbserver maybe-all-gdbserver
 maybe-all-gdbserver:
-TARGET-gdbserver=all
-maybe-all-gdbserver: all-gdbserver
-all-gdbserver: configure-gdbserver
-	@: $(MAKE); $(unstage)
-	@r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS)  \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) $(EXTRA_HOST_FLAGS) $(STAGE1_FLAGS_TO_PASS)  \
-		$(TARGET-gdbserver))
 
 
 
 
 .PHONY: check-gdbserver maybe-check-gdbserver
 maybe-check-gdbserver:
-maybe-check-gdbserver: check-gdbserver
-
-check-gdbserver:
-	@: $(MAKE); $(unstage)
-	@r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS)  \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(FLAGS_TO_PASS)  check)
-
 
 .PHONY: install-gdbserver maybe-install-gdbserver
 maybe-install-gdbserver:
-maybe-install-gdbserver: install-gdbserver
-
-install-gdbserver: installdirs
-	@: $(MAKE); $(unstage)
-	@r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(FLAGS_TO_PASS)  install)
-
 
 .PHONY: install-strip-gdbserver maybe-install-strip-gdbserver
 maybe-install-strip-gdbserver:
-maybe-install-strip-gdbserver: install-strip-gdbserver
-
-install-strip-gdbserver: installdirs
-	@: $(MAKE); $(unstage)
-	@r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(FLAGS_TO_PASS)  install-strip)
-
 
 # Other targets (info, dvi, pdf, etc.)
 
 .PHONY: maybe-info-gdbserver info-gdbserver
 maybe-info-gdbserver:
-maybe-info-gdbserver: info-gdbserver
-
-info-gdbserver: \
-    configure-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing info in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          info) \
-	  || exit 1
-
 
 .PHONY: maybe-dvi-gdbserver dvi-gdbserver
 maybe-dvi-gdbserver:
-maybe-dvi-gdbserver: dvi-gdbserver
-
-dvi-gdbserver: \
-    configure-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing dvi in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          dvi) \
-	  || exit 1
-
 
 .PHONY: maybe-pdf-gdbserver pdf-gdbserver
 maybe-pdf-gdbserver:
-maybe-pdf-gdbserver: pdf-gdbserver
-
-pdf-gdbserver: \
-    configure-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing pdf in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          pdf) \
-	  || exit 1
-
 
 .PHONY: maybe-html-gdbserver html-gdbserver
 maybe-html-gdbserver:
-maybe-html-gdbserver: html-gdbserver
-
-html-gdbserver: \
-    configure-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing html in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          html) \
-	  || exit 1
-
 
 .PHONY: maybe-TAGS-gdbserver TAGS-gdbserver
 maybe-TAGS-gdbserver:
-maybe-TAGS-gdbserver: TAGS-gdbserver
-
-TAGS-gdbserver: \
-    configure-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing TAGS in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          TAGS) \
-	  || exit 1
-
 
 .PHONY: maybe-install-info-gdbserver install-info-gdbserver
 maybe-install-info-gdbserver:
-maybe-install-info-gdbserver: install-info-gdbserver
-
-install-info-gdbserver: \
-    configure-gdbserver \
-    info-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing install-info in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          install-info) \
-	  || exit 1
-
 
 .PHONY: maybe-install-dvi-gdbserver install-dvi-gdbserver
 maybe-install-dvi-gdbserver:
-maybe-install-dvi-gdbserver: install-dvi-gdbserver
-
-install-dvi-gdbserver: \
-    configure-gdbserver \
-    dvi-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing install-dvi in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          install-dvi) \
-	  || exit 1
-
 
 .PHONY: maybe-install-pdf-gdbserver install-pdf-gdbserver
 maybe-install-pdf-gdbserver:
-maybe-install-pdf-gdbserver: install-pdf-gdbserver
-
-install-pdf-gdbserver: \
-    configure-gdbserver \
-    pdf-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing install-pdf in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          install-pdf) \
-	  || exit 1
-
 
 .PHONY: maybe-install-html-gdbserver install-html-gdbserver
 maybe-install-html-gdbserver:
-maybe-install-html-gdbserver: install-html-gdbserver
-
-install-html-gdbserver: \
-    configure-gdbserver \
-    html-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing install-html in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          install-html) \
-	  || exit 1
-
 
 .PHONY: maybe-installcheck-gdbserver installcheck-gdbserver
 maybe-installcheck-gdbserver:
-maybe-installcheck-gdbserver: installcheck-gdbserver
-
-installcheck-gdbserver: \
-    configure-gdbserver 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing installcheck in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          installcheck) \
-	  || exit 1
-
 
 .PHONY: maybe-mostlyclean-gdbserver mostlyclean-gdbserver
 maybe-mostlyclean-gdbserver:
-maybe-mostlyclean-gdbserver: mostlyclean-gdbserver
-
-mostlyclean-gdbserver: 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing mostlyclean in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          mostlyclean) \
-	  || exit 1
-
 
 .PHONY: maybe-clean-gdbserver clean-gdbserver
 maybe-clean-gdbserver:
-maybe-clean-gdbserver: clean-gdbserver
-
-clean-gdbserver: 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing clean in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          clean) \
-	  || exit 1
-
 
 .PHONY: maybe-distclean-gdbserver distclean-gdbserver
 maybe-distclean-gdbserver:
-maybe-distclean-gdbserver: distclean-gdbserver
-
-distclean-gdbserver: 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing distclean in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          distclean) \
-	  || exit 1
-
 
 .PHONY: maybe-maintainer-clean-gdbserver maintainer-clean-gdbserver
 maybe-maintainer-clean-gdbserver:
-maybe-maintainer-clean-gdbserver: maintainer-clean-gdbserver
-
-maintainer-clean-gdbserver: 
-	@: $(MAKE); $(unstage)
-	@[ -f ./gdbserver/Makefile ] || exit 0; \
-	r=`${PWD_COMMAND}`; export r; \
-	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
-	$(HOST_EXPORTS) \
-	for flag in $(EXTRA_HOST_FLAGS) ; do \
-	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
-	done; \
-	echo "Doing maintainer-clean in gdbserver"; \
-	(cd $(HOST_SUBDIR)/gdbserver && \
-	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
-	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
-	          "RANLIB=$${RANLIB}" \
-	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
-	          maintainer-clean) \
-	  || exit 1
-
 
 
 

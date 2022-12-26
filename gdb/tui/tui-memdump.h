@@ -77,6 +77,13 @@ struct tui_memdump_window : public tui_win_info
   }
 #endif
 
+  CORE_ADDR watchFromAddr;
+  size_t    watchLength;
+  std::string m_content;
+
+public:
+  void tui_memdump_format( CORE_ADDR, size_t);
+
 protected:
 
   void do_scroll_vertical (int num_to_scroll) override;

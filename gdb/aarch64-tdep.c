@@ -18,6 +18,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
+
+
 #include "defs.h"
 
 #include "frame.h"
@@ -57,6 +59,12 @@
 /* A Homogeneous Floating-Point or Short-Vector Aggregate may have at most
    four members.  */
 #define HA_MAX_NUM_FLDS		4
+
+
+// NS 26/12/2022
+#undef GDB_SELF_TEST
+
+
 
 /* All possible aarch64 target descriptors.  */
 static std::unordered_map <aarch64_features, target_desc *> tdesc_aarch64_map;

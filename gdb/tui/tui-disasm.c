@@ -909,7 +909,7 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
       // read this memory to array
 
       // find -maybe- end of func address by scanning
-      CORE_ADDR end_addr = tui_disasm_find_maybe_end_of_func(addr) + 1; // to add the ret
+      CORE_ADDR end_addr = tui_disasm_find_maybe_end_of_func( addr) + 1; // to add the ret
       //gdb_printf("decompile @%lx", end_addr);
 
       long take = 300; // = sizeof( byte_buf);
@@ -942,6 +942,7 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
           fprintf(fil, "%s\n", comVec.at(ii).c_str());
         }
         fclose(fil);
+        free( byte_buf);
       } // endif malloc OK
 
       if (mouse_button == 3)
@@ -1393,3 +1394,4 @@ tui_disasm_value_as_string (char *dest, struct value *val, int length)
   dest[length] = '\0';
 }
 #endif
+

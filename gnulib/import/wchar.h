@@ -685,7 +685,7 @@ typedef int rpl_mbstate_t;
 /* Make _GL_ATTRIBUTE_DEALLOC_FREE work, even though <stdlib.h> may not have
    been included yet.  */
 #if 1
-# if (1 && !defined free \
+# if (0 && !defined free \
       && !(defined __cplusplus && defined GNULIB_NAMESPACE))
 /* We can't do '#define free rpl_free' here.  */
 _GL_EXTERN_C void rpl_free (void *);
