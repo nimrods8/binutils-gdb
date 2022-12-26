@@ -233,6 +233,7 @@ void
 tui_set_initial_layout ()
 {
   tui_set_layout (layouts[0].get ());
+  execute_command( "tui new-layout console {-horizontal regs 3 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
 }
 
 /* Implement the "layout prev" command.  */
@@ -260,9 +261,7 @@ void tui_ontop_layout()
 void tui_console_layout()
 {
   // NS 13/11
-  execute_command( "tui new-layout console {-horizontal regs 1 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
-
-  tui_set_layout ( asm_console_layout);
+//  execute_command( "tui new-layout console {-horizontal regs 2 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
   tui_set_layout ( asm_console_layout);
 }
 

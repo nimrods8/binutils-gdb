@@ -53,16 +53,19 @@ when running the inferior from the beginning, i.e. not by attaching to it.
 
 	
 Notes:
-1. You may need to copy the compiled gdb python libraries to /usr/share/gdb:  
-`cp -R ./gdb/data-directory/* /usr/share/gdb/`  
-	
+1. You may need to install the compiled gdb python libraries to /usr/share/gdb using:  
+`cd ./gdb/data-directory`  
+`make install`
+which installed the missing python scripts.
+
+
 
 2DO
 ---
 * add break at opcodes by arch
 * add tui break into comments file to save/load automatically
 * read the list of renames/comments from ida and set it automatically in gdb tui
-
+* perfect decompiler
 
 -------------------------------------------------------------------------------------------------------------------------------
 This directory contains various GNU compilers, assemblers, linkers, 

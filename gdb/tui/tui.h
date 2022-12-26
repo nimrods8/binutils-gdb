@@ -58,6 +58,8 @@ enum tui_win_type
   DISASSEM_ONTOP_WIN,
 // NS 12/11  
   CONSOLE_WIN,
+// NS 11/12  
+  MEMDUMP_WIN, 
 
   /* This must ALWAYS be AFTER the major windows last.  */
   MAX_MAJOR_WINDOWS,

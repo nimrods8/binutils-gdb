@@ -88,8 +88,8 @@ struct tui_disasm_ontop_window : public tui_source_window_base
 
   void erase_source_content () override
   {
-    #if 0
-    do_erase_source_content (_("[ No Assembly Available ]"));
+    #if 1
+    do_erase_source_content (_("[ Wait for Decompiler ]"));
     #else
     do_erase_source_content (_(""));
     #endif
@@ -97,6 +97,13 @@ struct tui_disasm_ontop_window : public tui_source_window_base
 
   void display_start_addr (struct gdbarch **gdbarch_p,
 			   CORE_ADDR *addr_p) override;
+
+
+
+  void erase_data_content (const char *prompt);
+
+
+  int decompiler_line;
 
 protected:
 
