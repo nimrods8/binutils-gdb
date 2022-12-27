@@ -80,9 +80,9 @@ struct tui_console_window : public tui_win_info
 protected:
 
   void do_scroll_vertical (int num_to_scroll) override;
-  void do_scroll_horizontal (int num_to_scroll) override
-  {
-  }
+  void do_scroll_horizontal (int num_to_scroll) override;
+  
+  
 
   // void rerender () override;
 
@@ -147,6 +147,9 @@ private:
   int m_item_width = 0;
 
   int top_line = 0;
+  /* Used for horizontal scroll.  */
+  int m_horizontal_offset = 0;
+
 };
 
 

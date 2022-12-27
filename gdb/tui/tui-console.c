@@ -475,12 +475,25 @@ void tui_console_window::display_console_from( int fromline)
   }
 */
 
+
   while (i < contents.size () && cur_y <= height - 2)
   {
         // gdb_printf( "i=%d, %d %s", i, cur_y, contents.at(i).c_str());      
-	int x_pos = 5;
-        mvwaddstr (handle.get (), cur_y, x_pos, (char *) contents.at(i).c_str());
- 
+
+      	int x_pos = 2;
+        int print_width = contents.at(i).length() >= width - x_pos - 2  ? width - x_pos - 2 : contents.at(i).length();
+        
+        std::string s = contents.at(i);
+        if( contents.at(i).length() > width - x_pos - 2)
+           s = contents.at(i).substr( m_horizontal_offset, print_width - 1);
+     
+        mvwaddstr (handle.get (), cur_y, x_pos, (char *) s.c_str());
+
+
+        if( s.length() < width - x_pos - 2)
+           waddstr( handle.get(), n_spaces ( width - x_pos - 2 - s.length()));
+
+
 #if 0
         wmove (handle.get (), cur_y, 0);
         tui_puts (contents.at(i).c_str (), handle.get ());
@@ -512,6 +525,40 @@ void tui_console_window::display_console_from( int fromline)
   //refresh_window ();
 
 } // endfunc
+
+
+/* Scroll the data window horizontally.  */
+void
+tui_console_window::do_scroll_horizontal (int num_to_scroll)
+{
+  if (!contents.empty ())
+    {
+      int offset = m_horizontal_offset + num_to_scroll;
+      if( offset < 0)
+	       offset = 0;
+
+      int max = 0;
+      int shown_lines = top_line + height - 2;
+      if( shown_lines >= contents.size())
+         shown_lines = contents.size() - 1;
+      
+      for( int p = top_line; p < shown_lines; p++)
+      {
+          if( max < contents.at(p).length())
+             max = contents.at(p).length();
+      }
+      if( offset > max - width - 5) 
+         offset = max - width - 5;
+
+      m_horizontal_offset = offset;
+      //refresh_window ();
+      display_console_from( top_line);
+    }
+}
+
+
+
+
 
 /* Scroll the data window vertically forward or backward.  */
 void
@@ -556,6 +603,29 @@ tui_console_window::do_scroll_vertical (int num_to_scroll)
     #endif
 }
 
+
+
+#if 0
+
+/* Scroll the data window horizontal right or left.  */
+void
+tui_console_window::do_scroll_horizontal (int num_to_scroll)
+{
+    {
+      top_line += num_to_scroll;
+      if( top_line < 0) top_line = 0;
+      if( top_line > contents.size() - height + 2)
+          top_line = contents.size() - (height - 2);
+
+
+      erase_data_content (NULL);
+      //delete_data_content_windows ();
+      display_console_from ( top_line);
+    }
+}
+#endif
+
+
 /* Display a register in a window.  If hilite is TRUE, then the value
    will be displayed in reverse video.  */
 
@@ -564,87 +634,6 @@ void
 tui_console_item_window::rerender (WINDOW *handle, int field_width)
 {
         return;
-#if 1
-  if (highlight)
-    /* We ignore the return value, casting it to void in order to avoid
-       a compiler warning.  The warning itself was introduced by a patch
-       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
-       to code that causes the compiler to generate an unused-value
-       warning.  */
-    (void) wstandout (handle);
-      
-  mvwaddnstr (handle, y, x, content.c_str (), field_width - 1);
-  if (content.size () < field_width)
-    waddstr (handle, n_spaces (field_width - content.size ()));
-
-  if (highlight)
-    /* We ignore the return value, casting it to void in order to avoid
-       a compiler warning.  The warning itself was introduced by a patch
-       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
-       to code that causes the compiler to generate an unused-value
-       warning.  */
-    (void) wstandend (handle);
-#else
-
-  ui_file_style style = ui_file_style( ui_file_style::basic_color::WHITE,
-                                      ui_file_style::basic_color::BLACK, 
-                                      ui_file_style::intensity::NORMAL);
-  tui_apply_style( handle, style);
-
-
-  if (highlight) {
-    /* We ignore the return value, casting it to void in order to avoid
-       a compiler warning.  The warning itself was introduced by a patch
-       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
-       to code that causes the compiler to generate an unused-value
-       warning.  */
-       // (void) wstandout (handle);
-    	//wattron( handle,COLOR_PAIR(2));
-      
-      tui_set_reverse_mode( handle, true);
-  }
-  else 
-  {
-    /*
-    if( content.c_str()[0] == 'r')     
-  	   wattron( handle,COLOR_PAIR( color));
-    else
-    */
-//  	   wattron( handle,COLOR_PAIR( color));
-  }
-
-  //start_color();			/* Start color 			*/
-	//init_pair(1, COLOR_RED, COLOR_BLACK);
-
-	
-  wmove( handle, y, x);
-  tui_puts( content.c_str(), handle);
-  // mvwaddnstr (handle, y, x, content.c_str (), field_width - 1);
-  if (content.size () < field_width)
-    waddstr (handle, n_spaces (field_width - content.size ()));
-
-  if (highlight) {
-    /* We ignore the return value, casting it to void in order to avoid
-       a compiler warning.  The warning itself was introduced by a patch
-       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
-       to code that causes the compiler to generate an unused-value
-       warning.  */
-    ; //(void) wstandend (handle);
-    //wattroff( handle, COLOR_PAIR(2));
-      tui_set_reverse_mode( handle, false);
-  }
-  else 
-  { 
-     //  wattroff( handle,COLOR_PAIR(color));
-  }
-  #if 1
-  ui_file_style back_style = ui_file_style( ui_file_style::basic_color::NONE,
-                                            ui_file_style::basic_color::NONE, 
-                                            ui_file_style::intensity::NORMAL);
-  
-  tui_apply_style( handle, back_style);
-  #endif
-#endif
 }
 
         

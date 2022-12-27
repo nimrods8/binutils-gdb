@@ -1366,6 +1366,7 @@ initialize_layouts ()
   layout->add_window (STATUS_NAME, 0);
   layout->add_window (CMD_NAME, 1);
   layout->add_window (DISASSEM_ONTOP_NAME, 0);
+  layout->add_window (MEMDUMP_NAME, 1);
   layouts.emplace_back (layout);
   asm_console_layout = layout;
 

@@ -762,6 +762,9 @@ tui_watch_command (const char *args, int from_tty)
       if( TUI_MEMDUMP_WIN == NULL || !TUI_MEMDUMP_WIN->is_visible ())
 	        tui_console_layout ();
 
+      mem_contents.push_back( args);
+
+
     }
   else
     {
