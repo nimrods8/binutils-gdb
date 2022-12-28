@@ -53,6 +53,9 @@
 /*thread function definition*/
 void* threadFunction(void* args);
 std::vector<std::string>contents;
+static bool newData = false, thread_kill = false;
+
+
 
 #if 0
 /* A subclass of string_file that expands tab characters.  */
@@ -448,6 +451,13 @@ void tui_console_window::display_console_from( int fromline)
 {
   int cur_y = 1, i = fromline; //fromline;
 
+  if( newData)
+  {
+     newData = false;
+     top_line = 0;
+     m_horizontal_offset = 0;
+  }
+
 #if 0
   if (highlight)
     /* We ignore the return value, casting it to void in order to avoid
@@ -468,7 +478,8 @@ void tui_console_window::display_console_from( int fromline)
   else if( fromline == -1) i = 0;
 
   top_line = i;
-  /*
+
+/*
   else if( contents.size() > fromline && fromline <= height - 2)
   {
      i = fromline;
@@ -484,9 +495,11 @@ void tui_console_window::display_console_from( int fromline)
         int print_width = contents.at(i).length() >= width - x_pos - 2  ? width - x_pos - 2 : contents.at(i).length();
         
         std::string s = contents.at(i);
-        if( contents.at(i).length() > width - x_pos - 2)
+        if( contents.at(i).length() > width - x_pos - 2 && m_horizontal_offset < contents.at(i).length())
            s = contents.at(i).substr( m_horizontal_offset, print_width - 1);
-     
+        if( m_horizontal_offset >= contents.at(i).length())
+           s = " ";
+
         mvwaddstr (handle.get (), cur_y, x_pos, (char *) s.c_str());
 
 
@@ -547,8 +560,8 @@ tui_console_window::do_scroll_horizontal (int num_to_scroll)
           if( max < contents.at(p).length())
              max = contents.at(p).length();
       }
-      if( offset > max - width - 5) 
-         offset = max - width - 5;
+      if( offset > max) 
+         offset = max;
 
       m_horizontal_offset = offset;
       //refresh_window ();
@@ -663,6 +676,7 @@ void* threadFunction(void* args)
              arr1[pos + 1] = 0;
              oneline += arr1[pos];
           }
+          newData = true;
         } // endif got one byte from fifo
 #if 0
          // Print the read message
@@ -701,13 +715,21 @@ void* threadFunction(void* args)
 } // endfunc thread
 
 
+/*creating thread id*/
+static pthread_t id;
 
+//////////////////////////////////
+void tui_console_leave( void)
+{
+    pthread_cancel( id);
+    thread_kill = true; 
+    //contents.clear();
+    //newData = false; 
+}
 
 
 void initialize_tui_console()
 {
-      /*creating thread id*/
-    pthread_t id;
     int ret;
     
     /*creating thread*/

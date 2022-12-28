@@ -49,8 +49,8 @@
 #include "gdb_curses.h"
 
 
-std::vector<std::string>mem_contents;
-
+static std::vector<std::string>mem_contents;
+static std::string request;
 #if 0
 /* A subclass of string_file that expands tab characters.  */
 class tab_expansion_file : public string_file
@@ -402,20 +402,46 @@ tui_console_window::delete_data_content_windows ()
 
 //////////////////////////////////
 // MEMDUMP FORMATTING
-void tui_memdump_window::tui_memdump_format( CORE_ADDR watchaddr, size_t watchSize)
+void tui_memdump_window::tui_memdump_format( size_t watchSize)
 {
-	   gdb_byte *byte_buf = (gdb_byte *)malloc( watchSize);
-     target_read_memory( watchaddr, byte_buf, watchSize);
+     std::string m_cont;
+     gdb_byte *byte_buf = (gdb_byte *)malloc( watchSize);
+     //target_read_memory( watchaddr, byte_buf, watchSize);
+     char f[100];
+     CORE_ADDR pos = 0;
+
+     struct value *val = parse_and_eval( request.c_str());
+     CORE_ADDR watchaddr = value_as_address(val);
 
      while( true)
      {
+        m_cont = "";
+        target_read_memory( watchaddr + pos, byte_buf, 16);
+        sprintf( f, "0x%08lx", watchaddr + pos);
+        m_cont += " ";
+        m_cont += f;
+        m_cont += "    ";
         for( int i = 0; i < 16; i++)
         {
-            m_content += "0xdd "; //byte_buf[i];
+            sprintf( f, "%02x ", byte_buf[i]);
+            m_cont += f;
         } // endfor
-        break;
+        m_cont += "    ";
+
+        for( int i = 0; i < 16; i++)
+        {
+            gdb_byte g = byte_buf[i];
+            if( g < 0x20 || g > 0x7f) g = '.';
+            sprintf( f, "%c", g);
+            m_cont += f;
+        } // endfor
+        // m_cont += "\n";
+        mem_contents.push_back( m_cont);
+        pos += 16;
+        if( pos > watchSize)
+           break;
      }            
-}
+} // endfunc
 
 
 
@@ -446,13 +472,15 @@ tui_memdump_window::rerender ()
 
   //check_and_display_highlight_if_needed ();
 
+  title = "watch";
+
   if (mem_contents.empty ())
     erase_data_content (_("[ Watch Unavailable ]"));
   else
     {
       erase_data_content (NULL);
       //delete_data_content_windows ();
-      display_memdump_from (-1);
+      display_memdump_from ( 0);
     }
     #endif
     
@@ -463,10 +491,7 @@ tui_memdump_window::rerender ()
 // -1 = show terminal type screen, so that last line is at bottom of window
 void tui_memdump_window::display_memdump_from( int fromline)
 {
-  int cur_y = 1, i = fromline; //fromline;
-
-  title = "@$reg";
-
+  int cur_y = 2, i = fromline; //fromline;
 
 #if 0
   if (highlight)
@@ -498,7 +523,8 @@ void tui_memdump_window::display_memdump_from( int fromline)
   while (i < mem_contents.size () && cur_y <= height - 2)
   {
         // gdb_printf( "i=%d, %d %s", i, cur_y, contents.at(i).c_str());      
-	int x_pos = 5;
+
+  	int x_pos = 4;
         mvwaddstr (handle.get (), cur_y, x_pos, (char *) mem_contents.at(i).c_str());
  
 #if 0
@@ -513,7 +539,7 @@ void tui_memdump_window::display_memdump_from( int fromline)
 //      if (content.size () < field_width)
 //         waddstr (handle, n_spaces (field_width - content.size ()));
 #endif      
-	    i++;		    /* Next line.  */
+      i++;	        /* Next line.  */
       cur_y++;		/* Next row.  */
   } // endwhile
 
@@ -584,153 +610,8 @@ void
 tui_memdump_item_window::rerender (WINDOW *handle, int field_width)
 {
         return;
-#if 1
-  if (highlight)
-    /* We ignore the return value, casting it to void in order to avoid
-       a compiler warning.  The warning itself was introduced by a patch
-       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
-       to code that causes the compiler to generate an unused-value
-       warning.  */
-    (void) wstandout (handle);
-      
-  mvwaddnstr (handle, y, x, content.c_str (), field_width - 1);
-  if (content.size () < field_width)
-    waddstr (handle, n_spaces (field_width - content.size ()));
-
-  if (highlight)
-    /* We ignore the return value, casting it to void in order to avoid
-       a compiler warning.  The warning itself was introduced by a patch
-       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
-       to code that causes the compiler to generate an unused-value
-       warning.  */
-    (void) wstandend (handle);
-#else
-
-  ui_file_style style = ui_file_style( ui_file_style::basic_color::WHITE,
-                                      ui_file_style::basic_color::BLACK, 
-                                      ui_file_style::intensity::NORMAL);
-  tui_apply_style( handle, style);
-
-
-  if (highlight) {
-    /* We ignore the return value, casting it to void in order to avoid
-       a compiler warning.  The warning itself was introduced by a patch
-       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
-       to code that causes the compiler to generate an unused-value
-       warning.  */
-       // (void) wstandout (handle);
-    	//wattron( handle,COLOR_PAIR(2));
-      
-      tui_set_reverse_mode( handle, true);
-  }
-  else 
-  {
-    /*
-    if( content.c_str()[0] == 'r')     
-  	   wattron( handle,COLOR_PAIR( color));
-    else
-    */
-//  	   wattron( handle,COLOR_PAIR( color));
-  }
-
-  //start_color();			/* Start color 			*/
-	//init_pair(1, COLOR_RED, COLOR_BLACK);
-
-	
-  wmove( handle, y, x);
-  tui_puts( content.c_str(), handle);
-  // mvwaddnstr (handle, y, x, content.c_str (), field_width - 1);
-  if (content.size () < field_width)
-    waddstr (handle, n_spaces (field_width - content.size ()));
-
-  if (highlight) {
-    /* We ignore the return value, casting it to void in order to avoid
-       a compiler warning.  The warning itself was introduced by a patch
-       to ncurses 5.7 dated 2009-08-29, changing this macro to expand
-       to code that causes the compiler to generate an unused-value
-       warning.  */
-    ; //(void) wstandend (handle);
-    //wattroff( handle, COLOR_PAIR(2));
-      tui_set_reverse_mode( handle, false);
-  }
-  else 
-  { 
-     //  wattroff( handle,COLOR_PAIR(color));
-  }
-  #if 1
-  ui_file_style back_style = ui_file_style( ui_file_style::basic_color::NONE,
-                                            ui_file_style::basic_color::NONE, 
-                                            ui_file_style::intensity::NORMAL);
-  
-  tui_apply_style( handle, back_style);
-  #endif
-#endif
 }
 
-#if 0
-/*thread function definition*/
-void* threadFunction(void* args)
-{
-   char myfifo[] = "/tmp/myfifo";
-   char arr1[32];
-   int fd, red, pos = 0;
-   std::string oneline = "";
-
-   // Open FIFO for Read only
-   fd = open(myfifo, O_RDONLY /*| O_NONBLOCK*/);
-   while(1)
-   {
-      // Read from FIFO
-      if(( red = read(fd, &arr1[pos], 1)) > 0)
-      {
-        if( red == 1) {
-          if( arr1[pos] == '\n')
-          {
-             contents.push_back( oneline);
-             oneline = "";
-          }
-          else
-          {
-             arr1[pos + 1] = 0;
-             oneline += arr1[pos];
-          }
-        } // endif got one byte from fifo
-#if 0
-         // Print the read message
-         // arr1[red] = 0;
-         int frm = 0;
-         for( int i = 0; i < red; i++) {
-                if( arr1[i] == '\n' || i == red - 1) 
-                {       
-                        if( i == frm) {
-                                contents.push_back( " ");
-                                frm = i + 1;
-                                continue;
-                        }
-                        arr1[i] = 0;
-                        contents.push_back( std::string( &arr1[frm]));
-                        frm = i + 1;
-                        continue;
-                }
-         } // endfor
-#endif
-/*
-         std::vector<std::string>v1 = tui_hooks_split( std::string( arr1), '\n');
-            // NULL at end...
-         gdb_printf("split=%ld", v1.size());
-         for( int i = 0; i < v1.size(); i++)
-         {   
-
-             if( v1.at(i).length() > 0)
-                contents.push_back( v1.at(i));        
-         // gdb_printf("User2: %s %ld\n", arr1, contents.size());
-         }
-*/         
-      } // endif read data
-    }
-    close(fd);
-} // endfunc thread
-#endif
 
 
 
@@ -742,13 +623,17 @@ tui_watch_command (const char *args, int from_tty)
   // struct gdbarch *gdbarch = get_current_arch ();
 
   if (args != NULL)
-    {
+  {
       //size_t len = strlen (args);
+/*
+      std::string ar = args;
+      std::vector<std::string>args_vec;
+      args_vec = ar.split( ' ');
+*/
 
-      struct value *val = parse_and_eval( args);
-      CORE_ADDR watchFromAddr = value_as_address(val);
       size_t watchLength   = 100;
-      TUI_MEMDUMP_WIN->tui_memdump_format( watchFromAddr, watchLength);
+      request = args;
+      TUI_MEMDUMP_WIN->tui_memdump_format( watchLength);
       //rerender();
 
 
@@ -762,15 +647,15 @@ tui_watch_command (const char *args, int from_tty)
       if( TUI_MEMDUMP_WIN == NULL || !TUI_MEMDUMP_WIN->is_visible ())
 	        tui_console_layout ();
 
-      mem_contents.push_back( args);
+      //mem_contents.push_back( args);
 
 
-    }
+  }
   else
-    {
+  {
       gdb_printf (_("\"tui watch\" must be followed by the name of "
 		    "either a register,\nor an address"));
-    }
+  }
 } // endfunc
 
 

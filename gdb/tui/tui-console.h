@@ -154,6 +154,7 @@ private:
 
 
 void initialize_tui_console( void);
+void tui_console_leave( void);
 
 
 #endif /* TUI_TUI_CONSOLE_H */

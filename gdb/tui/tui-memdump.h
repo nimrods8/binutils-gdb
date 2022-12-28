@@ -82,7 +82,7 @@ struct tui_memdump_window : public tui_win_info
   std::string m_content;
 
 public:
-  void tui_memdump_format( CORE_ADDR, size_t);
+  void tui_memdump_format( size_t);
 
 protected:
 

@@ -57,6 +57,7 @@
 //NS 01/11
 #include "tui/tui-disasm.h"
 #include "tui/tui-console.h"
+#include "tui/tui-memdump.h"
 #include <sstream>
 #include "gdb_curses.h"
 
@@ -269,10 +270,13 @@ tui_dummy_print_frame_info_listing_hook (struct symtab *s,
 static void
 tui_inferior_exit (struct inferior *inf)
 {
+  tui_console_leave();
   /* Leave the SingleKey mode to make sure the gdb prompt is visible.  */
   tui_set_key_mode (TUI_COMMAND_MODE);
   tui_show_frame_info (0);
   tui_display_main ();
+
+
 }
 
 
@@ -384,6 +388,10 @@ tui_before_prompt (const char *current_gdb_prompt)
   if( TUI_CONSOLE_WIN != nullptr)
   {
      TUI_CONSOLE_WIN->rerender();
+  }
+  if( TUI_MEMDUMP_WIN != nullptr)
+  {
+     TUI_MEMDUMP_WIN->rerender();
   }
    
 }
