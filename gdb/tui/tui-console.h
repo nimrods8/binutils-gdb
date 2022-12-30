@@ -81,7 +81,8 @@ protected:
 
   void do_scroll_vertical (int num_to_scroll) override;
   void do_scroll_horizontal (int num_to_scroll) override;
-  
+  void click (int mouse_x, int mouse_y, int mouse_button) override;
+
   
 
   // void rerender () override;

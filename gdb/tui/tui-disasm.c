@@ -991,6 +991,9 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
         tui_update_ontop_windows_with_addr(gdbarch, addr);
 
         found = true;
+
+        tui_set_win_focus_to ( TUI_DISASMOT_WIN);
+
       }
       //                    break;
     } // found one of calls

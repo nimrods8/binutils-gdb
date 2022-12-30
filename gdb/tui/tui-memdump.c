@@ -409,14 +409,25 @@ void tui_memdump_window::tui_memdump_format( size_t watchSize)
      //target_read_memory( watchaddr, byte_buf, watchSize);
      char f[100];
      CORE_ADDR pos = 0;
+     mem_contents.clear();     
 
      struct value *val = parse_and_eval( request.c_str());
+     if( val == NULL)
+     {
+            mem_contents.push_back( "Can't sync with " + request);
+            return;
+     }
      CORE_ADDR watchaddr = value_as_address(val);
 
      while( true)
      {
         m_cont = "";
-        target_read_memory( watchaddr + pos, byte_buf, 16);
+        if( target_read_memory( watchaddr + pos, byte_buf, 16) == -1)
+        {
+            mem_contents.push_back( "Can't sync with " + request);
+
+            break;       
+        }
         sprintf( f, "0x%08lx", watchaddr + pos);
         m_cont += " ";
         m_cont += f;
@@ -472,13 +483,17 @@ tui_memdump_window::rerender ()
 
   //check_and_display_highlight_if_needed ();
 
-  title = "watch";
+  if( request.empty())
+     title = "watch";
+  else
+     title = request;
 
   if (mem_contents.empty ())
     erase_data_content (_("[ Watch Unavailable ]"));
   else
     {
       erase_data_content (NULL);
+      tui_memdump_format( 100);
       //delete_data_content_windows ();
       display_memdump_from ( 0);
     }
