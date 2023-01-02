@@ -53,12 +53,12 @@ struct tui_memdump_window : public tui_win_info
   tui_memdump_window () = default;
 
   DISABLE_COPY_AND_ASSIGN (tui_memdump_window);
-
+/*
   void refresh_window() override
   {
-     //rerender();
+     rerender();
   }
-  
+  */
   void rerender () override;
 
 
@@ -85,7 +85,7 @@ public:
   void tui_memdump_format( size_t);
 
 protected:
-
+  void click(int mouse_x, int mouse_y, int mouse_button) override;
   void do_scroll_vertical (int num_to_scroll) override;
   void do_scroll_horizontal (int num_to_scroll) override
   {

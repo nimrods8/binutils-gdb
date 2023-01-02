@@ -983,8 +983,9 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
 // turns filename string to color
 std::vector<std::string>FileNames = { "[stack]", "[heap]" };
 
-static std::string tui_hooks_filename2color( std::string filename)
+std::string tui_hooks_filename2color( std::string filename)
 {
+   if( filename == "reset") return( std::string( "\033[0m")); // reset back to black?
    if( filename == "[stack]") return( std::string( "\033[92m")); // green
    if( filename == "[heap]") return( std::string( "\033[94m")); // blue
    return( std::string("\033[91m"));
@@ -1039,7 +1040,7 @@ char xyz[64];
             if( zerox != std::string::npos) 
             {
                size_t zeroxsp = reg_str->find( " ", zerox);
-               reg_str->insert(  zeroxsp, "\033[0m");
+               reg_str->insert(  zeroxsp, "\033[40m");            // NS 2/1/2023 ...  //"\033[0m");
                reg_str->insert(  zerox, tui_hooks_filename2color( xstr)); //\033[0m");
 
          	   gdb_byte byte_buf[32];

@@ -50,7 +50,10 @@
 
 
 static std::vector<std::string>mem_contents;
+static std::vector<gdb_byte>saved_contents;
+static CORE_ADDR savedCoreAddr;
 static std::string request;
+static int requestLength;
 #if 0
 /* A subclass of string_file that expands tab characters.  */
 class tab_expansion_file : public string_file
@@ -404,7 +407,9 @@ tui_console_window::delete_data_content_windows ()
 // MEMDUMP FORMATTING
 void tui_memdump_window::tui_memdump_format( size_t watchSize)
 {
-     std::string m_cont;
+bool newData = false;
+std::string m_cont;
+
      gdb_byte *byte_buf = (gdb_byte *)malloc( watchSize);
      //target_read_memory( watchaddr, byte_buf, watchSize);
      char f[100];
@@ -419,6 +424,13 @@ void tui_memdump_window::tui_memdump_format( size_t watchSize)
      }
      CORE_ADDR watchaddr = value_as_address(val);
 
+     if( watchaddr != savedCoreAddr)
+     {
+        newData = true;
+        savedCoreAddr = watchaddr;
+        saved_contents.clear();
+     }
+
      while( true)
      {
         m_cont = "";
@@ -430,11 +442,29 @@ void tui_memdump_window::tui_memdump_format( size_t watchSize)
         }
         sprintf( f, "0x%08lx", watchaddr + pos);
         m_cont += " ";
+       
+        std::string fname = tui_hooks_get_name_of_rwMaps( watchaddr + pos);
+        if( !fname.empty())
+        {
+            m_cont += tui_hooks_filename2color( fname);
+        }
+
         m_cont += f;
+
+        if( !fname.empty())
+            m_cont += tui_hooks_filename2color( "reset");             // reset the color back to black
+
         m_cont += "    ";
         for( int i = 0; i < 16; i++)
         {
-            sprintf( f, "%02x ", byte_buf[i]);
+            if( !newData && ( gdb_byte)( saved_contents.at( i + pos)) != byte_buf[i])
+               sprintf( f, "\033[0;93m%02x\033[0m ", byte_buf[i]);
+            else
+               sprintf( f, "%02x ", byte_buf[i]);
+
+            if( pos + i > watchSize)
+               strcpy( f, "   ");
+
             m_cont += f;
         } // endfor
         m_cont += "    ";
@@ -443,8 +473,22 @@ void tui_memdump_window::tui_memdump_format( size_t watchSize)
         {
             gdb_byte g = byte_buf[i];
             if( g < 0x20 || g > 0x7f) g = '.';
-            sprintf( f, "%c", g);
+
+            if( !newData && ( gdb_byte)saved_contents.at( i + pos) != byte_buf[i])
+               sprintf( f, "\033[0;93m%c\033[0m", g);
+            else
+               sprintf( f, "%c", g);
+
+            if( pos + i > watchSize)
+               strcpy( f, " ");
+
             m_cont += f;
+
+            // update the saved content for next time
+            if( saved_contents.size() <= i + pos)
+               saved_contents.push_back( byte_buf[i]);
+            else
+               saved_contents[i+pos] = byte_buf[i];
         } // endfor
         // m_cont += "\n";
         mem_contents.push_back( m_cont);
@@ -493,7 +537,7 @@ tui_memdump_window::rerender ()
   else
     {
       erase_data_content (NULL);
-      tui_memdump_format( 100);
+      tui_memdump_format( requestLength);
       //delete_data_content_windows ();
       display_memdump_from ( 0);
     }
@@ -503,10 +547,23 @@ tui_memdump_window::rerender ()
 
 }
 
+
+
+/* Called for each mouse click inside this window.  Coordinates MOUSE_X
+   and MOUSE_Y are 0-based relative to the window, and MOUSE_BUTTON can
+   be 1 (left), 2 (middle), or 3 (right).  */
+void tui_memdump_window::click(int mouse_x, int mouse_y, int mouse_button)
+{
+     tui_set_win_focus_to ( TUI_MEMDUMP_WIN);
+     TUI_MEMDUMP_WIN->rerender();
+}
+
+
+
 // -1 = show terminal type screen, so that last line is at bottom of window
 void tui_memdump_window::display_memdump_from( int fromline)
 {
-  int cur_y = 2, i = fromline; //fromline;
+  int cur_y = 1, i = fromline; //fromline;
 
 #if 0
   if (highlight)
@@ -540,8 +597,11 @@ void tui_memdump_window::display_memdump_from( int fromline)
         // gdb_printf( "i=%d, %d %s", i, cur_y, contents.at(i).c_str());      
 
   	int x_pos = 4;
-        mvwaddstr (handle.get (), cur_y, x_pos, (char *) mem_contents.at(i).c_str());
- 
+
+//        mvwaddstr (handle.get (), cur_y, x_pos, (char *) mem_contents.at(i).c_str());
+          wmove( handle.get(), cur_y, x_pos);
+          tui_puts( (char *) mem_contents.at(i).c_str(), handle.get());
+
 #if 0
         wmove (handle.get (), cur_y, 0);
         tui_puts (contents.at(i).c_str (), handle.get ());
@@ -579,6 +639,9 @@ void
 tui_memdump_window::do_scroll_vertical (int num_to_scroll)
 {
 
+/*
+    gdb_printf( "scroll %d", num_to_scroll);
+*/
   //if (top_line >= 0)
     {
       top_line += num_to_scroll;
@@ -589,6 +652,11 @@ tui_memdump_window::do_scroll_vertical (int num_to_scroll)
 
       erase_data_content (NULL);
       //delete_data_content_windows ();
+
+//    gdb_printf( "scroll %d, %ld %d", top_line, mem_contents.size(), height);
+
+
+
       display_memdump_from ( top_line);
     }
 
@@ -640,14 +708,27 @@ tui_watch_command (const char *args, int from_tty)
   if (args != NULL)
   {
       //size_t len = strlen (args);
-/*
+
+      size_t watchLength   = 128;
       std::string ar = args;
       std::vector<std::string>args_vec;
-      args_vec = ar.split( ' ');
-*/
+      args_vec = tui_hooks_split( ar, ' ');
 
-      size_t watchLength   = 100;
       request = args;
+
+      for( int i = 0; i < args_vec.size(); i++)
+      {
+          if( i == 0) request = args_vec.at(i);
+          if( i > 0)
+          {
+             watchLength = atoi( args_vec.at(i).c_str());
+             if( watchLength > 0) break;
+          }
+      }
+      if( watchLength == 0) watchLength = 128;
+
+      requestLength = watchLength;
+      savedCoreAddr = -1;
       TUI_MEMDUMP_WIN->tui_memdump_format( watchLength);
       //rerender();
 
@@ -669,7 +750,7 @@ tui_watch_command (const char *args, int from_tty)
   else
   {
       gdb_printf (_("\"tui watch\" must be followed by the name of "
-		    "either a register,\nor an address"));
+		    "either a register,\nor an address and then, optionally a size to display"));
   }
 } // endfunc
 

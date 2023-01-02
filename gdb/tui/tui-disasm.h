@@ -120,6 +120,7 @@ private:
 };
 
 
+std::string tui_diasm_remove_ansi_colors(std::string _line);
 
 #endif /* TUI_TUI_DISASM_H */
 

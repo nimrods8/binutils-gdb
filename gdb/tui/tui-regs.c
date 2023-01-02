@@ -39,6 +39,7 @@
 #include "reggroups.h"
 #include "valprint.h"
 #include "completer.h"
+#include "tui/tui-disasm.h"
 
 #include "gdb_curses.h"
 
@@ -580,8 +581,26 @@ tui_data_item_window::rerender (WINDOW *handle, int field_width)
        warning.  */
        // (void) wstandout (handle);
     	//wattron( handle,COLOR_PAIR(2));
-      
+      #if 0
       tui_set_reverse_mode( handle, true);
+     #else 
+          ui_file_style style2 = ui_file_style( ui_file_style::basic_color::BLUE,
+                                              ui_file_style::basic_color::WHITE, 
+                                              ui_file_style::intensity::BOLD);
+          tui_apply_style( handle, style2);
+
+          // NS 2/1/2023 make sure you replace the end color background black into ::WHITE if highlighted
+          int pos = 0;
+          while( true) {
+             std::size_t fback = content.find( "\033[40m", pos);
+             if( fback == std::string::npos)
+                break;
+             else content[fback+3] = '7';
+             pos = fback;
+          }
+
+      #endif
+
   }
   else 
   {
@@ -600,8 +619,13 @@ tui_data_item_window::rerender (WINDOW *handle, int field_width)
   wmove( handle, y, x);
   tui_puts( content.c_str(), handle);
   // mvwaddnstr (handle, y, x, content.c_str (), field_width - 1);
-  if (content.size () < field_width)
-    waddstr (handle, n_spaces (field_width - content.size ()));
+
+
+  std::string nocolors = tui_diasm_remove_ansi_colors( content);
+
+
+  if( nocolors.size () < field_width)
+    waddstr (handle, n_spaces( field_width - nocolors.size ()));
 
   if (highlight) {
     /* We ignore the return value, casting it to void in order to avoid
@@ -611,7 +635,9 @@ tui_data_item_window::rerender (WINDOW *handle, int field_width)
        warning.  */
     ; //(void) wstandend (handle);
     //wattroff( handle, COLOR_PAIR(2));
+      #if 0
       tui_set_reverse_mode( handle, false);
+      #endif
   }
   else 
   { 

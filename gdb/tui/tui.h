@@ -54,7 +54,7 @@ enum tui_win_type
   CMD_WIN,
   STATUS_WIN,
 
-// NS 30/10
+// NS 30/10dump
   DISASSEM_ONTOP_WIN,
 // NS 12/11  
   CONSOLE_WIN,
