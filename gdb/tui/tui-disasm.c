@@ -53,7 +53,7 @@ static int decompiler_line;
 
 
 // NS 04/11 should be list per arch
-static std::vector<std::string> calls = {"call", "bl", "blr", "jmp"};
+static std::vector<std::string> calls = {"call", "bl", "blr", "jmp", "je", "jne", "ja", "jbe"};
 static std::vector<std::string> calls_funcnames = {"call", "bl", "blr"};
 static std::vector<std::string> loads = {"lea", "mov"};
 
@@ -73,7 +73,6 @@ struct tui_asm_line
 /********************************************************/
 bool tui_disasm_str_replace(std::string &str, const std::string &from, const std::string &to);
 CORE_ADDR tui_disasm_parse_line(std::string asm_line);
-std::string tui_diasm_remove_ansi_colors(std::string _line);
 CORE_ADDR tui_disasm_find_maybe_end_of_func(CORE_ADDR from);
 std::vector<std::string> tui_disasm_find_funcnames(CORE_ADDR, CORE_ADDR);
 std::string tui_disasm_parse_for_funcnames(std::string asm_line);
@@ -154,6 +153,7 @@ tui_disassemble(struct gdbarch *gdbarch,
     }
     catch (const gdb_exception_error &except)
     {
+      //gdb_printf( "%d", except.error);
       /* If PC points to an invalid address then we'll catch a
          MEMORY_ERROR here, this should stop the disassembly, but
          otherwise is fine.  */
@@ -177,6 +177,10 @@ tui_disassemble(struct gdbarch *gdbarch,
     // NS 15/10
     {
       std::string str_comment = "";
+
+          // happens in ...869a gdb_printf( "orig_pc=%lx ", orig_pc);
+
+//   gdb_printf( "orig_pc=%lx ", orig_pc & 0xffff);
 
       gdb::observers::tui_next_instruction.notify(orig_pc, &str_comment, &tal.insn);
       if (str_comment.size() > 0)
@@ -638,7 +642,7 @@ void tui_disasm_window::display_start_addr(struct gdbarch **gdbarch_p,
 //===========================
 // NS 30/10
 //===========================
-
+#if 1
 /* Scroll the disassembly forward or backward vertically.  */
 void tui_disasm_ontop_window::do_scroll_vertical(int num_to_scroll)
 {
@@ -649,9 +653,14 @@ void tui_disasm_ontop_window::do_scroll_vertical(int num_to_scroll)
 
     pc = m_start_line_or_addr.u.addr;
 
+       gdb_printf( "pc=%lx ", pc); // NS 0401
+
     symtab_and_line sal{};
     sal.pspace = current_program_space;
     sal.pc = tui_find_disassembly_address(m_gdbarch, pc, num_to_scroll);
+
+       ////// gdb_printf( "pc2=%lx ", sal.pc); // NS 0401
+
     update_source_window_as_is(m_gdbarch, sal);
   }
   else if( !m_content.empty() && isDecompiler)
@@ -662,6 +671,8 @@ void tui_disasm_ontop_window::do_scroll_vertical(int num_to_scroll)
      if( decompiler_line < 0) decompiler_line = 0;
   } // endif isdecompiler
 }
+#endif
+
 
 bool tui_disasm_ontop_window::location_matches_p(struct bp_location *loc, int line_no)
 {
@@ -734,11 +745,14 @@ bool tui_disasm_ontop_window::set_contents(struct gdbarch *arch,
   if (pc == 0 || !isVisible)
     return false;
 
+
   //////////////////
   // return false;
   //////////////////
 
-  pc = showAddr;
+
+// what's this????
+  // NS 0301   pc = showAddr;
 
   // gdb_printf( "now inside set contents\n");
 
@@ -847,34 +861,35 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
 
   if (!m_content.empty() && m_content.size() >= mouse_y)
   {
-    if (mouse_button == 3)
-    {
-      if (TUI_DISASMOT_WIN != nullptr && !TUI_DISASMOT_WIN->isVisible)
+      if (mouse_button == 3)
       {
-        // gdb_printf( "have xor\n\n");
-        //struct gdbarch *gdbarch = get_current_arch();
+          if (TUI_DISASMOT_WIN != nullptr && !TUI_DISASMOT_WIN->isVisible)
+          {
+            // gdb_printf( "have xor\n\n");
+            //struct gdbarch *gdbarch = get_current_arch();
 
-        decompiler_line = 0;
+            decompiler_line = 0;
 
-        int _x = TUI_DISASMOT_WIN->x;
-        int _y = TUI_DISASMOT_WIN->y;
-        int _w = TUI_DISASMOT_WIN->width;
-        int _h = TUI_DISASMOT_WIN->height;
-        _y = mouse_y + TUI_DISASM_WIN->y + 2;
-        _x = mouse_x + TUI_DISASM_WIN->x + 1;
-        _w = 100;
-        _h = 20;
+            int _x = TUI_DISASMOT_WIN->x;
+            int _y = TUI_DISASMOT_WIN->y;
+            int _w = TUI_DISASMOT_WIN->width;
+            int _h = TUI_DISASMOT_WIN->height;
+            _y = mouse_y + TUI_DISASM_WIN->y + 2;
+            _x = mouse_x + TUI_DISASM_WIN->x + 1;
+            _w = 100;
+            _h = 20;
 
-        TUI_DISASMOT_WIN->resize(_h, _w, _x, _y);
-        TUI_DISASMOT_WIN->make_visible(true);
-        TUI_DISASMOT_WIN->isVisible = true;
-        // TUI_DISASMOT_WIN->refill();
-        //tui_apply_current_layout(true);
-        //tui_update_ontop_windows_with_addr(gdbarch, 0L);
-        TUI_DISASMOT_WIN->erase_data_content( "Wait for Decompiler...");
-        TUI_DISASMOT_WIN->isVisible = false;
-      }
-    }
+            TUI_DISASMOT_WIN->resize(_h, _w, _x, _y);
+            TUI_DISASMOT_WIN->make_visible(true);
+            TUI_DISASMOT_WIN->isVisible = true;
+            // TUI_DISASMOT_WIN->refill();
+            //tui_apply_current_layout(true);
+            //tui_update_ontop_windows_with_addr(gdbarch, 0L);
+            TUI_DISASMOT_WIN->erase_data_content( "Wait for Decompiler...");
+            TUI_DISASMOT_WIN->isVisible = false;
+          }
+      } // endif mouse button decompiler
+
 
     // gdb_printf( "Line=%s", m_content[mouse_y].line.c_str());
 
@@ -900,17 +915,21 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
       if( fnmed2 < fnmed) fnmed = fnmed2;
       if( fnme != std::string::npos)
          decompName = line3.substr( fnme + 1, fnmed - fnme - 1);
-    }
+    } // endif no address found
 
-    
 
+    // address is found!
     if (addr != 0L && !TUI_DISASMOT_WIN->isVisible)
     {
       // read this memory to array
 
+    //gdb_printf("decompile1 @%lx", addr);
+
+
       // find -maybe- end of func address by scanning
       CORE_ADDR end_addr = tui_disasm_find_maybe_end_of_func( addr) + 1; // to add the ret
-      //gdb_printf("decompile @%lx", end_addr);
+    
+    //gdb_printf("decompile2 @%lx", end_addr);
 
       long take = 300; // = sizeof( byte_buf);
       if (end_addr - 1L > 0L)
@@ -1175,7 +1194,12 @@ CORE_ADDR tui_disasm_find_maybe_end_of_func(CORE_ADDR from)
   std::vector<tui_asm_line> asmlines;
   struct gdbarch *gdbarch = get_current_arch();
 
+//   gdb_printf( "decompile_1 %lx", from);
+
   tui_disassemble(gdbarch, asmlines, from, 0x3000);
+
+//   gdb_printf( "decompile11 %lx", from);
+
   for (int i = 0; i < asmlines.size(); i++)
   {
     // just a silly search for now
@@ -1283,7 +1307,7 @@ std::string tui_disasm_parse_for_funcnames(std::string asm_line)
         result = line.substr(plt + 1, plt2 - 1 - plt);
     }
   }
-  gdb_printf( "result=%s", result.c_str());
+  //gdb_printf( "result=%s", result.c_str());
   return result;
 } // endfunc
 #endif
@@ -1315,10 +1339,18 @@ CORE_ADDR tui_disasm_check_load_add(std::vector<tui_asm_line> asmlines)
           std::size_t _found4 = line.find(" ", _foundZeroX);
           std::string adds = line.substr(_foundZeroX, _found4 - _foundZeroX + 1);
 
-          struct value *val = parse_and_eval(adds.c_str());
-          CORE_ADDR addr = value_as_address(val);
-          // gdb_printf( "))) found %lx", addr);
-          return (addr);
+          // DEBUG 04/01 gdb_printf( "* %s", adds.c_str());
+          try 
+          {
+              struct value *val = parse_and_eval(adds.c_str());
+              CORE_ADDR addr = value_as_address(val);
+              // gdb_printf( "))) found %lx", addr);
+              return (addr);
+          }
+          catch (const gdb_exception_error &except)
+          {
+              break;
+          }
         }
       } // endif
     }

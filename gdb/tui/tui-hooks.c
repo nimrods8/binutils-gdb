@@ -99,6 +99,7 @@ typedef enum
 { 
    TUI_TYPE_COMMENT,
    TUI_TYPE_RENAME,
+   TUI_TYPE_BREAKPOINT,
    TUI_TYPE_END
 } enum_tui_type;
 
@@ -581,6 +582,12 @@ bool tui_hooks_serialize_comments( bool onlyShow)
 
   for( int i = 0; i < m_comments.size(); i++)
   {
+     // remove excess LF at the end of the text
+     int l1 = strlen( m_comments.at(i).text);
+     if( m_comments.at(i).text[l1 - 1] == '\n' && !onlyShow)
+        m_comments.at(i).text[l1 - 1] = 0;
+
+
      sprintf( text, "%d\t%10s\t%s\t%s\n", 
                     (int)m_comments.at(i).type,
                     paddress( gdbarch, m_comments.at(i).unbased_addr),
@@ -603,7 +610,7 @@ bool tui_hooks_serialize_comments( bool onlyShow)
      }
      else
      {
-        sprintf( text, "%d\t%10s\t%s\t%s", 
+        sprintf( text, "%d\t%10s\t%s\t%s\n", 
                     (int)m_comments.at(i).type,
                     paddress( gdbarch, m_comments.at(i).unbased_addr),
                     m_comments.at(i).filename,
@@ -633,7 +640,7 @@ bool tui_hooks_deserialize_comments( void)
 
   char *dir = getenv( "HOME");
   sprintf( fn, "/%s/.comments", dir);
-  gdb_printf( "%s\n", fn);
+  // NS 030123 DEBUG: gdb_printf( "%s\n", fn);
 
   FILE *file = fopen( fn, "rt");
   if( file == NULL)
@@ -651,11 +658,11 @@ bool tui_hooks_deserialize_comments( void)
   while( rd != 0)
   {
      rd = fgets( text, sizeof( text), file);
+
      if( rd != 0 && strlen( rd) > 10)
      {
          //std::string tmpstr = std::string( text);
          //std::vector<std::string> vecstr = tui_hooks_split( tmpstr, '\t');
-
 
          sscanf( text, "%d\t0x%x\t%s\t%s\n", 
                     &tempi, //&com.type,
@@ -665,7 +672,7 @@ bool tui_hooks_deserialize_comments( void)
 
          char *token;
          const char s[2] = "\t";
-         token = strtok( text, s);  		// type
+         token = strtok( text, s);  	// type
          token = strtok( NULL, s);		// address
          token = strtok( NULL, s);		// filename
          token = strtok( NULL, s);		// text
@@ -692,7 +699,7 @@ bool tui_hooks_deserialize_comments( void)
    } // endwhile
    fclose( file);
    
-   gdb_printf( "Comments vector length = %lu", m_comments.size());
+   // DEBUG... gdb_printf( "Comments vector length = %lu", m_comments.size());
    return true;
 }
 
@@ -734,14 +741,42 @@ std::string toHexFromDecimal(long long t)
     return is.str();
 }
 
+/// @brief tui_hooks_break_command
+/// @param arg - arguments
+/// @param from_tty 
+//
+//
+// add "tui break apply" in order to apply the tui breakpoints
+
 static void tui_hooks_break_command( const char *arg, int from_tty)
 {
    std::string sarg = std::string( arg);
+   std::string suffix = "apply"; 
+   
+   // --- APPLY SAVED BREAK POINTS ---
+   if( sarg.rfind( suffix) == sarg.size() - suffix.size())
+   {
+        // assuming we are always running code inside .text or .so libs
+        // CORE_ADDR based = addr_pc + m_execMaps.at(0).addr;
+        for( int j = 0; j < m_comments.size(); j++)
+        {
+           if( m_comments.at(j).type == TUI_TYPE_BREAKPOINT)
+           { 
+              char cmd[300];
+              sprintf( cmd, "b *%s", m_comments.at(j).text);
+              execute_command( cmd, false);
+              // DEBUG gdb_printf( "tui break at");
+           } // endif
+        } // endfor
+        return;
+   }
+
+
    int fnd1 = sarg.find( "+");
    int fnd2 = sarg.find( "-");
    if( fnd1 == std::string::npos && fnd2 == std::string::npos)
    {
-      gdb_printf( "Need to add + or -");
+      gdb_printf( "tui break: Need to add + or -");
       return;
    }
    int v = strtoul( sarg.substr( fnd1 > 0 ? fnd1 + 1 : fnd2).c_str(), NULL, 10);
@@ -750,6 +785,26 @@ static void tui_hooks_break_command( const char *arg, int from_tty)
    CORE_ADDR add = value_as_address( val0) + (fnd1 > 0 ? v : -v);
    char cmd[64];
    sprintf( cmd, "b *0x%s", toHexFromDecimal( add).c_str());
+
+   //////////////////////////////////////////////////
+   // save tui breakpoints to comments
+      struct comment com;
+      // DEBUG... gdb_printf( "set comments\n");
+      memcpy( com.filename, m_execMaps.at(0).filename, MAX_FN_TEXT - 1);
+      com.filename[MAX_FN_TEXT - 1] = (char)NULL;
+      memcpy( com.text, name.c_str(), MAX_COMMENT_LEN - 1);
+      com.text[MAX_COMMENT_LEN - 1] = (char)NULL;
+      CORE_ADDR pc = add;
+      com.unbased_addr = pc - m_execMaps.at(0).addr;
+
+      //struct gdbarch *gdbarch = target_gdbarch();
+      //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, com.unbased_addr));
+      com.type = TUI_TYPE_BREAKPOINT;
+
+      m_comments.push_back( com);
+   //////////////////////////////////////////////////
+
+
    execute_command( cmd, false);
 }
 
@@ -759,14 +814,14 @@ tui_hooks_comment_all_command (const char *arg, int from_tty)
 //   gdb_printf( "args=%s, %d %d %d %d\n", arg, (int)arg[3], (int)arg[4], (int)arg[5], (int)arg[6]);
    if( !memcmp( "save", arg, 4))
    {
-       gdb_printf( "save comments\n");
+       gdb_printf( "comments saved\n");
        tui_hooks_serialize_comments( false);
        return;
    }
    if( !memcmp( "set ", arg, 4))
    {
       struct comment com;
-      gdb_printf( "set comments\n");
+      // DEBUG... gdb_printf( "set comments\n");
       memcpy( com.filename, m_execMaps.at(0).filename, MAX_FN_TEXT - 1);
     
       CORE_ADDR pc = tui_location.addr ();
@@ -786,7 +841,7 @@ tui_hooks_comment_all_command (const char *arg, int from_tty)
       com.type = TUI_TYPE_COMMENT;
 
       m_comments.push_back( com);
-      gdb_printf( "Comments vector length = %lu\n", m_comments.size());
+      // DEBUG... gdb_printf( "Comments vector length = %lu\n", m_comments.size());
 
    }
    if( !memcmp( "show", arg, 4))
@@ -922,6 +977,9 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
                if(( hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen)) >= 0)
                {
                    CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
+
+                       //  gdb_printf( "decompile20 %lx", pow);
+
                    std::string froms = paddress( gdbarch, pow);
                    if(( where = inst->find( froms)) > 0)
                    {
@@ -930,7 +988,7 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
                    }
                } //endif
             } 
-            else
+            else 
             { 
                    CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
                    std::string froms = paddress( gdbarch, pow);
@@ -957,7 +1015,7 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
      // CORE_ADDR based = addr_pc + m_execMaps.at(0).addr;
      for( int j = 0; j < m_comments.size(); j++)
      {
-        if( /* m_comments.at(j).type == TUI_TYPE_COMMENT && */ !strcmp( m_comments.at(j).filename, m_execMaps.at(0).filename))
+        if( m_comments.at(j).type == TUI_TYPE_COMMENT && !strcmp( m_comments.at(j).filename, m_execMaps.at(0).filename))
         { 
            //gdb_printf( "com unbased=%lx\n", m_comments.at(j).unbased_addr);
            //struct gdbarch *gdbarch = target_gdbarch();
