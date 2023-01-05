@@ -44,8 +44,8 @@ a new floating window is opened that shows the disassembled jump-to.
 A new layout has been added: `layout console`. See below.  
 
 
-**tui break**
-New break point type:
+**tui break**:  
+New break point type:  
 `tui break <where>+/-<val>`: set a break point given a symbol. For example:   
 `tui break main+11` places a break point at the address of main + 11.  
 `tui break apply` to re-apply the breaks that were previously set using `tui break` and saved with `tui comment save`
@@ -56,11 +56,11 @@ when running the inferior from the beginning, i.e. not by attaching to it.
 
 
 **tui watch**  
-New watch mechanism. 
+New watch mechanism.   
 `tui watch <expression> [size to watch]`
 
 
-**Better mouse interaction**
+**Better mouse interaction**  
 Click the mouse inside a window to set it into focus
 
 	
@@ -75,7 +75,6 @@ which installed the missing python scripts.
 2DO
 ---
 * add break at opcodes by arch
-* add tui break into comments file to save/load automatically
 * read the list of renames/comments from ida and set it automatically in gdb tui
 * perfect decompiler
 
