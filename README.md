@@ -22,9 +22,9 @@ and
 `make install` in order to install all gdb components, including gdb-python and TUI support
 
 
-This process generates a `gdb` executable.
-
-New functions added:
+This process generates a `gdb` executable.  
+  
+New functions added:  
 **tui comment**:  
 `tui comment set <text>`: to add a comment at the current PC  
 `tui comment save`: to save all comments (and renames) to $HOME/.comments file  
