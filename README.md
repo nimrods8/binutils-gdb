@@ -36,29 +36,28 @@ New functions added:
 
 Use `info comments` to display all stored comments.
 
-
+  
 A new layout has been added. It is experimental! use:
 `layout ontop`
 This new layout allows to expand calls/branches without actually jumping into them. By clicking the opcode
-a new floating window is opened that shows the disassembled jump-to. 
-
-A new layout has been added: `layout console`. See below.
+a new floating window is opened that shows the disassembled jump-to.   
+A new layout has been added: `layout console`. See below.  
 
 
 **tui break**
 New break point type:
-`tui break <where>+/-<val>`: set a break point given a symbol. For example: 
-`tui break main+11` places a break point at the address of main + 11.
+`tui break <where>+/-<val>`: set a break point given a symbol. For example:   
+`tui break main+11` places a break point at the address of main + 11.  
 `tui break apply` to re-apply the breaks that were previously set using `tui break` and saved with `tui comment save`
 
-Another new layout split has been added:
-`layout console` with a console window which shows the STDOUT of the inferior,
-when running the inferior from the beginning, i.e. not by attaching to it.
+Another new layout split has been added:  
+`layout console` with a console window which shows the STDOUT of the inferior,  
+when running the inferior from the beginning, i.e. not by attaching to it.  
 
 
-**tui watch**
+**tui watch**  
 New watch mechanism. 
-`tui watch <expression> [size to watch]
+`tui watch <expression> [size to watch]`
 
 
 **Better mouse interaction**
