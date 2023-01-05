@@ -484,6 +484,18 @@ tui_data_window::rerender ()
 }
 
 
+
+
+/* Called for each mouse click inside this window.  Coordinates MOUSE_X
+   and MOUSE_Y are 0-based relative to the window, and MOUSE_BUTTON can
+   be 1 (left), 2 (middle), or 3 (right).  */
+void tui_data_window::click(int mouse_x, int mouse_y, int mouse_button)
+{
+     tui_set_win_focus_to ( this);
+     rerender();
+}
+
+
 /* Scroll the data window vertically forward or backward.  */
 void
 tui_data_window::do_scroll_vertical (int num_to_scroll)

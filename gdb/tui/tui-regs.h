@@ -70,6 +70,7 @@ struct tui_data_window : public tui_win_info
 
 protected:
 
+  void click( int, int, int) override;                   // NS 0501 clicking inside regs window causes focus
   void do_scroll_vertical (int num_to_scroll) override;
   void do_scroll_horizontal (int num_to_scroll) override
   {

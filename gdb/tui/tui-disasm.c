@@ -653,13 +653,11 @@ void tui_disasm_ontop_window::do_scroll_vertical(int num_to_scroll)
 
     pc = m_start_line_or_addr.u.addr;
 
-       gdb_printf( "pc=%lx ", pc); // NS 0401
+       /// DEBUG gdb_printf( "pc=%lx ", pc); // NS 0401
 
     symtab_and_line sal{};
     sal.pspace = current_program_space;
     sal.pc = tui_find_disassembly_address(m_gdbarch, pc, num_to_scroll);
-
-       ////// gdb_printf( "pc2=%lx ", sal.pc); // NS 0401
 
     update_source_window_as_is(m_gdbarch, sal);
   }
@@ -858,6 +856,15 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
   bool found = false;
 
   isDecompiler = false;
+
+  // if clicked at the top line - just do focus on disasm...
+  if( mouse_y == 0  && mouse_x < 3 && !TUI_DISASMOT_WIN->isVisible)
+  {
+     tui_set_win_focus_to ( this);
+     rerender(); 
+     return;
+  }
+
 
   if (!m_content.empty() && m_content.size() >= mouse_y)
   {
