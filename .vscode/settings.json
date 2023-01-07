@@ -72,6 +72,7 @@
                 "thread": "c",
                 "cfenv": "c",
                 "cinttypes": "c",
-                "typeinfo": "c"
+                "typeinfo": "c",
+                "arch-utils.h": "c"
         }
 }

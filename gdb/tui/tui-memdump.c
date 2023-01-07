@@ -712,7 +712,7 @@ tui_watch_command (const char *args, int from_tty)
       size_t watchLength   = 128;
       std::string ar = args;
       std::vector<std::string>args_vec;
-      args_vec = tui_hooks_split( ar, ' ');
+      args_vec = tui_hooks_split( ar, ',');
 
       request = args;
 
@@ -750,7 +750,7 @@ tui_watch_command (const char *args, int from_tty)
   else
   {
       gdb_printf (_("\"tui watch\" must be followed by the name of "
-		    "either a register,\nor an address and then, optionally a size to display"));
+		    "either a register,\nor an address and then, optionally a comma and a size to display"));
   }
 } // endfunc
 

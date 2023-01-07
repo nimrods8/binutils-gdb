@@ -57,8 +57,13 @@ when running the inferior from the beginning, i.e. not by attaching to it.
 
 **tui watch**  
 New watch mechanism.   
-`tui watch <expression> [size to watch]`
+`tui watch <expression>,[size to watch]`  
+NOTE the comma between expression and size. If no size is give 128 bytes are shown.  
 
+
+**tui skip**  
+Skips the next opcode  
+  
 
 **Better mouse interaction**  
 Click the mouse inside a window to set it into focus

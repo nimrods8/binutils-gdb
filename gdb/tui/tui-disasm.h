@@ -121,6 +121,14 @@ private:
 
 
 std::string tui_diasm_remove_ansi_colors(std::string _line);
+/**
+ * @brief takes the pc as an argument and find the next opcode's address
+ *        used for tui-hooks.c skip function
+ * 
+*/
+CORE_ADDR tui_disasm_find_next_opcode( CORE_ADDR pc);
+
+
 
 #endif /* TUI_TUI_DISASM_H */
 

@@ -66,6 +66,7 @@
 static void tui_hooks_comment_all_command (const char *, int);
 static void tui_hooks_call_rename_command (const char *, int);
 static void tui_hooks_break_command( const char *, int);
+static void tui_hooks_skip_command( const char *arg, int from_tty);
 bool tui_hooks_serialize_comments( bool);
 bool tui_hooks_deserialize_comments( void);
 std::string toHexFromDecimal(long long t);
@@ -741,6 +742,41 @@ std::string toHexFromDecimal(long long t)
     return is.str();
 }
 
+
+
+
+
+
+/// @brief tui_hooks_skip_command
+/// @param arg - arguments
+/// @param from_tty 
+//
+//
+static void tui_hooks_skip_command( const char *arg, int from_tty)
+{
+     if( tui_location.addr() == 0)
+     {
+         gdb_printf( "Can't skip, target is not running!");
+         return;
+     }
+     else /* The target is executing.  */
+     {
+         CORE_ADDR pc = regcache_read_pc (get_current_regcache ());
+         // DEBUG>>> gdb_printf( "read_pc=%lx", pc);
+         CORE_ADDR next_addr = tui_disasm_find_next_opcode( pc);
+//         std::vector<tui_asm_line> single_asm_line;
+//         next_addr = tui_disassemble(gdbarch, single_asm_line, pc, 1);
+         
+         regcache_write_pc ( get_current_regcache (), next_addr);
+         from_stack = true;
+         from_source_symtab = true;
+         tui_refresh_frame_and_register_information();
+     }
+} // endfunc
+
+
+
+
 /// @brief tui_hooks_break_command
 /// @param arg - arguments
 /// @param from_tty 
@@ -1269,6 +1305,12 @@ _initialize_tui_hooks ()
   add_cmd ( "break", class_tui, tui_hooks_break_command,
 	       _("Set a break using a symbol (e.g. main) and a displacement. For example:\ntui break main+11"),
 	       tuicmd);
+
+  add_cmd ( "skip", class_tui, tui_hooks_skip_command,
+	       _("Skips over the forthcoming opcode, so the next opcode will not be executed."),
+	       tuicmd);
+
+
 
   m_comments.clear();
   tui_hooks_deserialize_comments();

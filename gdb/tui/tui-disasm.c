@@ -1437,3 +1437,16 @@ tui_disasm_value_as_string (char *dest, struct value *val, int length)
 }
 #endif
 
+
+/**
+ * @brief takes the pc as an argument and find the next opcode's address
+ *        used for tui-hooks.c skip function
+ * 
+*/
+CORE_ADDR tui_disasm_find_next_opcode( CORE_ADDR pc)
+{
+    struct gdbarch *gdbarch = get_current_arch();
+    std::vector<tui_asm_line> single_asm_line;
+    CORE_ADDR next_addr = tui_disassemble( gdbarch, single_asm_line, pc, 2);
+    return( next_addr);
+}
