@@ -68,7 +68,10 @@ Skips the next opcode
 **Better mouse interaction**  
 Click the mouse inside a window to set it into focus
 
-	
+**tui console layout**
+A new layout has been added, called `console`.  
+Use `layout console` to set it.  
+
 Notes:
 1. You may need to install the compiled gdb python libraries to /usr/share/gdb using:  
 `cd ./gdb/data-directory`  
