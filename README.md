@@ -48,7 +48,9 @@ A new layout has been added: `layout console`. See below.
 New break point type:  
 `tui break <where>+/-<val>`: set a break point given a symbol. For example:   
 `tui break main+11` places a break point at the address of main + 11.  
-`tui break apply` to re-apply the breaks that were previously set using `tui break` and saved with `tui comment save`
+`tui break apply` to re-apply the breaks that were previously set using `tui break` and saved with `tui comment save`  
+Note that `tui break` now supports **regexp** for the function name, through `info func`.  
+	
 
 Another new layout split has been added:  
 `layout console` with a console window which shows the STDOUT of the inferior,  
