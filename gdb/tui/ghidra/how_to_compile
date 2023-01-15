@@ -1,0 +1,2 @@
+g++ -ggdb -I ./rz-ghidra/ghidra/ghidra/Ghidra/Features/Decompiler/src/decompile/cpp ./rz-ghidra/build/analysis_ghidra.so ./rz-ghidra/build/asm_ghidra.so ./rz-ghidra/build/core_ghidra.so -Wl,-rpath=/home/nstoler/projects/rz-ghidra/build decompile.cpp
+

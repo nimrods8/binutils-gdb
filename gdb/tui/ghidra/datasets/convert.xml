@@ -1,0 +1,21 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<bytechunk space="ram" offset="0x555555555145" readonly="true">
+554889e54883ec10c745fc00000000eb1a8b45fc89c6488d3da20e0000b800000000e8c4feffff8345fc01837dfc137ee0bf00000000b800000000e8bbfeffffb800000000c9c30f1f
+</bytechunk>
+<symbol space="ram" offset="0x555555555145" name="main"/>
+<symbol space="ram" offset="0x555555555170" name="main+43"/>
+
+<symbol space="ram" offset="0x555555555030" name="printf@plt"/>
+
+<symbol space="ram" offset="0x555555555040" name="fflush@plt"/>
+
+ 
+</binaryimage>
+<script>
+  <com>lo fu main</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+</decompilertest>

@@ -1,0 +1,15 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<bytechunk space="ram" offset=!! readonly="true">
+@@
+</bytechunk>
+<symbol space="ram" offset=!! name="$$"/>
+## 
+</binaryimage>
+<script>
+  <com>lo fu $$</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+</decompilertest>
