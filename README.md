@@ -59,13 +59,13 @@ Another new layout split has been added:
 when running the inferior from the beginning, i.e. not by attaching to it.  
 
 
-**tui watch**  
+**tui watch**:  
 New watch mechanism.   
 `tui watch <expression>,[size to watch]`  
 NOTE the comma between expression and size. If no size is give 128 bytes are shown.  
 
 
-**tui skip**  
+**tui skip**:  
 Skips the next opcode  
   
 
@@ -75,7 +75,8 @@ Click the mouse inside a window to set it into focus
 **tui console layout**
 A new layout has been added, called `console`.  
 Use `layout console` to set it.  
-
+  
+	  
 Notes:
 1. You may need to install the compiled gdb python libraries to /usr/share/gdb using:  
 `cd ./gdb/data-directory`  
