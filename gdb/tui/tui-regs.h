@@ -37,6 +37,10 @@ struct tui_data_item_window
 
   void rerender (WINDOW *handle, int field_width);
 
+  // NS 08/01/23 testing
+  void clicked();
+
+
   /* Location.  */
   int x = 0;
   int y = 0;
@@ -44,7 +48,7 @@ struct tui_data_item_window
   int regno = -1;
   bool highlight = false;
   bool visible = false;
-  std::string content;
+  std::string content, showValue;
 };
 
 /* The TUI registers window.  */

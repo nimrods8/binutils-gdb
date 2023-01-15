@@ -27,4 +27,17 @@ std::vector<std::string> tui_hooks_split(const std::string& s, char seperator);
 std::string tui_hooks_get_name_of_rwMaps( CORE_ADDR addr);
 std::string tui_hooks_filename2color( std::string filename);
 
+/************************************/
+typedef struct
+{
+   CORE_ADDR   func_addr;
+   std::string func_name;
+} functions_lookup;
+
+/// @brief This is a util helper function which requests "info func"
+///        with a given func name or regexp and returns a vector of addreses and func names
+/// @param args regexp or straight func name to look for
+/// @return std::vector of struct functions
+///
+std::vector<functions_lookup> tui_hooks_get_info_func( std::string args);
 #endif /* TUI_TUI_HOOKS_H */

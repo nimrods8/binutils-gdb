@@ -434,11 +434,18 @@ std::string m_cont;
      while( true)
      {
         m_cont = "";
-        if( target_read_memory( watchaddr + pos, byte_buf, 16) == -1)
+        try
         {
-            mem_contents.push_back( "Can't sync with " + request);
+           if( target_read_memory( watchaddr + pos, byte_buf, 16) == -1)
+           {
+              mem_contents.push_back( "Can't sync with " + request);
 
-            break;       
+              break;       
+           }
+        }
+        catch (const gdb_exception_error &except)
+        {
+           return;
         }
         sprintf( f, "0x%08lx", watchaddr + pos);
         m_cont += " ";

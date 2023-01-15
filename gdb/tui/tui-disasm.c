@@ -35,6 +35,7 @@
 #include "tui/tui-winsource.h"
 #include "tui/tui-stack.h"
 #include "tui/tui-file.h"
+#include "tui/tui-hooks.h"
 #include "tui/tui-disasm.h"
 #include "tui/tui-source.h"
 #include "progspace.h"
@@ -921,7 +922,52 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
       std::size_t fnmed2 = line3.find("+", frip);
       if( fnmed2 < fnmed) fnmed = fnmed2;
       if( fnme != std::string::npos)
+      {
          decompName = line3.substr( fnme + 1, fnmed - fnme - 1);
+         if( decompName.find( "@plt") != std::string::npos)
+         {
+            // DEBUG 12/1
+            gdb_printf( "plt @%s ", decompName.c_str());
+         }
+         /*
+               // try now with "info func"
+      std::string resultsstr = "";
+      std::string infof = "info func " + name;
+      execute_command_to_string( resultsstr, infof.c_str(), 0, false);
+      
+      
+      std::vector<std::string>v1 = tui_hooks_split( resultsstr, '\n');
+      CORE_ADDR func_addr;
+      char func_name[256];
+
+      bool found = false;
+      for( int l = 0; l < v1.size(); l++)
+      {  
+           // don't allow too big function names here...
+           if( v1[l].length() > 256)
+              continue;
+
+           if( sscanf( v1[l].c_str(), "0x%lx  %s", &func_addr, func_name) == 2)
+           {
+               // DEBUG: gdb_printf( "Found %lx %s\t", func_addr, func_name);
+
+               // this is how it looks like: 0x0000ffff8fd32000  QrCodeManager::IsTytoWifiCode()@plt
+
+               // now add what you asked...
+               func_addr += (fnd1 > 0 ? v : -v);
+
+
+               char cmd[64];
+               sprintf( cmd, "b *0x%s", toHexFromDecimal( func_addr).c_str());
+               gdb_printf( "<%s> ", cmd);
+
+               execute_command( cmd, false);
+               found = true;
+
+           } // endif
+      } // endfor
+*/
+      }
     } // endif no address found
 
 
@@ -973,7 +1019,7 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
 
       if (mouse_button == 3)
       {
-        int p = system("/home/nstoler/projects/rz-ghidra/ghidra/ghidra/Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_test_dbg -sleighpath /home/nstoler/projects/rz-ghidra/ghidra -path /home/nstoler/projects/datatests datatests > /dev/null");
+        int p = system("/home/cyberark/projects/binutil-gdb/gdb/tui/ghidra/ghidra_test_dbg -sleighpath /home/cyberark/projects/binutil-gdb/gdb/tui/ghidra -path /home/cyberark/projects/binutil-gdb/gdb/tui/ghidra/datatests datatests > /dev/null");
         if( p != 0) { 
 //          gdb_printf("problemos!");
            TUI_DISASMOT_WIN->erase_data_content( "Decompiler Error!");
@@ -1121,10 +1167,11 @@ CORE_ADDR tui_disasm_parse_line(std::string asm_line)
 {
   CORE_ADDR addr = 0L;
 
-  for (int q = 0; q < calls.size(); q++)
+  for( int q = 0; q < calls.size(); q++)
   {
     std::size_t _found = asm_line.find(calls.at(q));
 
+    //! call of some kind was found on the clicked line?
     if (_found != std::string::npos)
     {
       std::string line = tui_diasm_remove_ansi_colors(asm_line);
@@ -1142,7 +1189,7 @@ CORE_ADDR tui_disasm_parse_line(std::string asm_line)
       std::size_t __found = line.find(calls.at(q));
       std::size_t freg = line.find("*", __found); // in att disassembly flavor of x86
 
-      // indirect e.g. *rax
+      //------- indirect e.g. *rax
       if (freg != std::string::npos)
       {
         std::size_t fpar = line.find(")", freg);
@@ -1171,12 +1218,40 @@ CORE_ADDR tui_disasm_parse_line(std::string asm_line)
       {
         std::size_t __found2 = line.find(calls.at(q));
         std::size_t fzerox = line.find("0x", __found2);
-        if (fzerox != std::string::npos)
+        if( fzerox != std::string::npos)
         {
-          std::size_t fspace = line.find(" ", fzerox);
-          std::string address = line.substr(fzerox + 2, fspace);
-          addr = std::stoul(address, nullptr, 16);
-        }
+           std::size_t fspace = line.find(" ", fzerox);
+           std::string address = line.substr(fzerox + 2, fspace);
+           addr = std::stoul(address, nullptr, 16);
+
+           // NS 12/1
+           // check if we have an address name (e.g. C++) after the address
+           std::size_t ffunc = line.find(" <", fzerox);
+           if( ffunc != std::string::npos)
+           {
+              std::size_t ffunc_plt = line.find("@plt>", ffunc);
+              std::string f_name = line.substr( ffunc+2, ffunc_plt - ffunc - 2);
+              // NS DEBUG: gdb_printf( "found @plt> %s", f_name.c_str());
+
+              // -------- find function addresses --------
+              std::vector<functions_lookup> vec = tui_hooks_get_info_func( f_name);
+              // NS DEBUG: gdb_printf( "called %ld", vec.size());
+              if( vec.size() > 0)
+              {  
+                 for( auto lookup: vec)
+                 { 
+                     // first time I can't find a @plt, grab it as the function to show!!!
+                     if( lookup.func_name.find( "@plt") == std::string::npos)
+                     {
+                        addr = lookup.func_addr;
+                        break;
+                        // debug
+                        //db_printf( "lookup found %s", lookup.func_name.c_str());
+                     } // endif found NOT plt function
+                 } // endfor each
+              } // endif have data
+          }   
+        } // endif found *reg
       } // endelse
     }   // endnif !found
   }     // endfor
@@ -1447,6 +1522,6 @@ CORE_ADDR tui_disasm_find_next_opcode( CORE_ADDR pc)
 {
     struct gdbarch *gdbarch = get_current_arch();
     std::vector<tui_asm_line> single_asm_line;
-    CORE_ADDR next_addr = tui_disassemble( gdbarch, single_asm_line, pc, 2);
+    CORE_ADDR next_addr = tui_disassemble( gdbarch, single_asm_line, pc, 1);
     return( next_addr);
 }

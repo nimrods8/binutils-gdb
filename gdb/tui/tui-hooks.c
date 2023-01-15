@@ -39,6 +39,8 @@
 #include "frame.h"
 #include "disasm.h"
 
+// NS 0801
+#include "gdbcmd.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -60,6 +62,10 @@
 #include "tui/tui-memdump.h"
 #include <sstream>
 #include "gdb_curses.h"
+#include <iostream>
+
+// NS 09/01
+#include <unordered_map>
 
 
 // NS 16/10
@@ -94,7 +100,9 @@ struct mapping
 
 std::vector<mapping> m_execMaps;
 std::vector<mapping> m_rwMaps;
-
+static bool newSolibsLoaded;         // true when new solibs have been loaded
+static bool commentsTainted;
+static bool breaksTainted;
 
 typedef enum
 { 
@@ -342,11 +350,24 @@ static int tui_hooks_get_index_of_maps( CORE_ADDR pc)
 }
 
 
+inline bool ends_with(std::string const & value, std::string const & ending)
+{
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+inline bool ends_with_string(std::string const& str, std::string const& what) {
+    return what.size() <= str.size()
+        && str.find(what, str.size() - what.size()) != str.npos;
+}
 /**
  returns the index of pc inside m_execMaps
  or -1 if not found
+
+ bool searchAll - if true, searches all entries in m_execMaps,
+                  if false, searches only first entry (entry 0)
 **/
-static int tui_hooks_get_index_of_maps_by_filename( std::string &filename)
+static int tui_hooks_get_index_of_maps_by_filename( std::string &filename, bool searchAll)
 {
   struct mapping m;
   // DEBUG:: struct gdbarch *gdbarch = target_gdbarch();
@@ -360,9 +381,24 @@ static int tui_hooks_get_index_of_maps_by_filename( std::string &filename)
         // DEBUG:: gdb_printf( "In here: %s\n", m.filename);
         return i;
      }
+     // NS 08/01/23 check if filename is just local... allow it for now
+     // so, if there are no slashes in the registered filename - then
+     // this is probably imported line and all filenames ending with that should be OK for us
+     if( filename.find("/") == std::string::npos)
+     {
+       // Crazy Debug::: gdb_printf( "fn=%s len=%ld %s", filename.c_str(), filename.length(), m.filename);
+
+        if( ends_with_string( m.filename, filename))
+        {
+           // overly zelous debugging.... gdb_printf( "Found ida!");
+           return i;        
+        }
+     }
+     if( !searchAll)
+        break;
   } //endfor
   return -1;
-}
+} // endfunc
 
 
 
@@ -444,6 +480,8 @@ char filename[MAX_FN_TEXT];
 
   m_execMaps.clear();
   m_rwMaps.clear();        // NS 16/11
+
+  newSolibsLoaded = true;
 
   if( map == NULL)
   {
@@ -607,7 +645,10 @@ bool tui_hooks_serialize_comments( bool onlyShow)
                     paddress( gdbarch, m_comments.at(i).unbased_addr),
                     &m_comments.at(i).filename[takefrom],
                     m_comments.at(i).text);      
-         gdb_printf( "%s", text);
+         if( text[strlen( text) - 1] != '\n')
+            gdb_printf( "%s\n", text);           
+         else
+            gdb_printf( "%s", text);
      }
      else
      {
@@ -696,6 +737,9 @@ bool tui_hooks_deserialize_comments( void)
 	      com.type = (enum_tui_type)tempi;
          com.unbased_addr = (CORE_ADDR)unb;
          m_comments.push_back( com);
+
+         commentsTainted = true;
+
      } // endif
    } // endwhile
    fclose( file);
@@ -744,9 +788,6 @@ std::string toHexFromDecimal(long long t)
 
 
 
-
-
-
 /// @brief tui_hooks_skip_command
 /// @param arg - arguments
 /// @param from_tty 
@@ -756,7 +797,7 @@ static void tui_hooks_skip_command( const char *arg, int from_tty)
 {
      if( tui_location.addr() == 0)
      {
-         gdb_printf( "Can't skip, target is not running!");
+         gdb_printf( "Can't skip, target is not running!\n");
          return;
      }
      else /* The target is executing.  */
@@ -764,8 +805,7 @@ static void tui_hooks_skip_command( const char *arg, int from_tty)
          CORE_ADDR pc = regcache_read_pc (get_current_regcache ());
          // DEBUG>>> gdb_printf( "read_pc=%lx", pc);
          CORE_ADDR next_addr = tui_disasm_find_next_opcode( pc);
-//         std::vector<tui_asm_line> single_asm_line;
-//         next_addr = tui_disassemble(gdbarch, single_asm_line, pc, 1);
+         next_addr = tui_disasm_find_next_opcode( next_addr);        // we need to find the next-next one.... don't we?
          
          regcache_write_pc ( get_current_regcache (), next_addr);
          from_stack = true;
@@ -773,6 +813,164 @@ static void tui_hooks_skip_command( const char *arg, int from_tty)
          tui_refresh_frame_and_register_information();
      }
 } // endfunc
+
+
+/// @brief This is a util helper function which requests "info func"
+///        with a given func name or regexp and returns a vector of addreses and func names
+/// @param args regexp or straight func name to look for
+/// @return std::vector of struct functions
+///
+std::vector<functions_lookup> tui_hooks_get_info_func( std::string args)
+{
+   std::vector<functions_lookup> retVec;
+ 
+   std::string resultsstr = "";
+   std::string infof = "info func " + args /* + "*"*/; // the asterisk is just complicating things...
+   try
+   {
+      execute_command_to_string( resultsstr, infof.c_str(), 0, false);
+   }
+   catch( ...)
+   {
+      // bail out...
+      return retVec;
+   }
+   std::vector<std::string>v1 = tui_hooks_split( resultsstr, '\n');
+   CORE_ADDR func_addr;
+   char func_name[256];
+
+
+   // DEBUG: gdb_printf( "%s", resultsstr.c_str());
+
+//   bool found = false;
+   for( auto vline : v1) // int l = 0; l < v1.size(); l++)
+   {  
+        // don't allow too big function names here...
+        if( vline.length() > sizeof( func_name) - 1)
+           continue;
+
+        // DEBUG NS 12/1:   gdb_printf( "%s", vline.c_str());
+
+        if( sscanf( vline.c_str(), "0x%lx  %s", &func_addr, func_name) == 2)
+        {
+            // this is how it looks like: 0x0000ffff8fd32000  QrCodeManager::IsTytoWifiCode()@plt
+
+            functions_lookup lookup;
+            lookup.func_addr = func_addr;
+            lookup.func_name = func_name;
+            retVec.push_back( lookup);
+            //found = true;
+        } // endif
+   } // endfor
+   return retVec;
+} // end helper function
+
+
+
+/// @brief static helper to run break points upon request with all sorts of goodies
+/// @param arg 
+/// @param from_tty 
+static void tui_hooks_run_breakpoints_helper( std::string sarg)
+{
+   int fnd1 = sarg.find( "+");
+   int fnd2 = sarg.find( "-");
+   if( fnd1 == std::string::npos && fnd2 == std::string::npos)
+   {
+      gdb_printf( "tui break: Need to add + or -");
+      return;
+   }
+   int v = strtoul( sarg.substr( fnd1 > 0 ? fnd1 + 1 : fnd2).c_str(), NULL, 10);
+   std::string name = sarg.substr( 0, (fnd1 > 0 ? fnd1 : fnd2));
+   
+   struct value *val0 = NULL;
+   try
+   {
+      val0 = parse_and_eval( name.c_str());
+   }   
+   catch( const gdb_exception_error &except)
+   {
+      // try now with "info func"
+      std::string resultsstr = "";
+      std::string infof = "info func " + name;
+      execute_command_to_string( resultsstr, infof.c_str(), 0, false);
+      
+      
+      std::vector<std::string>v1 = tui_hooks_split( resultsstr, '\n');
+      CORE_ADDR func_addr;
+      char func_name[256];
+
+      bool found = false;
+      for( int l = 0; l < v1.size(); l++)
+      {  
+           // don't allow too big function names here...
+           if( v1[l].length() > 256)
+              continue;
+
+           if( sscanf( v1[l].c_str(), "0x%lx  %s", &func_addr, func_name) == 2)
+           {
+               // DEBUG: gdb_printf( "Found %lx %s\t", func_addr, func_name);
+
+               // this is how it looks like: 0x0000ffff8fd32000  QrCodeManager::IsTytoWifiCode()@plt
+
+               // now add what you asked...
+               func_addr += (fnd1 > 0 ? v : -v);
+
+
+               char cmd[64];
+               sprintf( cmd, "b *0x%s", toHexFromDecimal( func_addr).c_str());
+               gdb_printf( "<%s> ", cmd);
+
+               execute_command( cmd, false);
+               found = true;
+
+           } // endif
+      } // endfor
+
+      // should add new comment?
+      if( found)
+      {
+         struct comment com;
+         if( sarg.length() < sizeof( com.text))
+         {
+            com.filename[0] = '*';
+            com.filename[1] = (char)NULL;
+            memcpy( com.text, sarg.c_str(), MAX_COMMENT_LEN - 1);
+            com.text[MAX_COMMENT_LEN - 1] = (char)NULL;
+            com.unbased_addr = 0L;
+            com.type = TUI_TYPE_BREAKPOINT;
+            m_comments.push_back( com);
+            breaksTainted = true;
+         } // endif size OK
+      } // endif found
+      return;
+   } // endof catch
+   
+   CORE_ADDR add = value_as_address( val0) + (fnd1 > 0 ? v : -v);
+   char cmd[64];
+   sprintf( cmd, "b *0x%s", toHexFromDecimal( add).c_str());
+
+   //////////////////////////////////////////////////
+   // save tui breakpoints to comments
+      struct comment com;
+      // DEBUG... gdb_printf( "set comments\n");
+      memcpy( com.filename, m_execMaps.at(0).filename, MAX_FN_TEXT - 1);
+      com.filename[MAX_FN_TEXT - 1] = (char)NULL;
+      memcpy( com.text, name.c_str(), MAX_COMMENT_LEN - 1);
+      com.text[MAX_COMMENT_LEN - 1] = (char)NULL;
+      CORE_ADDR pc = add;
+      com.unbased_addr = pc - m_execMaps.at(0).addr;
+
+      //struct gdbarch *gdbarch = target_gdbarch();
+      //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, com.unbased_addr));
+      com.type = TUI_TYPE_BREAKPOINT;
+
+      m_comments.push_back( com);
+      breaksTainted = true;
+   //////////////////////////////////////////////////
+
+
+   execute_command( cmd, false);
+} // endfunc helper tui breaks
 
 
 
@@ -794,55 +992,28 @@ static void tui_hooks_break_command( const char *arg, int from_tty)
    {
         // assuming we are always running code inside .text or .so libs
         // CORE_ADDR based = addr_pc + m_execMaps.at(0).addr;
-        for( int j = 0; j < m_comments.size(); j++)
+        for( struct comment com : m_comments)
         {
-           if( m_comments.at(j).type == TUI_TYPE_BREAKPOINT)
+           if( com.type == TUI_TYPE_BREAKPOINT)
            { 
-              char cmd[300];
-              sprintf( cmd, "b *%s", m_comments.at(j).text);
-              execute_command( cmd, false);
+//              char cmd[300];
+//              sprintf( cmd, "b *%s", m_comments.at(j).text);
+//              execute_command( cmd, false);
               // DEBUG gdb_printf( "tui break at");
+              sarg = com.text;
+              tui_hooks_run_breakpoints_helper( sarg);
            } // endif
         } // endfor
         return;
    }
+   else
+      tui_hooks_run_breakpoints_helper( sarg);
+} // endfunc
 
 
-   int fnd1 = sarg.find( "+");
-   int fnd2 = sarg.find( "-");
-   if( fnd1 == std::string::npos && fnd2 == std::string::npos)
-   {
-      gdb_printf( "tui break: Need to add + or -");
-      return;
-   }
-   int v = strtoul( sarg.substr( fnd1 > 0 ? fnd1 + 1 : fnd2).c_str(), NULL, 10);
-   std::string name = sarg.substr( 0, (fnd1 > 0 ? fnd1 : fnd2));
-   struct value *val0 = parse_and_eval( name.c_str());
-   CORE_ADDR add = value_as_address( val0) + (fnd1 > 0 ? v : -v);
-   char cmd[64];
-   sprintf( cmd, "b *0x%s", toHexFromDecimal( add).c_str());
-
-   //////////////////////////////////////////////////
-   // save tui breakpoints to comments
-      struct comment com;
-      // DEBUG... gdb_printf( "set comments\n");
-      memcpy( com.filename, m_execMaps.at(0).filename, MAX_FN_TEXT - 1);
-      com.filename[MAX_FN_TEXT - 1] = (char)NULL;
-      memcpy( com.text, name.c_str(), MAX_COMMENT_LEN - 1);
-      com.text[MAX_COMMENT_LEN - 1] = (char)NULL;
-      CORE_ADDR pc = add;
-      com.unbased_addr = pc - m_execMaps.at(0).addr;
-
-      //struct gdbarch *gdbarch = target_gdbarch();
-      //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, com.unbased_addr));
-      com.type = TUI_TYPE_BREAKPOINT;
-
-      m_comments.push_back( com);
-   //////////////////////////////////////////////////
 
 
-   execute_command( cmd, false);
-}
+
 
 static void
 tui_hooks_comment_all_command (const char *arg, int from_tty)
@@ -877,6 +1048,9 @@ tui_hooks_comment_all_command (const char *arg, int from_tty)
       com.type = TUI_TYPE_COMMENT;
 
       m_comments.push_back( com);
+
+      commentsTainted = true;
+
       // DEBUG... gdb_printf( "Comments vector length = %lu\n", m_comments.size());
 
    }
@@ -977,10 +1151,45 @@ tui_hooks_call_rename_command (const char *arg, int from_tty)
          com.type = TUI_TYPE_RENAME;
 
          m_comments.push_back( com);
-         gdb_printf( "Comments vector length = %lu\n", m_comments.size());
+
+         commentsTainted = true;
+
+         // DEBUG: gdb_printf( "Comments vector length = %lu\n", m_comments.size());
       } //endif
    }
 }
+
+
+////////////////////////////////////////////////////////////////////////////
+/// Hash table basics
+class Hashtable {
+    std::unordered_map<CORE_ADDR, std::string> htmap;
+
+public:
+    void put( CORE_ADDR key, std::string value) {
+            htmap[key] = value;
+    }
+
+    const std::string get( CORE_ADDR key) {
+            return htmap[key];
+    }
+    void clear()
+    {
+            htmap.clear();
+    }
+
+};
+////////////////////////////////////////////////////////////////////////////
+/*
+int main() {
+    ht.put("Bob", "Dylan");
+    int one = 1;
+    ht.put("one", &one);
+    std::cout << (char *)ht.get("Bob") << "; " << *(int *)ht.get("one");
+}
+*/
+static Hashtable ht_comments, ht_renames;
+
 
 
 
@@ -990,27 +1199,83 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
   // NS? tui_hooks_sort_maps( tui_location.addr());
 
   if( cur_inst_addr == 0L)
-  {
+  { 
+      // place current disassembled file in first position
       tui_hooks_sort_maps( tui_location.addr());
-      return;
-  } 
 
+      if( newSolibsLoaded || commentsTainted)
+      {
+         commentsTainted = false;
+         newSolibsLoaded = false;
+         
+         ht_comments.clear();
+         ht_renames.clear();
+
+
+         gdb_printf( "solib=%d, taint=%d, size=%ld", newSolibsLoaded, commentsTainted, m_comments.size());
+
+         static int hooks_axa = -1;
+
+         // prepare a hashmap of all comments, renames and breaks for this filename
+         for( int i = 0; i < m_comments.size();  i++)
+         {
+              std::string filen = m_comments.at(i).filename;
+              
+              if( m_comments.at(i).type == TUI_TYPE_COMMENT && 
+                     tui_hooks_get_index_of_maps_by_filename( filen, false) == 0)
+              { 
+                 //gdb_printf( "com unbased=%lx\n", m_comments.at(j).unbased_addr);
+                 //struct gdbarch *gdbarch = target_gdbarch();
+                 //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, addr_pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, m_comments.at(j).unbased_addr));
+
+                 ht_comments.put( m_comments.at(i).unbased_addr + m_execMaps.at(0).addr, m_comments.at(i).text);
+               } // endif comments
+
+               else if( m_comments.at(i).type == TUI_TYPE_RENAME)
+               {
+                  if( true /*hooks_axa == -1 || before_prompt_called*/)
+                  {
+                     // std::string filen = m_comments.at(i).filename;
+                     // DEBUG gdb_printf( "Flne=%s, i = %d\n", filen.c_str(), i);
+                     if(( hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen, true)) >= 0)
+                     {
+                         CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
+                         ht_renames.put( pow, m_comments.at(i).text);
+
+                             //  gdb_printf( "decompile20 %lx", pow);
+
+   //                      std::string froms = paddress( gdbarch, pow);
+   //                      if(( where = inst->find( froms)) > 0)
+   //                      {
+   //                         inst->replace( where, froms.length(), m_comments.at(i).text);
+   //                         break;
+                     } //endif
+                  } // endif
+               } // end else
+          } // endfor
+       } // new solibs or comments/renames loaded? 
+       return;
+  } // endif
+
+#if 0
   // NS: this should be executed only after a before_prompt was called and not everytime
   // the observer notify is called...
   int where;
   struct gdbarch *gdbarch = target_gdbarch();
   static int hooks_axa = -1;
-
+  // **************
   // --- RENAME ---
+  // **************
      for( int i = 0; i < m_comments.size();  i++)
      {
+
          if( m_comments.at(i).type == TUI_TYPE_RENAME)
          {
             if( true /*hooks_axa == -1 || before_prompt_called*/)
             {
-               std::string filen = m_comments.at(i).filename;
+               // std::string filen = m_comments.at(i).filename;
                // DEBUG gdb_printf( "Flne=%s, i = %d\n", filen.c_str(), i);
-               if(( hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen)) >= 0)
+               if(( hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen, true)) >= 0)
                {
                    CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
 
@@ -1024,6 +1289,7 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
                    }
                } //endif
             } 
+            /**
             else 
             { 
                    CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
@@ -1034,13 +1300,14 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
                       break;
                    }
             }
+            **/
          } // endif
       } // endfor
 
 
+  // **************
   // --- COMMENTS ---
-
-
+  // **************
   /* Translate PC address.  */
   // redeclared struct gdbarch *gdbarch = tui_location.gdbarch ();
   CORE_ADDR addr_pc = cur_inst_addr; //tui_location.addr ();
@@ -1051,7 +1318,11 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
      // CORE_ADDR based = addr_pc + m_execMaps.at(0).addr;
      for( int j = 0; j < m_comments.size(); j++)
      {
-        if( m_comments.at(j).type == TUI_TYPE_COMMENT && !strcmp( m_comments.at(j).filename, m_execMaps.at(0).filename))
+        std::string filen = m_comments.at(j).filename;
+
+        if( m_comments.at(j).type == TUI_TYPE_COMMENT && 
+              tui_hooks_get_index_of_maps_by_filename( filen, false) == 0)
+        /*!strcmp( m_comments.at(j).filename, m_execMaps.at(0).filename))*/
         { 
            //gdb_printf( "com unbased=%lx\n", m_comments.at(j).unbased_addr);
            //struct gdbarch *gdbarch = target_gdbarch();
@@ -1070,6 +1341,28 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
         } // endif
      } // endfor
    } // endif
+#else
+   std::string addings;
+   addings = ht_comments.get( cur_inst_addr);
+
+   if( !addings.empty())
+   {
+       str_comment->insert( str_comment->size(), addings); 
+   }
+
+   addings = ht_renames.get( cur_inst_addr);
+   if( !addings.empty())
+   {
+       int where;
+       struct gdbarch *gdbarch = target_gdbarch();
+
+       std::string froms = paddress( gdbarch, cur_inst_addr);
+       if(( where = inst->find( froms)) > 0)
+       {
+          inst->replace( where, froms.length(), addings);
+       }
+   }
+#endif
 } // endfunc
 
 
@@ -1094,7 +1387,7 @@ std::string tui_hooks_filename2color( std::string filename)
 ██   ████ ███████ ██   ██    ██        ██   ██ ███████  ██████  ██ ███████    ██    ███████ ██   ██ 
 */
 static void
-tui_hooks_next_reg( const char *regname, std::string *reg_str)
+tui_hooks_next_reg( const char *regname, std::string *reg_str, std::string *reg_value)
 {
 char xyz[64];
 
@@ -1124,6 +1417,7 @@ char xyz[64];
       {
          // NS 18/11 check with m_rwMaps to see where this register is pointintg at
          sprintf( xyz, "$%s", regname); 
+
          struct value *val9 = parse_and_eval( xyz);
          //gdb_printf( "Ref %s = %lx", xyz, value_as_address( val9));
          std::string xstr = tui_hooks_get_name_of_rwMaps( value_as_address( val9));
@@ -1179,10 +1473,29 @@ char xyz[64];
          // now, value is the dereferenced value of the register
          CORE_ADDR addr1 = value_as_address( val1);
 
-         if( (addr0 & 0x00000000ffffffff)  < 0xff && addr1 == 0x18)
+         if( (addr0 & 0x00000000ffffffff)  < 0xff /*&& addr1 == 0x18*/)
          {
+            sprintf( xyz, "*(char *)((*(long *)$%s) + 0x19)", regname); 
+            val1 = parse_and_eval( xyz);
+            char vaddr2 = (char)value_as_long( val1);
+
             // this is a QString or QByteArray!
-            reg_str->insert(  reg_str->size(), " \033[92m<Qt>"); //\033[0m");
+            if( vaddr2 == 0x00 && addr1 == 0x18)
+               reg_str->insert(  reg_str->size(), " \033[92m<QStr>"); //\033[0m");
+             else if( addr1 == 0x18 && vaddr2 != 0x00)
+               reg_str->insert(  reg_str->size(), " \033[92m<QByte>"); //\033[0m");
+             else if( addr1 != 0x18)
+               reg_str->insert(  reg_str->size(), " \033[92m<QList>"); //\033[0m");
+
+            // reg value
+            // in case simple QString...
+            sprintf( xyz, "(*(long *)$%s)+0x18", regname); 
+            reg_value->insert( 0, xyz);
+         }
+         else
+         {
+            sprintf( xyz, "$%s", regname); 
+            reg_value->insert( 0, xyz);
          }
          /*
          else

@@ -86,7 +86,7 @@ tab_expansion_file::write (const char *buf, long length_buf)
    representation of it.  */
 
 static std::string
-tui_register_format (frame_info_ptr frame, int regnum)
+tui_register_format (frame_info_ptr frame, int regnum, std::string &val)
 {
   struct gdbarch *gdbarch = get_frame_arch (frame);
 
@@ -115,12 +115,23 @@ tui_register_format (frame_info_ptr frame, int regnum)
   if (!str.empty () && str.back () == '\n')
     str.resize (str.size () - 1);
 
+#if 0
+  // try to shorten the (horribly) long pc address designation
+  if( str.ends_with( "()>"))
+  {
+        // e.g. pc             0xffff86285724      0xffff86285724 <Managers::PowerManager::handlePowerRequest()>
+
+  }
+#endif
 
   //gdb_printf( "next reg 2\n");
 
   // NS 20/10
   const char *regname = gdbarch_register_name (gdbarch, regnum);
-  gdb::observers::tui_next_reg.notify( regname,  &str);             // in tui_hooks.c
+
+  // make sure value is empty because I am inserting into it in the notification function in tui_hook
+  val = "";
+  gdb::observers::tui_next_reg.notify( regname,  &str, &val);             // in tui_hooks.c
 
 
   //gdb_printf( "next reg 3\n");
@@ -165,18 +176,22 @@ tui_get_register (frame_info_ptr frame,
 		  struct tui_data_item_window *data, 
 		  int regnum, bool *changedp)
 {
-  if (changedp)
-    *changedp = false;
-  if (target_has_registers ())
-    {
-      std::string new_content = tui_register_format (frame, regnum);
+   if( changedp)
+     *changedp = false;
+   
+   if( target_has_registers ())
+   {
+      std::string val;
 
-      if (changedp != NULL && data->content != new_content)
-	*changedp = true;
+      std::string new_content = tui_register_format( frame, regnum, val);
+      if( changedp != NULL && data->content != new_content)
+         *changedp = true;
 
-      data->content = std::move (new_content);
-    }
-}
+      data->content = std::move( new_content);
+      data->showValue = std::move( val);
+   } // endif
+} // endfunc
+
 
 /* See tui-regs.h.  */
 
@@ -324,42 +339,47 @@ tui_data_window::display_registers_from (int start_element_no)
 {
   int max_len = 0;
   for (auto &&data_item_win : m_regs_content)
-    {
-      int len = data_item_win.content.size ();
+  {
+      std::string nocolors = tui_diasm_remove_ansi_colors( data_item_win.content);
 
-      if (len > max_len)
-	max_len = len;
-    }
+      int len = nocolors.size(); //data_item_win.content.size ();
+
+      if( len > max_len)
+         max_len = len;
+  }
   m_item_width = max_len + 1;
 
   int i;
   /* Mark register windows above the visible area.  */
-  for (i = 0; i < start_element_no; i++)
-    m_regs_content[i].y = 0;
+  for( i = 0; i < start_element_no; i++)
+      m_regs_content[i].y = 0;
 
   m_regs_column_count = (width - 2) / m_item_width;
-  if (m_regs_column_count == 0)
-    m_regs_column_count = 1;
+  
+  // NS 12/1/23: don't allow column count to be less than 2
+  if( m_regs_column_count < 2)
+     m_regs_column_count = 2;
+
   m_item_width = (width - 2) / m_regs_column_count;
 
-  /* Now create each data "sub" window, and write the display into
-     it.  */
+
+  /* Now create each data "sub" window, and write the display into it.  */
   int cur_y = 1;
   while (i < m_regs_content.size () && cur_y <= height - 2)
-    {
+  {
       for (int j = 0;
 	   j < m_regs_column_count && i < m_regs_content.size ();
 	   j++)
-	{
+      {
 	  /* Create the window if necessary.  */
 	  m_regs_content[i].x = (m_item_width * j) + 1;
 	  m_regs_content[i].y = cur_y;
 	  m_regs_content[i].visible = true;
-	  m_regs_content[i].rerender (handle.get (), m_item_width);
+	  m_regs_content[i].rerender( handle.get(), m_item_width);
 	  i++;		/* Next register.  */
-	}
+      }
       cur_y++;		/* Next row.  */
-    }
+  }
 
   /* Mark register windows below the visible area.  */
   for (; i < m_regs_content.size (); i++)
@@ -491,8 +511,38 @@ tui_data_window::rerender ()
    be 1 (left), 2 (middle), or 3 (right).  */
 void tui_data_window::click(int mouse_x, int mouse_y, int mouse_button)
 {
+     // NS 0801 scan all elements
+     int i = 0;
+     while (i < m_regs_content.size ())
+     {
+	       if( m_regs_content[i].y ==  mouse_y +1 && m_regs_content[i].visible &&
+	             mouse_x >= m_regs_content[i].x && mouse_x < m_regs_content[i].x + m_item_width)
+	          m_regs_content[i].clicked();      
+
+	       i++;		/* Next register.  */
+     } // endwhile 
+
      tui_set_win_focus_to ( this);
      rerender();
+}
+
+
+
+
+/*************************************************************/
+/// @brief called whenever a specific item has been clicked
+/// @param  
+void tui_data_item_window::clicked( void)
+{
+     // DEBUG DEBUG DEBUG gdb_printf( "I'm clicked! %s", content.c_str());
+     if( regno >= 0)
+     {
+        //const char *regname = gdbarch_register_name ( get_current_arch (), regno);
+        
+        std::string goWatch = "tui watch " + showValue;
+        gdb_printf( "%s ", goWatch.c_str());
+        execute_command( goWatch.c_str(), false);
+     }
 }
 
 
