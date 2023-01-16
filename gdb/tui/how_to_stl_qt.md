@@ -31,3 +31,17 @@ register_libstdcxx_printers (None)
 end
 
 
+(3) if no debug symbols in your app (as you would expect), then you should
+    compile a QT5 app. See `/opt/Qt/Examples/Qt-5.12.4/test`. Compiling
+    this generates a main.o file, which we use the following way in gdb:
+
+    `add-symbol-file /<QT5-test-folder>/main.o 0`
+
+    This would load symbols from `main.o` to the current gdb context.
+
+(4) QString and QByteArrays pretty printouts are limited to 200 (or so) chars.
+    use:
+
+    `p (&{QByteArray}$x20)->d`
+
+    This will create a convenience variable that you can: `tui watch $xxx,600`
