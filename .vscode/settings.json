@@ -74,6 +74,7 @@
                 "cinttypes": "c",
                 "typeinfo": "c",
                 "arch-utils.h": "c",
-                "record.h": "c"
+                "record.h": "c",
+                "observable.h": "c"
         }
 }

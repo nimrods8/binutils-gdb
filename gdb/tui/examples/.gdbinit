@@ -1,7 +1,7 @@
 # Don't wrap line or the coloring regexp won't work.
 set width 0
 
-# A yellow prompt
+# A blue prompt
 set prompt \033[0;34mgdb>\033[0m 
 
 

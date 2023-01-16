@@ -5,12 +5,12 @@ From: https://github.com/Lekensteyn/qt5printers
 (2) git clone https://github.com/Lekensteyn/qt5printers.git
 (3) add to .gdbinit or write in gdb:
 
-	python
-	import sys, os.path
-	sys.path.insert(0, os.path.expanduser('~/.gdb'))
-	import qt5printers
-	qt5printers.register_printers(gdb.current_objfile())
-	end
+python
+import sys, os.path
+sys.path.insert(0, os.path.expanduser('~/.gdb'))
+import qt5printers
+qt5printers.register_printers(gdb.current_objfile())
+end
 
 
 *STL:*  
@@ -23,11 +23,11 @@ get svn using: `apt install subversion`
 
 (2) add to .gdbinit or write in a gdb session:
 
-	python
-	import sys
-	sys.path.insert(0, '/root/.gdb/stlprinters/python')
-	from libstdcxx.v6.printers import register_libstdcxx_printers
-	register_libstdcxx_printers (None)
-	end
+python
+import sys
+sys.path.insert(0, '/root/.gdb/stlprinters/python')
+from libstdcxx.v6.printers import register_libstdcxx_printers
+register_libstdcxx_printers (None)
+end
 
 

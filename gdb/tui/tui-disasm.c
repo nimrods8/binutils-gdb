@@ -897,6 +897,9 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
             TUI_DISASMOT_WIN->isVisible = false;
           }
       } // endif mouse button decompiler
+      else
+          TUI_DISASMOT_WIN->erase_data_content( "Wait for Disassembler...");
+
 
 
     // gdb_printf( "Line=%s", m_content[mouse_y].line.c_str());
@@ -1019,7 +1022,7 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
 
       if (mouse_button == 3)
       {
-        int p = system("/home/cyberark/projects/binutil-gdb/gdb/tui/ghidra/ghidra_test_dbg -sleighpath /home/cyberark/projects/binutil-gdb/gdb/tui/ghidra -path /home/cyberark/projects/binutil-gdb/gdb/tui/ghidra/datatests datatests > /dev/null");
+        int p = system("/home/cyberark/projects/binutils-gdb/gdb/tui/ghidra/ghidra_test_dbg -sleighpath /home/cyberark/projects/binutils-gdb/gdb/tui/ghidra -path /home/cyberark/projects/binutils-gdb/gdb/tui/ghidra/datatests datatests > /dev/null");
         if( p != 0) { 
 //          gdb_printf("problemos!");
            TUI_DISASMOT_WIN->erase_data_content( "Decompiler Error!");
@@ -1396,47 +1399,116 @@ std::string tui_disasm_parse_for_funcnames(std::string asm_line)
 
 #if 1
 /***************************************************************/
+// this functions takes on disassembled line and checks if
+// the line contains a load or mov with address that points
+// to somewhere we can later on print its value
+//
+// In arm64 this kind of load effective address is made of two
+// instructions 'adrp' and 'add'
+//
 CORE_ADDR tui_disasm_check_load_add(std::vector<tui_asm_line> asmlines)
 {
+  static CORE_ADDR adrpAdd;
+  static bool haveADRP = false;
+
   std::vector<std::string> retVec;
   tui_asm_line _asm;
   std::string _asmstr;
 
-  for (int i = 0; i < asmlines.size(); i++)
+  for( int i = 0; i < asmlines.size(); i++)
   {
-    _asm = asmlines.at(i);
-    _asmstr = _asm.insn;
+      _asm = asmlines.at(i);
+      _asmstr = _asm.insn;
 
-    for (int q = 0; q < loads.size(); q++)
-    {
-      std::size_t _found = _asmstr.find(loads.at(q));
-      if (_found != std::string::npos)
+      for (int q = 0; q < loads.size(); q++)
       {
-        std::string line = tui_diasm_remove_ansi_colors(_asmstr);
-        std::size_t _found2 = line.find(loads.at(q));
-        std::size_t _found3 = line.find("# ", _found2);
-        if (_found3 != std::string::npos)
+        std::size_t _found = _asmstr.find(loads.at(q));
+        if (_found != std::string::npos)
         {
-          std::size_t _foundZeroX = line.find("0x", _found3);
-          std::size_t _found4 = line.find(" ", _foundZeroX);
-          std::string adds = line.substr(_foundZeroX, _found4 - _foundZeroX + 1);
+          std::string line = tui_diasm_remove_ansi_colors(_asmstr);
+          std::size_t _found2 = line.find(loads.at(q));
+          std::size_t _found3 = line.find("# ", _found2);
+          if (_found3 != std::string::npos)
+          {
+            std::size_t _foundZeroX = line.find("0x", _found3);
+            std::size_t _found4 = line.find(" ", _foundZeroX);
+            std::string adds = line.substr(_foundZeroX, _found4 - _foundZeroX + 1);
 
-          // DEBUG 04/01 gdb_printf( "* %s", adds.c_str());
-          try 
-          {
-              struct value *val = parse_and_eval(adds.c_str());
-              CORE_ADDR addr = value_as_address(val);
-              // gdb_printf( "))) found %lx", addr);
-              return (addr);
+            // DEBUG 04/01 gdb_printf( "* %s", adds.c_str());
+            try 
+            {
+                struct value *val = parse_and_eval(adds.c_str());
+                CORE_ADDR addr = value_as_address(val);
+                // gdb_printf( "))) found %lx", addr);
+                return (addr);
+            }
+            catch (const gdb_exception_error &except)
+            {
+                break;
+            }
           }
-          catch (const gdb_exception_error &except)
+        } // endif
+      } // endfor all loads strings
+
+      // second step if found the adrp opcode...
+      if( haveADRP)
+      {
+          haveADRP = false;
+          std::string line = tui_diasm_remove_ansi_colors(_asmstr);
+          std::size_t __found2 = line.find( "#0x");
+          if ( __found2 != std::string::npos)
           {
-              break;
-          }
-        }
+              std::size_t __found4 = line.find(" ", __found2);
+              std::string adds = line.substr( __found2 + 1, __found4 - __found2 - 1);
+
+              try 
+              {
+                  struct value *val = parse_and_eval(adds.c_str());
+                  CORE_ADDR addr = adrpAdd + value_as_address(val);
+                  // gdb_printf( "))) found %lx", addr);
+                  return( addr);
+              }
+              catch (const gdb_exception_error &except)
+              {
+                  break;
+              }
+       
+          } // endif
       } // endif
-    }
+
+
+      // check for arm's ADRP
+      std::string findarm = "adrp";
+      for (int q = 0; q < 1; q++)
+      {
+          std::size_t _found = _asmstr.find( findarm);
+          if (_found != std::string::npos)
+          {
+            std::string line = tui_diasm_remove_ansi_colors(_asmstr);
+            std::size_t _found2 = line.find( findarm);
+            std::size_t _foundZeroX = line.find( "0x", _found2);
+            if (_foundZeroX != std::string::npos)
+            {
+              std::size_t _found4 = line.find(" ", _foundZeroX);
+              std::string adds = line.substr(_foundZeroX, _found4 - _foundZeroX + 1);
+
+              // DEBUG 04/01 gdb_printf( "* %s", adds.c_str());
+              try 
+              {
+                  haveADRP = true;
+                  struct value *val = parse_and_eval(adds.c_str());
+                  adrpAdd = value_as_address(val);
+                  // gdb_printf( "))) found %lx", addr);
+              }
+              catch (const gdb_exception_error &except)
+              {
+                  break;
+              }
+            }
+          } // endif
+      } // endfor adrp
   } // endfor all asmlines
+
   return 0L;
 
 } // endfunc
