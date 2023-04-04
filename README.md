@@ -11,7 +11,9 @@ on Ubuntu you need to:
 apt install libncurses5-dev
 apt install texinfo
 apt install build-essential
-apt-get install libgmp-dev
+apt install libgmp-dev
+apt install python3-dev
+apt install flex bison
 ```
 (2) configure:   
 `./configure --enable-targets=aarch64-linux-gnu,arm-linux-gnueabi,x86_64-pc-linux-gnu --enable-tui --with-python --disable-ld --disable-gas --disable-sim`
