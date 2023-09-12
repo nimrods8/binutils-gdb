@@ -1029,21 +1029,24 @@ tui_hooks_comment_all_command (const char *arg, int from_tty)
    {
       struct comment com;
       // DEBUG... gdb_printf( "set comments\n");
-      memcpy( com.filename, m_execMaps.at(0).filename, MAX_FN_TEXT - 1);
-    
-      CORE_ADDR pc = tui_location.addr ();
-     
 
+      CORE_ADDR pc = tui_location.addr ();
+      if( m_execMaps.size() > 0)
+      {
+         memcpy( com.filename, m_execMaps.at(0).filename, MAX_FN_TEXT - 1);
+         com.unbased_addr = pc - m_execMaps.at(0).addr;
+      }
+      else
+      {
+         memcpy( com.filename, "unknown", 8);
+         com.unbased_addr = pc - /*m_execMaps.at(0).addr*/ 0;
+      }
       com.filename[MAX_FN_TEXT - 1] = (char)NULL;
       memcpy( com.text, &arg[4], MAX_COMMENT_LEN - 1);
       com.text[MAX_COMMENT_LEN - 1] = (char)NULL;
 
-      com.unbased_addr = pc - m_execMaps.at(0).addr;
-
-
       //struct gdbarch *gdbarch = target_gdbarch();
       //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, com.unbased_addr));
-
 
       com.type = TUI_TYPE_COMMENT;
 
@@ -1156,6 +1159,23 @@ tui_hooks_call_rename_command (const char *arg, int from_tty)
 
          // DEBUG: gdb_printf( "Comments vector length = %lu\n", m_comments.size());
       } //endif
+
+      // ???no filename when reversing???
+      else
+      {
+         memcpy( com.filename, "unknown", 8);
+         com.filename[MAX_FN_TEXT - 1] = (char)NULL;
+
+         memcpy( com.text, &arg[4], MAX_COMMENT_LEN - 1);
+         com.text[MAX_COMMENT_LEN - 1] = (char)NULL;
+
+         com.unbased_addr = call_to;
+         com.type = TUI_TYPE_RENAME;
+
+         m_comments.push_back( com);
+
+         commentsTainted = true;
+      } // endelse
    }
 }
 
@@ -1222,13 +1242,17 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
               std::string filen = m_comments.at(i).filename;
               
               if( m_comments.at(i).type == TUI_TYPE_COMMENT && 
-                     tui_hooks_get_index_of_maps_by_filename( filen, false) == 0)
+                  ( filen == "unknown" || tui_hooks_get_index_of_maps_by_filename( filen, false) == 0))
               { 
                  //gdb_printf( "com unbased=%lx\n", m_comments.at(j).unbased_addr);
                  //struct gdbarch *gdbarch = target_gdbarch();
                  //gdb_printf( "Set: %s %s %s\n", paddress( gdbarch, addr_pc), paddress( gdbarch, m_execMaps.at(0).addr), paddress( gdbarch, m_comments.at(j).unbased_addr));
 
-                 ht_comments.put( m_comments.at(i).unbased_addr + m_execMaps.at(0).addr, m_comments.at(i).text);
+                 CORE_ADDR execMapAddr = 0L;
+                 if( filen != "unknown")
+		    execMapAddr = m_execMaps.at(0).addr;
+
+                 ht_comments.put( m_comments.at(i).unbased_addr + execMapAddr, m_comments.at(i).text);
                } // endif comments
 
                else if( m_comments.at(i).type == TUI_TYPE_RENAME)
@@ -1237,12 +1261,15 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
                   {
                      // std::string filen = m_comments.at(i).filename;
                      // DEBUG gdb_printf( "Flne=%s, i = %d\n", filen.c_str(), i);
-                     if(( hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen, true)) >= 0)
+                     if(( filen == "unknown" || (hooks_axa = tui_hooks_get_index_of_maps_by_filename( filen, true)) >= 0))
                      {
-                         CORE_ADDR pow = m_comments.at(i).unbased_addr + m_execMaps.at( hooks_axa).addr;
+ 		         CORE_ADDR pow = m_comments.at(i).unbased_addr;
+                         if( filen != "unknown" && hooks_axa >= 0)
+                            pow += m_execMaps.at( hooks_axa).addr;
+
                          ht_renames.put( pow, m_comments.at(i).text);
 
-                             //  gdb_printf( "decompile20 %lx", pow);
+                         gdb_printf( "rename %lx", pow);
 
    //                      std::string froms = paddress( gdbarch, pow);
    //                      if(( where = inst->find( froms)) > 0)
