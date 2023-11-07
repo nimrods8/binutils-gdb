@@ -2695,6 +2695,11 @@ insert_bp_location (struct bp_location *bl,
      insert those locations.  With a list of breakpoint conditions, the target
      can decide when to stop and notify GDB.  */
 
+
+  // NS debug: gdb_printf ( "NS This bp %d at address %s is_bp %d\n", bl->owner->number, paddress (bl->gdbarch, bl->address), is_breakpoint( bl->owner));
+
+
+
   if (is_breakpoint (bl->owner))
     {
       build_target_condition_list (bl);
@@ -2740,7 +2745,10 @@ insert_bp_location (struct bp_location *bl,
 
 	      val = bl->owner->insert_location (bl);
 	      if (val)
+              {
+                gdb_printf( "[NS] exception ovl %d or section %x, Val=%d", overlay_debugging, bl->section, val);
 		bp_excpt = gdb_exception {RETURN_ERROR, GENERIC_ERROR};
+              }
 	    }
 	  catch (gdb_exception &e)
 	    {
@@ -2778,8 +2786,14 @@ insert_bp_location (struct bp_location *bl,
 		      val = target_insert_breakpoint (bl->gdbarch,
 						      &bl->overlay_target_info);
 		      if (val)
+                      {
 			bp_excpt
 			  = gdb_exception {RETURN_ERROR, GENERIC_ERROR};
+
+
+                        gdb_printf (tmp_error_stream, "Error with bp %d at address %s \n", bl->owner->number, paddress (bl->gdbarch, bl->address));
+
+                      }
 		    }
 		  catch (gdb_exception &e)
 		    {

@@ -52,10 +52,10 @@
 #define MIN_LINE_WIDTH     4	/* Use at least 4 digits for line
 				   numbers.  */
 #define MIN_PROC_WIDTH    12
-#define MAX_TARGET_WIDTH  10
+#define MAX_TARGET_WIDTH  30
 #define MAX_PID_WIDTH     19
 
-
+
 
 std::string
 tui_locator_window::make_status_line () const

@@ -88,6 +88,11 @@ Use a remote computer via a serial line, using a gdb-specific protocol.\n\
 Specify the serial device it is connected to\n\
 (e.g. /dev/ttyS0, /dev/ttya, COM1, etc.).");
 
+
+// NS 07/11/2023
+static int NS_hardware_breakpoint_kind = 2;
+
+
 /* See remote.h  */
 
 bool remote_debug = false;
@@ -389,9 +394,12 @@ private:
     m_arch_states;
 };
 
+static char RemoteLongName[64];
+
 static const target_info remote_target_info = {
   "remote",
-  N_("Remote target using gdb-specific protocol"),
+//  N_("Remote target using gdb-specific protocol"),
+  RemoteLongName,
   remote_doc
 };
 
@@ -954,6 +962,7 @@ private:
      get_remote_state method instead.  */
   remote_state m_remote_state;
 };
+
 
 static const target_info extended_remote_target_info = {
   "extended-remote",
@@ -5089,6 +5098,11 @@ remote_target::connection_string ()
 void
 remote_target::open (const char *name, int from_tty)
 {
+  // NS 281023 fill in RemoteLongName
+  strcpy( RemoteLongName, "[Rmt] ");
+  memcpy( &RemoteLongName[6], name, 57);
+  RemoteLongName[63] = (char)NULL;
+
   open_1 (name, from_tty, 0);
 }
 
@@ -10571,6 +10585,7 @@ remote_target::insert_breakpoint (struct gdbarch *gdbarch,
       struct remote_state *rs;
       char *p, *endbuf;
 
+
       /* Make sure the remote is pointing at the right process, if
 	 necessary.  */
       if (!gdbarch_has_global_breakpoints (target_gdbarch ()))
@@ -10870,6 +10885,27 @@ remote_target::stopped_data_address (CORE_ADDR *addr_p)
 }
 
 
+//====================================================================
+// NS 07/11/2023
+//====================================================================
+static void
+remote_bpset_command( const char *args, int from_tty)
+{
+  if (args == NULL)
+    error_no_arg (_("missing argument with remote breakpoint kind set [on/off]"));
+
+  gdb_argv argv (args);
+//  if (argv[0] == NULL || argv[1] != NULL)
+//    error (_("Invalid parameters!"));
+
+  if( !strcmp( argv[0], "on"))
+     NS_hardware_breakpoint_kind = 2;
+  else 
+     NS_hardware_breakpoint_kind = 0;
+}
+//====================================================================
+
+
 int
 remote_target::insert_hw_breakpoint (struct gdbarch *gdbarch,
 				     struct bp_target_info *bp_tgt)
@@ -10879,13 +10915,23 @@ remote_target::insert_hw_breakpoint (struct gdbarch *gdbarch,
   char *p, *endbuf;
   char *message;
 
+
   if (packet_support (PACKET_Z1) == PACKET_DISABLE)
     return -1;
 
   /* Make sure the remote is pointing at the right process, if
      necessary.  */
   if (!gdbarch_has_global_breakpoints (target_gdbarch ()))
+  {
     set_general_process ();
+
+    // NS NS NS
+    if( NS_hardware_breakpoint_kind != 0 && bp_tgt->kind == 4)
+    {
+       bp_tgt->kind = NS_hardware_breakpoint_kind;
+       // NS debug gdb_printf( "[:] NS NS NS 2... kind=%x\n", bp_tgt->kind);
+    }
+  }
 
   rs = get_remote_state ();
   p = rs->buf.data ();
@@ -10900,13 +10946,26 @@ remote_target::insert_hw_breakpoint (struct gdbarch *gdbarch,
   xsnprintf (p, endbuf - p, ",%x", bp_tgt->kind);
 
   if (supports_evaluation_of_breakpoint_conditions ())
+  {
     remote_add_target_side_condition (gdbarch, bp_tgt, p, endbuf);
+  }
 
   if (can_run_breakpoint_commands ())
+  {
     remote_add_target_side_commands (gdbarch, bp_tgt, p);
+  }
 
   putpkt (rs->buf);
   getpkt (&rs->buf, 0);
+
+
+  if( NS_hardware_breakpoint_kind != 0 && bp_tgt->kind == 4)
+     bp_tgt->kind = NS_hardware_breakpoint_kind;
+
+  // NS NS NS
+  // NS debug gdb_printf( "[:] NS NS NS 5 %s... kind=%x\n", p, bp_tgt->kind);
+
+
 
   switch (packet_ok (rs->buf, &remote_protocol_packets[PACKET_Z1]))
     {
@@ -15362,6 +15421,14 @@ Transfer files to and from the remote target system."),
   add_cmd ("delete", class_files, remote_delete_command,
 	   _("Delete a remote file."),
 	   &remote_cmdlist);
+
+
+// NS NS 07/11
+  add_cmd ("bp_kind", class_files, remote_bpset_command,
+	   _("on => Set remote hardware breakpoint kind to 2 in case kind 4 appears."),
+	   &remote_cmdlist);
+
+
 
   add_setshow_string_noescape_cmd ("exec-file", class_files,
 				   &remote_exec_file_var, _("\

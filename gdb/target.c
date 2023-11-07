@@ -216,7 +216,9 @@ target_has_execution (inferior *inf)
 const char *
 target_shortname ()
 {
-  return current_inferior ()->top_target ()->shortname ();
+// NS 281023  return current_inferior ()->top_target ()->shortname ();
+  return current_inferior ()->top_target ()->longname ();
+
 }
 
 /* See target.h.  */
