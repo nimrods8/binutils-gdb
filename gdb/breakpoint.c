@@ -2746,7 +2746,7 @@ insert_bp_location (struct bp_location *bl,
 	      val = bl->owner->insert_location (bl);
 	      if (val)
               {
-                gdb_printf( "[NS] exception ovl %d or section %x, Val=%d", overlay_debugging, bl->section, val);
+                gdb_printf( "[NS] exception ovl %d or section %p, return val=%d", overlay_debugging, bl->section, val);
 		bp_excpt = gdb_exception {RETURN_ERROR, GENERIC_ERROR};
               }
 	    }

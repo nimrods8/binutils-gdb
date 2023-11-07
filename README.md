@@ -78,6 +78,15 @@ Click the mouse inside a window to set it into focus
 A new layout has been added, called `console`.  
 Use `layout console` to set it.  
   
+
+**tui info**
+Display any of the `info` commands on the console window. For example, use:
+`tui info break` 
+to show breakpoints on the console window, or
+`tui info thread`
+to show current threads execution picture
+
+
 	  
 Notes:
 1. You may need to install the compiled gdb python libraries to /usr/share/gdb using:  

@@ -54,7 +54,7 @@
 void* threadFunction(void* args);
 std::vector<std::string>contents;
 static bool newData = false, thread_kill = false;
-
+static std::string infoShow = std::string();
 
 
 #if 0
@@ -430,20 +430,38 @@ tui_console_window::erase_data_content (const char *prompt)
 void
 tui_console_window::rerender ()
 {
-  #if 1
+#if 1
 // gdb_printf( "rerender=%ld", contents.size());
 
   //check_and_display_highlight_if_needed ();
 
-  if (contents.empty ())
-    erase_data_content (_("[ Values Unavailable ]"));
-  else
-    {
-      erase_data_content (NULL);
-      //delete_data_content_windows ();
-      display_console_from (-1);
-    }
-    #endif
+  if( contents.empty () && infoShow.empty())
+     erase_data_content (_("[ Values Unavailable ]"));
+
+  // info show
+  else if( !infoShow.empty())
+  {
+     std::string resultsstr = "";
+     std::string infof = "info " + infoShow;
+     try
+     {
+         execute_command_to_string( resultsstr, infof.c_str(), 0, false);
+     }
+     catch( ...)
+     {
+        // error? bail out...
+        erase_data_content (_("[ Execution Error! ]"));
+     }
+     contents = tui_hooks_split( resultsstr, '\n');
+
+  }
+  if( !contents.empty())
+  {
+     erase_data_content (NULL);
+     //delete_data_content_windows ();
+     display_console_from (-1);
+  }
+#endif
 }
 
 // -1 = show terminal type screen, so that last line is at bottom of window
@@ -646,6 +664,7 @@ tui_console_window::do_scroll_horizontal (int num_to_scroll)
 void
 tui_console_item_window::rerender (WINDOW *handle, int field_width)
 {
+    gdb_printf( "console Rerender!");
         return;
 }
 
@@ -754,6 +773,33 @@ void initialize_tui_console()
 }
 
 
+
+/////////////////////////////////////////////////////////////////////////
+static void tui_info_command( const char *args, int from_tty)
+{
+//   gdb_printf( "NS: %s", args);
+
+
+   infoShow = std::string( args);
+
+   std::vector<functions_lookup> retVec;
+ 
+   std::string resultsstr = "";
+   std::string infof = "info " + infoShow;
+   try
+   {
+      execute_command_to_string( resultsstr, infof.c_str(), 0, false);
+   }
+   catch( ...)
+   {
+      // error? bail out...
+      return;
+   }
+   contents = tui_hooks_split( resultsstr, '\n');
+}
+
+
+
 /*********************************/
 /* THIS FUNCTION IS CALLED       */
 /* AUTOMATICALLY BY gdb/init.c   */
@@ -762,17 +808,13 @@ void _initialize_tui_console ();
 void
 _initialize_tui_console ()
 {
-
-
-/*  
-  struct cmd_list_element **tuicmd, *cmd;
+struct cmd_list_element **tuicmd /*, *cmd*/;
 
   tuicmd = tui_get_cmd_list ();
 
-  cmd = add_cmd ("reg", class_tui, tui_reg_command, _("\
-TUI command to control the register window.\n\
-Usage: tui reg NAME\n\
-NAME is the name of the register group to display"), tuicmd);
-  set_cmd_completer (cmd, tui_reggroup_completer);
-*/
+  /*cmd =*/ add_cmd ("info", class_tui, tui_info_command, _("\
+        TUI command to control the console window.\n\
+        Usage: tui info NAME\n\
+        NAME is the name of the info data to display on the console window"), tuicmd);
+  //set_cmd_completer (cmd, info_print_command_completer);
 }
