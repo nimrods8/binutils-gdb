@@ -26,6 +26,9 @@
 #include "gdb_curses.h"	/* For WINDOW.  */
 #include "observable.h"
 
+// NS from gdb 2023
+#include "gdbsupport/gdb-checked-static-cast.h"
+
 /* A deleter that calls delwin.  */
 struct curses_deleter
 {
@@ -88,6 +91,22 @@ public:
     return true;
   }
 
+
+  // NS from gdb tui 2023
+
+  /* Return the width of the box.  */
+  int box_width () const
+  {
+    return can_box () ? 1 : 0;
+  }
+
+  /* Return the size of the box.  */
+  int box_size () const
+  {
+    return 2 * box_width ();
+  }
+
+
   /* Resize this window.  The parameters are used to set the window's
      size and position.  */
   virtual void resize (int height, int width,
@@ -145,6 +164,19 @@ public:
   }
 
   void check_and_display_highlight_if_needed ();
+
+
+  // NS 2023 gdb
+
+  /* A helper function to change the title and then redraw the
+     surrounding box, if needed.  */
+  void set_title (std::string &&new_title);
+
+
+  /* Return a reference to the current window title.  */
+  const std::string &title_ () const
+  { return title; }
+
 
   /* Window handle.  */
   std::unique_ptr<WINDOW, curses_deleter> handle;

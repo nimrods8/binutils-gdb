@@ -37,6 +37,9 @@
 #include "gdbcmd.h"
 #include "async-event.h"
 
+// NS gdb 2023
+#include "utils.h"
+
 #include "tui/tui.h"
 #include "tui/tui-io.h"
 #include "tui/tui-command.h"
@@ -221,6 +224,35 @@ show_tui_border_kind (struct ui_file *file,
   gdb_printf (file, _("The kind of border for TUI windows is \"%s\".\n"),
 	      value);
 }
+
+
+
+
+/* Implementation of the "set/show style tui-current-position" commands.  */
+
+bool style_tui_current_position = false;
+
+static void
+show_style_tui_current_position (ui_file *file,
+				 int from_tty,
+				 cmd_list_element *c,
+				 const char *value)
+{
+  gdb_printf (file, _("\
+Styling the text highlighted by the TUI's current position indicator is %s.\n"),
+		    value);
+}
+
+static void
+set_style_tui_current_position (const char *ignore, int from_tty,
+				cmd_list_element *c)
+{
+  if (TUI_SRC_WIN != nullptr)
+    TUI_SRC_WIN->refill ();
+  if (TUI_DISASM_WIN != nullptr)
+    TUI_DISASM_WIN->refill ();
+}
+
 
 
 /* Tui internal configuration variables.  These variables are updated
@@ -496,8 +528,12 @@ tui_resize_all (void)
 {
   int height_diff, width_diff;
   int screenheight, screenwidth;
-
+  
   rl_get_screen_size (&screenheight, &screenwidth);
+
+  // NS 2023 gdb
+  screenwidth += readline_hidden_cols;
+
   width_diff = screenwidth - tui_term_width ();
   height_diff = screenheight - tui_term_height ();
   if (height_diff || width_diff)
@@ -546,6 +582,10 @@ tui_async_resize_screen (gdb_client_data arg)
       int screen_height, screen_width;
 
       rl_get_screen_size (&screen_height, &screen_width);
+
+      // NS 2023 gdb
+      screen_width += readline_hidden_cols;
+
       set_screen_width_and_height (screen_width, screen_height);
 
       /* win_resized is left set so that the next call to tui_enable()
@@ -844,6 +884,20 @@ tui_show_compact_source (struct ui_file *file, int from_tty,
   gdb_printf (file, _("TUI source window compactness is %s.\n"), value);
 }
 
+
+// NS 2023 gdb
+bool tui_enable_mouse = true;
+
+/* Implement 'show tui mouse-events'.  */
+
+static void
+show_tui_mouse_events (struct ui_file *file, int from_tty,
+		       struct cmd_list_element *c, const char *value)
+{
+  gdb_printf (file, _("TUI mouse events are %s.\n"), value);
+}
+
+
 /* Set the tab width of the specified window.  */
 static void
 tui_set_tab_width_command (const char *arg, int from_tty)
@@ -1058,6 +1112,12 @@ tui_window_command (const char *args, int from_tty)
   help_list (tui_window_cmds, "tui window ", all_commands, gdb_stdout);
 }
 
+// NS 2023 gdb
+/* See tui-win.h.  */
+
+bool tui_left_margin_verbose = false;
+
+
 /* Function to initialize gdb commands, for tui window
    manipulation.  */
 
@@ -1201,10 +1261,49 @@ This variable controls the attributes to use for the active window border:\n\
   add_setshow_zuinteger_cmd ("tab-width", no_class,
 			     &internal_tab_width, _("\
 Set the tab width, in characters, for the TUI."), _("\
-Show the tab witdh, in characters, for the TUI."), _("\
+Show the tab width, in characters, for the TUI."), _("\
 This variable controls how many spaces are used to display a tab character."),
 			     tui_set_tab_width, tui_show_tab_width,
 			     &tui_setlist, &tui_showlist);
+
+
+// NS 2023 gdb
+  add_setshow_boolean_cmd ("mouse-events", class_tui,
+			   &tui_enable_mouse, _("\
+Set whether TUI mode handles mouse clicks."), _("\
+Show whether TUI mode handles mouse clicks."), _("\
+When on (default), mouse clicks control the TUI and can be accessed by Python\n\
+extensions.  When off, mouse clicks are handled by the terminal, enabling\n\
+terminal-native text selection."),
+			   nullptr,
+			   show_tui_mouse_events,
+			   &tui_setlist, &tui_showlist);
+
+  add_setshow_boolean_cmd ("tui-current-position", class_maintenance,
+			   &style_tui_current_position, _("\
+Set whether to style text highlighted by the TUI's current position indicator."),
+			   _("\
+Show whether to style text highlighted by the TUI's current position indicator."),
+			   _("\
+When enabled, the source and assembly code highlighted by the TUI's current\n\
+position indicator is styled."),
+			   set_style_tui_current_position,
+			   show_style_tui_current_position,
+			   &style_set_list,
+			   &style_show_list);
+
+  add_setshow_boolean_cmd ("tui-left-margin-verbose", class_maintenance,
+			   &tui_left_margin_verbose, _("\
+Set whether the left margin should use '_' and '0' instead of spaces."),
+			   _("\
+Show whether the left margin should use '_' and '0' instead of spaces."),
+			   _("\
+When enabled, the left margin will use '_' and '0' instead of spaces."),
+			   nullptr,
+			   nullptr,
+			   &maintenance_set_cmdlist,
+			   &maintenance_show_cmdlist);
+
 
   add_setshow_boolean_cmd ("tui-resize-message", class_maintenance,
 			   &resize_message, _("\

@@ -154,6 +154,19 @@ tui_prev_win (struct tui_win_info *cur_win)
 }
 
 
+// NS 2023 gdb
+void
+tui_win_info::set_title (std::string &&new_title)
+{
+  if (/*m_*/title != new_title)
+    {
+      /*m_*/title = new_title;
+      check_and_display_highlight_if_needed ();
+    }
+}
+
+
+
 void
 tui_win_info::rerender ()
 {

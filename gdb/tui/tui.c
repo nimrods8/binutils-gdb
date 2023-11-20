@@ -408,6 +408,12 @@ tui_enable (void)
 		 gdb_getenv_term ());
 	}
       w = stdscr;
+
+
+      // NS 191123
+      gdb_printf( "has colors=%d", has_colors());
+
+
       if (has_colors ())
 	{
 #ifdef HAVE_USE_DEFAULT_COLORS

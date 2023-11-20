@@ -365,6 +365,15 @@ extern void copy_bitwise (gdb_byte *dest, ULONGEST dest_offset,
 			  const gdb_byte *source, ULONGEST source_offset,
 			  ULONGEST nbits, int bits_big_endian);
 
+
+// NS 2023 gdb
+/* When readline decides that the terminal cannot auto-wrap lines, it reduces
+   the width of the reported screen width by 1.  This variable indicates
+   whether that's the case or not, allowing us to add it back where
+   necessary.  See _rl_term_autowrap in readline/terminal.c.  */
+
+extern int readline_hidden_cols;
+
 /* A fast hashing function.  This can be used to hash data in a fast way
    when the length is known.  If no fast hashing library is available, falls
    back to iterative_hash from libiberty.  START_VALUE can be set to

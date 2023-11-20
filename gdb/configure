@@ -723,7 +723,7 @@ GUILE_LIBS
 GUILE_CPPFLAGS
 GUILD_TARGET_FLAG
 GUILD
-pkg_config_prog_path
+pkg_config_prog_path='/usr/bin/pkg-config'
 HAVE_PYTHON_FALSE
 HAVE_PYTHON_TRUE
 PYTHON_LIBS
@@ -12196,6 +12196,7 @@ else
 fi
 
 
+pkg_config_prog_path="/usr/bin/pkg-config"
 if test "${enable_source_highlight}" != "no"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the source-highlight library" >&5
 $as_echo_n "checking for the source-highlight library... " >&6; }

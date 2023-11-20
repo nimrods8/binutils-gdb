@@ -816,5 +816,5 @@ struct cmd_list_element **tuicmd /*, *cmd*/;
         TUI command to control the console window.\n\
         Usage: tui info NAME\n\
         NAME is the name of the info data to display on the console window"), tuicmd);
-  //set_cmd_completer (cmd, info_print_command_completer);
+//  set_cmd_completer (cmd, info_print_command_completer);
 }

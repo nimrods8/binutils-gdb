@@ -149,7 +149,17 @@ public:
 
   virtual bool location_matches_p (struct bp_location *loc, int line_no) = 0;
 
-  void update_exec_info ();
+
+  // NS 2023 gdb
+  /* Fill in the left margin of the current window with execution indicator
+     information, e.g. breakpoint indicators, and line numbers.  When
+     REFRESH_P is true this function will call refresh_window to ensure
+     updates are written to the screen, otherwise the refresh is skipped,
+     which will leave the on screen contents out of date.  When passing
+     false for REFRESH_P you should be planning to call refresh_window
+     yourself.  */
+  void update_exec_info (bool refresh_p = true);
+//  void update_exec_info ();
 
   /* Update the window to display the given location.  Does nothing if
      the location is already displayed.  */
@@ -181,6 +191,22 @@ private:
 
   void show_source_content ();
 
+
+// NS 2023 gdb
+  /* Write STRING to the window M_PAD, but skip the first SKIP printable
+     characters.  Any escape sequences within the first SKIP characters are
+     still processed though.  This means if we have this string:
+
+     "\033[31mABCDEFGHIJKLM\033[0m"
+
+     and call this function with a skip value of 3, then we effectively
+     write this string to M_PAD:
+
+     "\033[31mDEFGHIJKLM\033[0m"
+
+     the initial escape that sets the color will still be applied.  */
+  void puts_to_pad_with_skip (const char *string, int skip);
+
   /* Called when the user "set style enabled" setting is changed.  */
   void style_changed ();
 
@@ -189,6 +215,19 @@ private:
 
   /* Pad used to display fixme mumble  */
   std::unique_ptr<WINDOW, curses_deleter> m_pad;
+
+
+  // NS 2023 gdb
+  /* When M_PAD was allocated, this holds the width that was initially
+     asked for.  If we ask for a very large pad then the allocation may
+     fail, and we might instead allocate a narrower pad.  */
+  int m_pad_requested_width = 0;
+
+  /* If M_PAD is not as wide as the content (so less than M_MAX_LENGTH)
+     then this value indicates the offset at which the pad contents begin.  */
+  int m_pad_offset = 0;
+
+
 };
 
 

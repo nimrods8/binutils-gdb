@@ -1524,6 +1524,12 @@ info_frame_command_core (frame_info_ptr fi, bool selected_frame_p)
     {
       funname = func->print_name ();
       funlang = func->language ();
+
+
+      // NS 09/11
+      gdb_printf( "[NS] 1");
+
+
       if (funlang == language_cplus)
 	{
 	  /* It seems appropriate to use print_name() here,

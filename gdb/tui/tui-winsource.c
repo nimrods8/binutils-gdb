@@ -170,9 +170,16 @@ tui_source_window_base::update_source_window_as_is
     erase_source_content ();
   else
     {
+/*
       update_breakpoint_info (nullptr, false);
       show_source_content ();
       update_exec_info ();
+*/
+
+      //  NS 2023 gdb
+      update_breakpoint_info (nullptr, false);
+      update_exec_info (false);
+      show_source_content ();
     }
 }
 
@@ -228,7 +235,11 @@ void
 tui_source_window_base::do_erase_source_content (const char *str)
 {
   int x_pos;
-  int half_width = (width - 2) / 2;
+//  int half_width = (width - 2) / 2;
+
+// NS 2023 gdb
+int half_width = (width - box_size ()) / 2;
+
 
   m_content.clear ();
   if (handle != NULL)
@@ -250,6 +261,72 @@ tui_source_window_base::do_erase_source_content (const char *str)
 }
 
 
+
+
+// NS 2023 gdb
+/* See tui-winsource.h.  */
+
+void
+tui_source_window_base::puts_to_pad_with_skip (const char *string, int skip)
+{
+  gdb_assert (m_pad.get () != nullptr);
+  WINDOW *w = m_pad.get ();
+
+  while (skip > 0)
+    {
+      const char *next = strpbrk (string, "\033");
+
+      /* Print the plain text prefix.  */
+      size_t n_chars = next == nullptr ? strlen (string) : next - string;
+      if (n_chars > 0)
+	{
+	  if (skip > 0)
+	    {
+	      if (skip < n_chars)
+		{
+		  string += skip;
+		  n_chars -= skip;
+		  skip = 0;
+		}
+	      else
+		{
+		  skip -= n_chars;
+		  string += n_chars;
+		  n_chars = 0;
+		}
+	    }
+
+	  if (n_chars > 0)
+	    {
+	      std::string copy (string, n_chars);
+	      tui_puts (copy.c_str (), w);
+	    }
+	}
+
+      /* We finished.  */
+      if (next == nullptr)
+	break;
+
+      gdb_assert (*next == '\033');
+
+      int n_read;
+      if (skip_ansi_escape (next, &n_read))
+	{
+	  std::string copy (next, n_read);
+	  tui_puts (copy.c_str (), w);
+	  next += n_read;
+	}
+      else
+	gdb_assert_not_reached ("unhandled escape");
+
+      string = next;
+    }
+
+  if (*string != '\0')
+    tui_puts (string, w);
+}
+
+
 /* Redraw the complete line of a source or disassembly window.  */
 void
 tui_source_window_base::show_source_line (int lineno)
@@ -261,7 +338,11 @@ tui_source_window_base::show_source_line (int lineno)
     tui_set_reverse_mode (m_pad.get (), true);
 
   wmove (m_pad.get (), lineno, 0);
-  tui_puts (line->line.c_str (), m_pad.get ());
+
+  //tui_puts (line->line.c_str (), m_pad.get ());
+  // NS 2023 gdb
+  puts_to_pad_with_skip (line->line.c_str (), m_pad_offset);
+
   if (line->is_exec_point)
     tui_set_reverse_mode (m_pad.get (), false);
 }
@@ -312,7 +393,19 @@ tui_source_window_base::show_source_content ()
   for (int lineno = 0; lineno < m_content.size (); lineno++)
     show_source_line (lineno);
 
-  refresh_window ();
+  // NS 2023 gdb
+  if (can_box ())
+    {
+      /* Calling check_and_display_highlight_if_needed will call refresh_window
+	 (so long as the current window can be boxed), which will ensure that
+	 the newly loaded window content is copied to the screen.  */
+      check_and_display_highlight_if_needed ();
+    }
+  else
+    refresh_window ();
+
+
+//  refresh_window ();
 }
 
 tui_source_window_base::tui_source_window_base ()
@@ -521,7 +614,7 @@ tui_source_window_base::update_breakpoint_info
    based upon the input window which is either the source or
    disassembly window.  */
 void
-tui_source_window_base::update_exec_info ()
+tui_source_window_base::update_exec_info ( bool refresh_p)
 {
   update_breakpoint_info (nullptr, true);
   for (int i = 0; i < m_content.size (); i++)
@@ -549,5 +642,9 @@ tui_source_window_base::update_exec_info ()
 
       show_line_number (i);
     }
-  refresh_window ();
+
+  // NS 2023 gdb
+  if (refresh_p)
+    refresh_window ();
+//  refresh_window ();
 }

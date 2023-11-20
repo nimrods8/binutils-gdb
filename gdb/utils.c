@@ -28,6 +28,9 @@
 #include <sys/resource.h>
 #endif /* HAVE_SYS_RESOURCE_H */
 
+
+
+
 #ifdef TUI
 #include "tui/tui.h"		/* For tui_get_command_dimension.   */
 #endif
@@ -51,6 +54,10 @@
 #include "gdbsupport/gdb_obstack.h"
 #include "gdbcore.h"
 #include "top.h"
+
+// NS 2023 gdb
+// removed... #include "ui.h"
+
 #include "main.h"
 #include "solist.h"
 
@@ -353,6 +360,12 @@ internal_vproblem (struct internal_problem *problem,
 	exit (1);
       }
   }
+
+// NS 2023 gdb
+#ifdef TUI
+  tui_disable ();
+#endif
+
 
   /* Create a string containing the full error/warning message.  Need
      to call query with this full string, as otherwize the reason
@@ -1178,6 +1191,19 @@ static bool filter_initialized = false;
 
 
 
+
+
+// NS 2023 gdb
+/* See readline's rlprivate.h.  */
+
+extern "C" int _rl_term_autowrap;
+
+/* See utils.h.  */
+
+int readline_hidden_cols = 0;
+
+
+
 /* Initialize the number of lines per page and chars per line.  */
 
 void
@@ -1206,8 +1232,28 @@ init_page_info (void)
 
       /* Get the screen size from Readline.  */
       rl_get_screen_size (&rows, &cols);
+
+
+      // NS 2023 gdb
+      /* Readline:
+	 - ignores the COLUMNS variable when detecting screen width
+	   (because rl_prefer_env_winsize defaults to 0)
+	 - puts the detected screen width in the COLUMNS variable
+	   (because rl_change_environment defaults to 1)
+	 - may report one less than the detected screen width in
+	   rl_get_screen_size (when _rl_term_autowrap == 0).
+	 We could set readline_hidden_cols by comparing COLUMNS to cols as
+	 returned by rl_get_screen_size, but instead simply use
+	 _rl_term_autowrap.  */
+      readline_hidden_cols = _rl_term_autowrap ? 0 : 1;
+
+
+
       lines_per_page = rows;
-      chars_per_line = cols;
+      //chars_per_line = cols;
+
+      // replaced with this, 2023 gdb
+      chars_per_line = cols + readline_hidden_cols;
 
       /* Readline should have fetched the termcap entry for us.
 	 Only try to use tgetnum function if rl_get_screen_size
@@ -1236,6 +1282,10 @@ init_page_info (void)
   set_width ();
 }
 
+
+
+
+
 /* Return nonzero if filtered printing is initialized.  */
 int
 filtered_printing_initialized (void)
@@ -1261,6 +1311,21 @@ set_batch_flag_and_restore_page_info::~set_batch_flag_and_restore_page_info ()
   set_screen_size ();
   set_width ();
 }
+
+
+
+// NS 2023 gdb
+
+/* An approximation of SQRT(INT_MAX) that is:
+   - cheap to calculate,
+   - guaranteed to be smaller than SQRT(INT_MAX), such that
+     sqrt_int_max * sqrt_int_max doesn't overflow, and
+   - "close enough" to SQRT(INT_MAX), for instance for INT_MAX == 2147483647,
+     SQRT(INT_MAX) is ~46341 and sqrt_int_max == 32767.  */
+
+static const int sqrt_int_max = INT_MAX >> (sizeof (int) * 8 / 2);
+
+
 
 /* Set the screen size based on LINES_PER_PAGE and CHARS_PER_LINE.  */
 
@@ -1334,6 +1399,70 @@ set_screen_width_and_height (int width, int height)
   set_screen_size ();
   set_width ();
 }
+
+
+// NS 2023 gdb
+/* Implement "maint info screen".  */
+
+static void
+maintenance_info_screen (const char *args, int from_tty)
+{
+  int rows, cols;
+  rl_get_screen_size (&rows, &cols);
+
+  gdb_printf (gdb_stdout,
+	      _("Number of characters gdb thinks "
+		"are in a line is %u%s.\n"),
+	      chars_per_line,
+	      chars_per_line == UINT_MAX ? " (unlimited)" : "");
+
+  gdb_printf (gdb_stdout,
+	      _("Number of characters readline reports "
+		"are in a line is %d%s.\n"),
+	      cols,
+	      (cols == sqrt_int_max
+	       ? " (unlimited)"
+	       : (cols == sqrt_int_max - 1
+		  ? " (unlimited - 1)"
+		  : "")));
+
+#ifdef HAVE_LIBCURSES
+  gdb_printf (gdb_stdout,
+	     _("Number of characters curses thinks "
+	       "are in a line is %d.\n"),
+	     COLS);
+#endif
+
+  gdb_printf (gdb_stdout,
+	      _("Number of characters environment thinks "
+		"are in a line is %s (COLUMNS).\n"),
+	      getenv ("COLUMNS"));
+
+  gdb_printf (gdb_stdout,
+	      _("Number of lines gdb thinks are in a page is %u%s.\n"),
+	      lines_per_page,
+	      lines_per_page == UINT_MAX ? " (unlimited)" : "");
+
+  gdb_printf (gdb_stdout,
+	      _("Number of lines readline reports "
+		"are in a page is %d%s.\n"),
+	      rows,
+	      rows == sqrt_int_max ? " (unlimited)" : "");
+
+#ifdef HAVE_LIBCURSES
+  gdb_printf (gdb_stdout,
+	     _("Number of lines curses thinks "
+	       "are in a page is %d.\n"),
+	      LINES);
+#endif
+
+  gdb_printf (gdb_stdout,
+	      _("Number of lines environment thinks "
+		"are in a page is %s (LINES).\n"),
+	      getenv ("LINES"));
+}
+
+
 
 void
 pager_file::emit_style_escape (const ui_file_style &style)
@@ -2398,7 +2527,33 @@ strncmp_iw_with_mode (const char *string1, const char *string2,
 	  return 0;
 	}
       else
-	return (*string1 != '\0' && *string1 != '(');
+// NS 2023 gdb
+	{
+	  if (*string1 == '(')
+	    {
+	      int p_count = 0;
+
+	      do
+		{
+		  if (*string1 == '(')
+		    ++p_count;
+		  else if (*string1 == ')')
+		    --p_count;
+		  ++string1;
+		}
+	      while (*string1 != '\0' && p_count > 0);
+
+	      /* There maybe things like 'const' after the parameters,
+		 which we do want to ignore.  However, if there's an '@'
+		 then this likely indicates something like '@plt' which we
+		 should not ignore.  */
+	      return *string1 == '@';
+	    }
+
+	  return *string1 == '\0' ? 0 : 1;
+	}
+
+// NS deleted 2023 gdb	return (*string1 != '\0' && *string1 != '(');
     }
   else
     return 1;
@@ -2929,7 +3084,17 @@ strncmp_iw_with_mode_tests ()
   CHECK_NO_MATCH ("foo2 (args\t )", "foo", MATCH_PARAMS);
   CHECK_MATCH ("foo[abi:a][abi:b](bar[abi:c][abi:d])", "foo[abi:a][abi:b](bar[abi:c][abi:d])",
 	       MATCH_PARAMS);
-  CHECK_MATCH ("foo[abi:a][abi:b](bar[abi:c][abi:d])", "foo", MATCH_PARAMS);
+// NS 2023 deleted  CHECK_MATCH ("foo[abi:a][abi:b](bar[abi:c][abi:d])", "foo", MATCH_PARAMS);
+
+// NS 2023 gdb added
+  CHECK_NO_MATCH ("foo(args)@plt", "foo", MATCH_PARAMS);
+  CHECK_NO_MATCH ("foo((())args(()))@plt", "foo", MATCH_PARAMS);
+  CHECK_MATCH ("foo((())args(()))", "foo", MATCH_PARAMS);
+  CHECK_MATCH ("foo(args) const", "foo", MATCH_PARAMS);
+  CHECK_MATCH ("foo(args)const", "foo", MATCH_PARAMS);
+
+
+
 
   /* strncmp_iw_with_mode also supports case insensitivity.  */
   {
@@ -3729,11 +3894,21 @@ When set, debugging messages will be marked with seconds and microseconds."),
   add_internal_problem_command (&internal_warning_problem);
   add_internal_problem_command (&demangler_warning_problem);
 
+// NS 2023 gdb
+  add_cmd ("screen", class_maintenance, &maintenance_info_screen,
+	 _("Show screen characteristics."), &maintenanceinfolist);
+
+
+
 #if GDB_SELF_TEST
   selftests::register_test ("gdb_realpath", gdb_realpath_tests);
   selftests::register_test ("gdb_argv_array_view", gdb_argv_as_array_view_test);
   selftests::register_test ("strncmp_iw_with_mode",
 			    strncmp_iw_with_mode_tests);
   selftests::register_test ("pager", test_pager);
+
+// NS 2023 gdb currently removed by me
+//  selftests::register_test ("assign_set_return_if_changed",
+//			    test_assign_set_return_if_changed);
 #endif
 }

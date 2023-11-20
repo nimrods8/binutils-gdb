@@ -101,6 +101,34 @@ to the original value, use
 
 
 
+**How to add source code highlightint?**  
+(1) add the line:
+`pkg_config_prog_path="/usr/bin/pkg-config"`
+
+ before this in the gdb/configure file:  
+```
+
+if test "${enable_source_highlight}" != "no"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the source-highlight library" >&5
+$as_echo_n "checking for the source-highlight library... " >&6; }
+  if test "${pkg_config_prog_path}" = "missing"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no - pkg-config not found" >&5
+$as_echo "no - pkg-config not found" >&6; }
+    if test "${enable_source_highlight}" = "yes"; then
+      as_fn_error $? "pkg-config was not found in your system" "$LINENO" 5
+    fi
+```
+
+(2) add the libsource-highlight package:  
+`apt install libsource-highlight-dev`  
+  
+(2) add `--enable-source-highlight` to the configure line  
+(3) run `./configure` with all flags
+(4) run `make all-gdb`
+
+
+
+
 2DO
 ---
 * add break at opcodes by arch

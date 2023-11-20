@@ -37,9 +37,9 @@ localedir = $(datadir)/locale
 aliaspath = $(localedir)
 
 AR = ar
-ACLOCAL = /home/nimrod/Documents/binutils-gdb/missing aclocal
-AUTOCONF = /home/nimrod/Documents/binutils-gdb/missing autoconf
-AUTOHEADER = /home/nimrod/Documents/binutils-gdb/missing autoheader
+ACLOCAL = aclocal
+AUTOCONF = autoconf
+AUTOHEADER = autoheader
 CC = gcc
 RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
 YACC = bison -y -d

@@ -522,12 +522,62 @@ bool dont = false;
   }
 }
 
+
+#ifndef GDB_OLD
+static void tui_puts_internal (WINDOW *w, const char *string, int *height)
+{
+  char c;
+  int prev_col = 0;
+  bool saw_nl = false;
+
+  while ((c = *string++) != 0)
+    {
+      if (c == '\1' || c == '\2')
+        {
+          /* Ignore these, they are readline escape-marking
+             sequences.  */
+          continue;
+        }
+
+      if (c == '\033')
+        {
+          size_t bytes_read = apply_ansi_escape (w, string - 1);
+          if (bytes_read > 0)
+            {
+              string = string + bytes_read - 1;
+              continue;
+            }
+        }
+
+      if (c == '\n')
+        saw_nl = true;
+
+      do_tui_putc (w, c);
+
+      if (height != nullptr)
+        {
+          int col = getcurx (w);
+          if (col <= prev_col)
+            ++*height;
+          prev_col = col;
+        }
+    }
+
+  if (TUI_CMD_WIN != nullptr && w == TUI_CMD_WIN->handle.get ())
+    update_cmdwin_start_line ();
+  if (saw_nl)
+
+   wrefresh (w);
+}
+
+#else
 static void
 tui_puts_internal (WINDOW *w, const char *string, int *height)
 {
   char c;
   int prev_col = 0;
   bool saw_nl = false;
+
 
   while ((c = *string++) != 0)
     {
@@ -540,7 +590,7 @@ tui_puts_internal (WINDOW *w, const char *string, int *height)
 	     sequences.  */
 	}
       else
-	{
+      {
 	  if (c == '\033')
 	    {
 	      size_t bytes_read = apply_ansi_escape (w, string - 1);
@@ -553,14 +603,15 @@ tui_puts_internal (WINDOW *w, const char *string, int *height)
 	  do_tui_putc (w, c);
 
 	  if (height != nullptr)
-	    {
+	  {
 	      int col = getcurx (w);
 	      if (col <= prev_col)
 		++*height;
 	      prev_col = col;
-	    }
-	}
+	  }
+      }
     }
+
   if (TUI_CMD_WIN != nullptr && w == TUI_CMD_WIN->handle.get ())
     update_cmdwin_start_line ();
   if (saw_nl)
@@ -571,6 +622,8 @@ tui_puts_internal (WINDOW *w, const char *string, int *height)
 //      TUI_DISASMOT_WIN->refill();
 
 }
+#endif
+
 
 /* Readline callback.
    Redisplay the command line with its prompt after readline has
