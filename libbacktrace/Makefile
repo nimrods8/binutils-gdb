@@ -137,12 +137,12 @@ am__append_4 = allocfail.sh
 #	edtest.dSYM edtest_alloc.dSYM
 am__append_6 = b2test
 am__append_7 = b2test_buildid
-#am__append_8 = b3test
-#am__append_9 = b3test_dwz_buildid
+am__append_8 = b3test
+am__append_9 = b3test_dwz_buildid
 am__append_10 = btest_lto
 am__append_11 = btest_alloc stest stest_alloc
-#am__append_12 = btest_dwz
-#am__append_13 = btest_dwz_gnudebuglink
+am__append_12 = btest_dwz
+am__append_13 = btest_dwz_gnudebuglink
 am__append_14 = -lz
 am__append_15 = -lz
 am__append_16 = ztest ztest_alloc
@@ -222,7 +222,7 @@ libbacktrace_noformat_la_OBJECTS =  \
 am_libbacktrace_noformat_la_rpath =
 am__EXEEXT_1 = allocfail$(EXEEXT)
 am__EXEEXT_2 = b2test$(EXEEXT)
-#am__EXEEXT_3 = b3test$(EXEEXT)
+am__EXEEXT_3 = b3test$(EXEEXT)
 am__EXEEXT_4 = test_elf_32$(EXEEXT) test_elf_64$(EXEEXT) \
 	test_macho$(EXEEXT) test_xcoff_32$(EXEEXT) \
 	test_xcoff_64$(EXEEXT) test_pecoff$(EXEEXT) \
@@ -267,9 +267,9 @@ b2test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(b2test_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_3 = b3test-btest.$(OBJEXT) \
 	b3test-testlib.$(OBJEXT)
-#am_b3test_OBJECTS = $(am__objects_3)
+am_b3test_OBJECTS = $(am__objects_3)
 b3test_OBJECTS = $(am_b3test_OBJECTS)
-#b3test_DEPENDENCIES = libbacktrace_elf_for_test.la
+b3test_DEPENDENCIES = libbacktrace_elf_for_test.la
 b3test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(b3test_CFLAGS) $(CFLAGS) \
 	$(b3test_LDFLAGS) $(LDFLAGS) -o $@
@@ -829,7 +829,7 @@ CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DSYMUTIL = dsymutil
 DUMPBIN = 
-DWZ = 
+DWZ = dwz
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
@@ -1055,10 +1055,10 @@ b2test_SOURCES = $(btest_SOURCES)
 b2test_CFLAGS = $(libbacktrace_TEST_CFLAGS)
 b2test_LDFLAGS = -Wl,--build-id
 b2test_LDADD = libbacktrace_elf_for_test.la
-#b3test_SOURCES = $(btest_SOURCES)
-#b3test_CFLAGS = $(libbacktrace_TEST_CFLAGS)
-#b3test_LDFLAGS = -Wl,--build-id
-#b3test_LDADD = libbacktrace_elf_for_test.la
+b3test_SOURCES = $(btest_SOURCES)
+b3test_CFLAGS = $(libbacktrace_TEST_CFLAGS)
+b3test_LDFLAGS = -Wl,--build-id
+b3test_LDADD = libbacktrace_elf_for_test.la
 btest_SOURCES = btest.c testlib.c
 btest_CFLAGS = $(libbacktrace_TEST_CFLAGS) -O
 btest_LDADD = libbacktrace.la
@@ -2429,17 +2429,17 @@ instrumented_alloc.lo: alloc.c
 
 allocfail.sh: allocfail
 
-#%_dwz: %
-#	rm -f $@ $@_common.debug
-#	cp $< $@_1
-#	cp $< $@_2
-#	if $(DWZ) -m $@_common.debug $@_1 $@_2; then \
-#	  rm -f $@_2; \
-#	  mv $@_1 $@; \
-#	else \
-#	  echo "Ignoring dwz errors, assuming that test passes"; \
-#	  cp $< $@; \
-#	fi
+%_dwz: %
+	rm -f $@ $@_common.debug
+	cp $< $@_1
+	cp $< $@_2
+	if $(DWZ) -m $@_common.debug $@_1 $@_2; then \
+	  rm -f $@_2; \
+	  mv $@_1 $@; \
+	else \
+	  echo "Ignoring dwz errors, assuming that test passes"; \
+	  cp $< $@; \
+	fi
 
 edtest2_build.c: gen_edtest2_build; @true
 gen_edtest2_build: $(srcdir)/edtest2.c

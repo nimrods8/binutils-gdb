@@ -277,7 +277,7 @@ AUTOCONF = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing autoconf
 AUTOHEADER = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing autoheader
 AUTOMAKE = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing automake-1.15
 AWK = mawk
-BFD_MACHINES =  i386-dis.lo i386-opc.lo aarch64-asm.lo aarch64-dis.lo aarch64-opc.lo aarch64-asm-2.lo aarch64-dis-2.lo aarch64-opc-2.lo arm-dis.lo
+BFD_MACHINES = $(ALL32_MACHINES) $(ALL64_MACHINES)
 BUILD_LIBS = ../libiberty/libiberty.a 
 BUILD_LIB_DEPS = ../libiberty/libiberty.a 
 CATALOGS =  da.gmo de.gmo es.gmo fi.gmo fr.gmo ga.gmo id.gmo it.gmo nl.gmo pt_BR.gmo ro.gmo sr.gmo sv.gmo tr.gmo uk.gmo vi.gmo zh_CN.gmo
@@ -370,7 +370,7 @@ am__leading_dot = .
 am__quote = 
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
-archdefs =  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm
+archdefs = -DARCH_all
 #bfdincludedir = 
 bfdincludedir = $(includedir)
 # Empty these so that the respective installation directories will not be created.
@@ -692,7 +692,7 @@ CFILES = \
 
 ALL32_MACHINES = $(TARGET32_LIBOPCODES_CFILES:.c=.lo)
 ALL64_MACHINES = $(TARGET64_LIBOPCODES_CFILES:.c=.lo)
-OFILES =  i386-dis.lo i386-opc.lo aarch64-asm.lo aarch64-dis.lo aarch64-opc.lo aarch64-asm-2.lo aarch64-dis-2.lo aarch64-opc-2.lo arm-dis.lo
+OFILES = $(ALL32_MACHINES) $(ALL64_MACHINES)
 
 # development.sh is used to determine -Werror default.
 CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/development.sh
@@ -1368,11 +1368,11 @@ uninstall-am: uninstall-bfdincludeDATA uninstall-bfdlibLTLIBRARIES
 
 
 disassemble.lo: disassemble.c
-	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm $(srcdir)/disassemble.c
+	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ -DARCH_all $(srcdir)/disassemble.c
 	$(AM_V_at)mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 #	source='disassemble.c' object='$@' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC)$(LTCOMPILE) -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm $(srcdir)/disassemble.c
+#	$(AM_V_CC)$(LTCOMPILE) -c -o $@ -DARCH_all $(srcdir)/disassemble.c
 
 stamp-lib: libopcodes.la
 	libtooldir=`$(LIBTOOL) --config | sed -n -e 's/^objdir=//p'`; \
@@ -1597,11 +1597,11 @@ mips-dis.lo: mips-dis.c
 #	$(AM_V_CC)$(LTCOMPILE) -c -o $@ $(MIPS_DEFS) $<
 
 sh-dis.lo: sh-dis.c
-	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm $(srcdir)/sh-dis.c
+	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ -DARCH_all $(srcdir)/sh-dis.c
 	$(AM_V_at)mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 #	source='sh-dis.c' object='$@' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC)$(LTCOMPILE) -c -o $@  -DARCH_i386 -DARCH_iamcu -DARCH_aarch64 -DARCH_arm $(srcdir)/sh-dis.c
+#	$(AM_V_CC)$(LTCOMPILE) -c -o $@ -DARCH_all $(srcdir)/sh-dis.c
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

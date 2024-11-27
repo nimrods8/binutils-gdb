@@ -414,7 +414,7 @@ SHARED_LDFLAGS =
 SHARED_LIBADD =  
 SHELL = /bin/bash
 STRIP = strip
-TDEFINES =     
+TDEFINES =  
 USE_NLS = yes
 VERSION = 2.39.50
 WARN_CFLAGS = -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wstack-usage=262144 -Werror
@@ -436,10 +436,10 @@ am__quote =
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
 bfd64_libs = $(BFD64_LIBS)
-bfd_backends =  elf64-x86-64.lo elfxx-x86.lo elf-ifunc.lo elf-vxworks.lo elf64.lo elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo dwarf2.lo elf32-i386.lo elf32.lo pei-i386.lo peigen.lo cofflink.lo coffgen.lo pe-x86_64.lo pex64igen.lo pei-x86_64.lo elf64-gen.lo elf32-gen.lo elf64-aarch64.lo elfxx-aarch64.lo elf32-aarch64.lo elf32-arm.lo elf-nacl.lo pei-aarch64.lo pe-aarch64igen.lo plugin.lo
+bfd_backends =  elf64-x86-64.lo elfxx-x86.lo elf-ifunc.lo elf-vxworks.lo elf64.lo elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo dwarf2.lo elf32-i386.lo elf32.lo pei-i386.lo peigen.lo cofflink.lo coffgen.lo pe-x86_64.lo pex64igen.lo pei-x86_64.lo elf64-gen.lo elf32-gen.lo plugin.lo $(ALL_BACKENDS)
 bfd_default_target_size = 64
 bfd_file_ptr = int64_t
-bfd_machines =  cpu-i386.lo cpu-iamcu.lo cpu-aarch64.lo cpu-arm.lo
+bfd_machines =  cpu-i386.lo cpu-iamcu.lo $(ALL_MACHINES)
 bfd_ufile_ptr = uint64_t
 #bfdincludedir = 
 bfdincludedir = $(includedir)
@@ -458,7 +458,7 @@ datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-havevecs = -DHAVE_x86_64_elf64_vec -DHAVE_i386_elf32_vec -DHAVE_iamcu_elf32_vec -DHAVE_x86_64_elf32_vec -DHAVE_i386_pei_vec -DHAVE_x86_64_pe_vec -DHAVE_x86_64_pei_vec -DHAVE_elf64_le_vec -DHAVE_elf64_be_vec -DHAVE_elf32_le_vec -DHAVE_elf32_be_vec -DHAVE_aarch64_elf64_le_vec -DHAVE_aarch64_elf64_be_vec -DHAVE_aarch64_elf32_le_vec -DHAVE_aarch64_elf32_be_vec -DHAVE_arm_elf32_le_vec -DHAVE_arm_elf32_be_vec -DHAVE_aarch64_pei_vec -DHAVE_arm_elf32_fdpic_le_vec -DHAVE_arm_elf32_fdpic_be_vec
+havevecs = -DHAVE_all_vecs
 host = x86_64-pc-linux-gnu
 host_alias = x86_64-pc-linux-gnu
 host_cpu = x86_64
@@ -492,7 +492,7 @@ target_cpu = x86_64
 target_noncanonical = x86_64-pc-linux-gnu
 target_os = linux-gnu
 target_vendor = pc
-tdefaults =  -DDEFAULT_VECTOR=x86_64_elf64_vec -DSELECT_VECS='&x86_64_elf64_vec,&i386_elf32_vec,&iamcu_elf32_vec,&x86_64_elf32_vec,&i386_pei_vec,&x86_64_pe_vec,&x86_64_pei_vec,&elf64_le_vec,&elf64_be_vec,&elf32_le_vec,&elf32_be_vec,&aarch64_elf64_le_vec,&aarch64_elf64_be_vec,&aarch64_elf32_le_vec,&aarch64_elf32_be_vec,&arm_elf32_le_vec,&arm_elf32_be_vec,&aarch64_pei_vec,&arm_elf32_fdpic_le_vec,&arm_elf32_fdpic_be_vec' -DSELECT_ARCHITECTURES='&bfd_i386_arch,&bfd_iamcu_arch,&bfd_aarch64_arch,&bfd_arm_arch'
+tdefaults =  -DDEFAULT_VECTOR=x86_64_elf64_vec -DASSOCIATED_VECS='&x86_64_elf64_vec,&i386_elf32_vec,&iamcu_elf32_vec,&x86_64_elf32_vec,&i386_pei_vec,&x86_64_pe_vec,&x86_64_pei_vec,&elf64_le_vec,&elf64_be_vec,&elf32_le_vec,&elf32_be_vec'
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
@@ -529,7 +529,7 @@ ZLIB = -L$(top_builddir)/../zlib -lz
 ZLIBINC = -I$(top_srcdir)/../zlib
 AM_CFLAGS = $(WARN_CFLAGS) $(ZLIBINC) $(ZSTD_CFLAGS)
 AM_CPPFLAGS = -DBINDIR='"$(bindir)"' -DLIBDIR='"$(libdir)"' \
-	        \
+	     \
 	$(CSEARCH) $(CSWITCHES) $(HAVEVECS) 
 LIBDL = 
 
@@ -1132,10 +1132,10 @@ CONFIG_STATUS_DEPENDENCIES = \
 # These are defined by configure:
 WORDSIZE = 64
 ALL_BACKENDS = $(BFD64_BACKENDS) $(BFD32_BACKENDS)
-BFD_BACKENDS =  elf64-x86-64.lo elfxx-x86.lo elf-ifunc.lo elf-vxworks.lo elf64.lo elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo dwarf2.lo elf32-i386.lo elf32.lo pei-i386.lo peigen.lo cofflink.lo coffgen.lo pe-x86_64.lo pex64igen.lo pei-x86_64.lo elf64-gen.lo elf32-gen.lo elf64-aarch64.lo elfxx-aarch64.lo elf32-aarch64.lo elf32-arm.lo elf-nacl.lo pei-aarch64.lo pe-aarch64igen.lo plugin.lo
-BFD_MACHINES =  cpu-i386.lo cpu-iamcu.lo cpu-aarch64.lo cpu-arm.lo
-TDEFAULTS =  -DDEFAULT_VECTOR=x86_64_elf64_vec -DSELECT_VECS='&x86_64_elf64_vec,&i386_elf32_vec,&iamcu_elf32_vec,&x86_64_elf32_vec,&i386_pei_vec,&x86_64_pe_vec,&x86_64_pei_vec,&elf64_le_vec,&elf64_be_vec,&elf32_le_vec,&elf32_be_vec,&aarch64_elf64_le_vec,&aarch64_elf64_be_vec,&aarch64_elf32_le_vec,&aarch64_elf32_be_vec,&arm_elf32_le_vec,&arm_elf32_be_vec,&aarch64_pei_vec,&arm_elf32_fdpic_le_vec,&arm_elf32_fdpic_be_vec' -DSELECT_ARCHITECTURES='&bfd_i386_arch,&bfd_iamcu_arch,&bfd_aarch64_arch,&bfd_arm_arch'
-HAVEVECS = -DHAVE_x86_64_elf64_vec -DHAVE_i386_elf32_vec -DHAVE_iamcu_elf32_vec -DHAVE_x86_64_elf32_vec -DHAVE_i386_pei_vec -DHAVE_x86_64_pe_vec -DHAVE_x86_64_pei_vec -DHAVE_elf64_le_vec -DHAVE_elf64_be_vec -DHAVE_elf32_le_vec -DHAVE_elf32_be_vec -DHAVE_aarch64_elf64_le_vec -DHAVE_aarch64_elf64_be_vec -DHAVE_aarch64_elf32_le_vec -DHAVE_aarch64_elf32_be_vec -DHAVE_arm_elf32_le_vec -DHAVE_arm_elf32_be_vec -DHAVE_aarch64_pei_vec -DHAVE_arm_elf32_fdpic_le_vec -DHAVE_arm_elf32_fdpic_be_vec
+BFD_BACKENDS =  elf64-x86-64.lo elfxx-x86.lo elf-ifunc.lo elf-vxworks.lo elf64.lo elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo dwarf2.lo elf32-i386.lo elf32.lo pei-i386.lo peigen.lo cofflink.lo coffgen.lo pe-x86_64.lo pex64igen.lo pei-x86_64.lo elf64-gen.lo elf32-gen.lo plugin.lo $(ALL_BACKENDS)
+BFD_MACHINES =  cpu-i386.lo cpu-iamcu.lo $(ALL_MACHINES)
+TDEFAULTS =  -DDEFAULT_VECTOR=x86_64_elf64_vec -DASSOCIATED_VECS='&x86_64_elf64_vec,&i386_elf32_vec,&iamcu_elf32_vec,&x86_64_elf32_vec,&i386_pei_vec,&x86_64_pe_vec,&x86_64_pei_vec,&elf64_le_vec,&elf64_be_vec,&elf32_le_vec,&elf32_be_vec'
+HAVEVECS = -DHAVE_all_vecs
 
 # C source files that correspond to .o's.
 SOURCE_CFILES = \

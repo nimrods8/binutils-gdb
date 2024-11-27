@@ -9488,7 +9488,7 @@ remote_target::readchar (int timeout)
     {
     case SERIAL_EOF:
       remote_unpush_target (this);
-      throw_error (TARGET_CLOSE_ERROR, _("Remote connection closed"));
+      throw_error (TARGET_CLOSE_ERROR, _("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Remote connection closed >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"));
       /* no return */
     case SERIAL_ERROR:
       unpush_and_perror (this, _("Remote communication error.  "

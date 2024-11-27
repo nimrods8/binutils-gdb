@@ -677,7 +677,8 @@ bool tui_hooks_serialize_comments( bool onlyShow)
 bool tui_hooks_deserialize_comments( void)
 {
   char fn[100], text[1024];
-  unsigned int unb;
+  //unsigned int unb;
+  CORE_ADDR unb;
   int tempi;
 
   char *dir = getenv( "HOME");
@@ -705,16 +706,24 @@ bool tui_hooks_deserialize_comments( void)
      {
          //std::string tmpstr = std::string( text);
          //std::vector<std::string> vecstr = tui_hooks_split( tmpstr, '\t');
+    
+         char tmps[256];
 
-         sscanf( text, "%d\t0x%x\t%s\t%s\n", 
+         sscanf( text, "%d\t0x%s\t%s\t%s\n", 
                     &tempi, //&com.type,
-                    (unsigned int *)&unb, //com.unbased_addr, 
+//                    (unsigned int *)&unb, //com.unbased_addr, 
+                    tmps,
                     com.filename,
                     com.text);
 
+	 unb = strtoull( tmps, NULL, 16);
+         gdb_printf( "Comments vector unb = %s %lx", tmps, unb);
+
+
+
          char *token;
          const char s[2] = "\t";
-         token = strtok( text, s);  	// type
+         token = strtok( text, s);  	        // type
          token = strtok( NULL, s);		// address
          token = strtok( NULL, s);		// filename
          token = strtok( NULL, s);		// text
@@ -734,7 +743,7 @@ bool tui_hooks_deserialize_comments( void)
          memcpy( com.filename, vecstr.at(3).c_str(), sizeof( com.filename));
          memcpy( com.text, vecstr.at(4).c_str(), sizeof( com.text));
 */
-	      com.type = (enum_tui_type)tempi;
+         com.type = (enum_tui_type)tempi;
          com.unbased_addr = (CORE_ADDR)unb;
          m_comments.push_back( com);
 
