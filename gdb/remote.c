@@ -95,7 +95,7 @@ static int NS_hardware_breakpoint_kind = 2;
 
 /* See remote.h  */
 
-bool remote_debug = false;
+bool remote_debug = false; 
 
 #define OPAQUETHREADBYTES 8
 
@@ -5884,7 +5884,10 @@ remote_target::open_1 (const char *name, int from_tty, int extended_p)
 
     try
       {
+        // BS 300125
+        gdb_printf ( "<<< %s\n", get_remote_exec_file ());
 	remote->start_remote (from_tty, extended_p);
+        gdb_printf ( ">>> %s\n", get_remote_exec_file ());
       }
     catch (const gdb_exception &ex)
       {

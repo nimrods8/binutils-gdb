@@ -207,8 +207,8 @@ am__append_16 = fcntl.c
 #am__append_29 = getlogin_r.c
 #am__append_30 = getrandom.c
 #am__append_31 = gettimeofday.c
-am__append_32 = glob.c globfree.c
-am__append_33 = glob_pattern_p.c
+#am__append_32 = glob.c globfree.c
+#am__append_33 = glob_pattern_p.c
 #am__append_34 = inet_ntop.c
 #am__append_35 = isblank.c
 #am__append_36 = listen.c
@@ -488,9 +488,9 @@ am__objects_16 = libgnu_a-fcntl.$(OBJEXT)
 #am__objects_30 =  \
 #	libgnu_a-getrandom.$(OBJEXT)
 #am__objects_31 = libgnu_a-gettimeofday.$(OBJEXT)
-am__objects_32 = libgnu_a-glob.$(OBJEXT) \
-	libgnu_a-globfree.$(OBJEXT)
-am__objects_33 = libgnu_a-glob_pattern_p.$(OBJEXT)
+#am__objects_32 = libgnu_a-glob.$(OBJEXT) \
+#	libgnu_a-globfree.$(OBJEXT)
+#am__objects_33 = libgnu_a-glob_pattern_p.$(OBJEXT)
 #am__objects_34 =  \
 #	libgnu_a-inet_ntop.$(OBJEXT)
 #am__objects_35 = libgnu_a-isblank.$(OBJEXT)
@@ -683,18 +683,18 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = $(SUBDIRS)
-ACLOCAL = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing aclocal-1.15
+ACLOCAL = ${SHELL} /home/px/binutils-gdb/missing aclocal-1.15
 ALLOCA = 
 ALLOCA_H = alloca.h
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
 APPLE_UNIVERSAL_BUILD = 0
-AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+AR = ar --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
 ARFLAGS = cr
-AUTOCONF = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing autoconf
-AUTOHEADER = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing autoheader
-AUTOMAKE = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing automake-1.15
-AWK = mawk
+AUTOCONF = ${SHELL} /home/px/binutils-gdb/missing autoconf
+AUTOHEADER = ${SHELL} /home/px/binutils-gdb/missing autoheader
+AUTOMAKE = ${SHELL} /home/px/binutils-gdb/missing automake-1.15
+AWK = gawk
 BITSIZEOF_PTRDIFF_T = 
 BITSIZEOF_SIG_ATOMIC_T = 
 BITSIZEOF_SIZE_T = 
@@ -725,7 +725,7 @@ FLOAT_H =
 FNMATCH_H = 
 FREXPL_LIBM = 
 FREXP_LIBM = 
-GLOB_H = glob.h
+GLOB_H = 
 GL_CFLAG_ALLOW_WARNINGS = -Wno-error
 GL_CFLAG_GNULIB_WARNINGS =  -Wno-cast-qual -Wno-conversion -Wno-float-equal -Wno-sign-compare -Wno-undef -Wno-unused-function -Wno-unused-parameter -Wno-float-conversion -Wimplicit-fallthrough -Wno-pedantic -Wno-sign-conversion -Wno-type-limits -Wno-unsuffixed-float-constants
 GL_GNULIB_ACCEPT = 1
@@ -1712,7 +1712,7 @@ PRAGMA_SYSTEM_HEADER = #pragma GCC system_header
 PRIPTR_PREFIX = "l"
 PTHREAD_H_DEFINES_STRUCT_TIMESPEC = 0
 PTRDIFF_T_SUFFIX = 
-RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+RANLIB = ranlib --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
 REPLACE_ACCESS = 0
 REPLACE_ACOSF = 0
 REPLACE_ALIGNED_ALLOC = 0
@@ -1807,8 +1807,8 @@ REPLACE_GETPASS = 0
 REPLACE_GETPASS_FOR_GETPASS_GNU = 0
 REPLACE_GETRANDOM = 0
 REPLACE_GETTIMEOFDAY = 0
-REPLACE_GLOB = 1
-REPLACE_GLOB_PATTERN_P = 1
+REPLACE_GLOB = 0
+REPLACE_GLOB_PATTERN_P = 0
 REPLACE_GMTIME = 0
 REPLACE_HUGE_VAL = 0
 REPLACE_HYPOT = 0
@@ -2015,10 +2015,10 @@ WINDOWS_64_BIT_ST_SIZE = 0
 WINDOWS_STAT_INODES = 0
 WINDOWS_STAT_TIMESPEC = 0
 WINT_T_SUFFIX = 
-abs_builddir = /home/nimrod/Documents/binutils-gdb/gnulib/import
-abs_srcdir = /home/nimrod/Documents/binutils-gdb/gnulib/import
-abs_top_builddir = /home/nimrod/Documents/binutils-gdb/gnulib
-abs_top_srcdir = /home/nimrod/Documents/binutils-gdb/gnulib
+abs_builddir = /home/px/binutils-gdb/gnulib/import
+abs_srcdir = /home/px/binutils-gdb/gnulib/import
+abs_top_builddir = /home/px/binutils-gdb/gnulib
+abs_top_srcdir = /home/px/binutils-gdb/gnulib
 ac_ct_CC = 
 am__include = include
 am__leading_dot = .
@@ -2052,7 +2052,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/nimrod/Documents/binutils-gdb/install-sh
+install_sh = ${SHELL} /home/px/binutils-gdb/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -4773,26 +4773,26 @@ fnmatch.h: $(top_builddir)/config.status
 	rm -f $@
 
 # We need the following in order to create <glob.h>.
-glob.h: glob.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
-	$(gl_V_at)$(SED_HEADER_STDOUT) \
-	      -e 's|@''GUARD_PREFIX''@|GL|g' \
-	      -e 's|@''HAVE_GLOB_H''@|$(HAVE_GLOB_H)|g' \
-	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
-	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|#pragma GCC system_header|g' \
-	      -e 's|@''PRAGMA_COLUMNS''@||g' \
-	      -e 's|@''NEXT_GLOB_H''@|$(NEXT_GLOB_H)|g' \
-	      -e 's/@''GNULIB_GLOB''@/$(GL_GNULIB_GLOB)/g' \
-	      -e 's|@''HAVE_GLOB''@|$(HAVE_GLOB)|g' \
-	      -e 's|@''HAVE_GLOB_PATTERN_P''@|$(HAVE_GLOB_PATTERN_P)|g' \
-	      -e 's|@''REPLACE_GLOB''@|$(REPLACE_GLOB)|g' \
-	      -e 's|@''REPLACE_GLOB_PATTERN_P''@|$(REPLACE_GLOB_PATTERN_P)|g' \
-	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
-	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
-	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
-	      $(srcdir)/glob.in.h > $@-t
-	$(AM_V_at)mv $@-t $@
-#glob.h: $(top_builddir)/config.status
-#	rm -f $@
+#glob.h: glob.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
+#	$(gl_V_at)$(SED_HEADER_STDOUT) \
+#	      -e 's|@''GUARD_PREFIX''@|GL|g' \
+#	      -e 's|@''HAVE_GLOB_H''@|$(HAVE_GLOB_H)|g' \
+#	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
+#	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|#pragma GCC system_header|g' \
+#	      -e 's|@''PRAGMA_COLUMNS''@||g' \
+#	      -e 's|@''NEXT_GLOB_H''@|$(NEXT_GLOB_H)|g' \
+#	      -e 's/@''GNULIB_GLOB''@/$(GL_GNULIB_GLOB)/g' \
+#	      -e 's|@''HAVE_GLOB''@|$(HAVE_GLOB)|g' \
+#	      -e 's|@''HAVE_GLOB_PATTERN_P''@|$(HAVE_GLOB_PATTERN_P)|g' \
+#	      -e 's|@''REPLACE_GLOB''@|$(REPLACE_GLOB)|g' \
+#	      -e 's|@''REPLACE_GLOB_PATTERN_P''@|$(REPLACE_GLOB_PATTERN_P)|g' \
+#	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
+#	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
+#	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
+#	      $(srcdir)/glob.in.h > $@-t
+#	$(AM_V_at)mv $@-t $@
+glob.h: $(top_builddir)/config.status
+	rm -f $@
 
 glob-libc.gl.h: glob-libc.h
 	$(AM_V_GEN)$(SED_HEADER_STDOUT) \

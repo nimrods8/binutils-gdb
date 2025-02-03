@@ -324,14 +324,14 @@ ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
 DIST_SUBDIRS = $(SUBDIRS)
-ACLOCAL = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing aclocal-1.15
+ACLOCAL = ${SHELL} /home/px/binutils-gdb/missing aclocal-1.15
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
-AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
-AUTOCONF = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing autoconf
-AUTOHEADER = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing autoheader
-AUTOMAKE = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing automake-1.15
-AWK = mawk
+AR = ar --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
+AUTOCONF = ${SHELL} /home/px/binutils-gdb/missing autoconf
+AUTOHEADER = ${SHELL} /home/px/binutils-gdb/missing autoheader
+AUTOMAKE = ${SHELL} /home/px/binutils-gdb/missing automake-1.15
+AWK = gawk
 CATALOGS =  da.gmo es.gmo fi.gmo fr.gmo hr.gmo id.gmo ja.gmo pt.gmo ro.gmo ru.gmo rw.gmo sr.gmo sv.gmo tr.gmo uk.gmo vi.gmo zh_CN.gmo
 CATOBJEXT = .gmo
 CC = gcc
@@ -401,11 +401,11 @@ PACKAGE_URL =
 PACKAGE_VERSION = 2.39.50
 PATH_SEPARATOR = :
 PKGVERSION = (GNU Binutils) 
-PKG_CONFIG = /usr/bin/x86_64-pc-linux-gnu-pkg-config
+PKG_CONFIG = 
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
 POSUB = po
-RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+RANLIB = ranlib --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
 REPORT_BUGS_TEXI = @uref{https://sourceware.org/bugzilla/}
 REPORT_BUGS_TO = <https://sourceware.org/bugzilla/>
 SED = /usr/bin/sed
@@ -414,7 +414,7 @@ SHARED_LDFLAGS =
 SHARED_LIBADD =  
 SHELL = /bin/bash
 STRIP = strip
-TDEFINES =  
+TDEFINES =     
 USE_NLS = yes
 VERSION = 2.39.50
 WARN_CFLAGS = -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wstack-usage=262144 -Werror
@@ -423,10 +423,10 @@ WARN_WRITE_STRINGS = -Wwrite-strings
 XGETTEXT = :
 ZSTD_CFLAGS = 
 ZSTD_LIBS = 
-abs_builddir = /home/nimrod/Documents/binutils-gdb/bfd
-abs_srcdir = /home/nimrod/Documents/binutils-gdb/bfd
-abs_top_builddir = /home/nimrod/Documents/binutils-gdb/bfd
-abs_top_srcdir = /home/nimrod/Documents/binutils-gdb/bfd
+abs_builddir = /home/px/binutils-gdb/bfd
+abs_srcdir = /home/px/binutils-gdb/bfd
+abs_top_builddir = /home/px/binutils-gdb/bfd
+abs_top_srcdir = /home/px/binutils-gdb/bfd
 ac_ct_CC = 
 ac_ct_DUMPBIN = 
 all_backends = $(BFD64_BACKENDS) $(BFD32_BACKENDS)
@@ -436,10 +436,10 @@ am__quote =
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
 bfd64_libs = $(BFD64_LIBS)
-bfd_backends =  elf64-x86-64.lo elfxx-x86.lo elf-ifunc.lo elf-vxworks.lo elf64.lo elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo dwarf2.lo elf32-i386.lo elf32.lo pei-i386.lo peigen.lo cofflink.lo coffgen.lo pe-x86_64.lo pex64igen.lo pei-x86_64.lo elf64-gen.lo elf32-gen.lo plugin.lo $(ALL_BACKENDS)
+bfd_backends =  elf64-x86-64.lo elfxx-x86.lo elf-ifunc.lo elf-vxworks.lo elf64.lo elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo dwarf2.lo elf32-i386.lo elf32.lo pei-i386.lo peigen.lo cofflink.lo coffgen.lo pe-x86_64.lo pex64igen.lo pei-x86_64.lo elf64-gen.lo elf32-gen.lo elf64-aarch64.lo elfxx-aarch64.lo elf32-aarch64.lo elf32-arm.lo elf-nacl.lo pei-aarch64.lo pe-aarch64igen.lo plugin.lo
 bfd_default_target_size = 64
 bfd_file_ptr = int64_t
-bfd_machines =  cpu-i386.lo cpu-iamcu.lo $(ALL_MACHINES)
+bfd_machines =  cpu-i386.lo cpu-iamcu.lo cpu-aarch64.lo cpu-arm.lo
 bfd_ufile_ptr = uint64_t
 #bfdincludedir = 
 bfdincludedir = $(includedir)
@@ -458,7 +458,7 @@ datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-havevecs = -DHAVE_all_vecs
+havevecs = -DHAVE_x86_64_elf64_vec -DHAVE_i386_elf32_vec -DHAVE_iamcu_elf32_vec -DHAVE_x86_64_elf32_vec -DHAVE_i386_pei_vec -DHAVE_x86_64_pe_vec -DHAVE_x86_64_pei_vec -DHAVE_elf64_le_vec -DHAVE_elf64_be_vec -DHAVE_elf32_le_vec -DHAVE_elf32_be_vec -DHAVE_aarch64_elf64_le_vec -DHAVE_aarch64_elf64_be_vec -DHAVE_aarch64_elf32_le_vec -DHAVE_aarch64_elf32_be_vec -DHAVE_arm_elf32_le_vec -DHAVE_arm_elf32_be_vec -DHAVE_aarch64_pei_vec -DHAVE_arm_elf32_fdpic_le_vec -DHAVE_arm_elf32_fdpic_be_vec
 host = x86_64-pc-linux-gnu
 host_alias = x86_64-pc-linux-gnu
 host_cpu = x86_64
@@ -468,7 +468,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/nimrod/Documents/binutils-gdb/install-sh
+install_sh = ${SHELL} /home/px/binutils-gdb/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -492,7 +492,7 @@ target_cpu = x86_64
 target_noncanonical = x86_64-pc-linux-gnu
 target_os = linux-gnu
 target_vendor = pc
-tdefaults =  -DDEFAULT_VECTOR=x86_64_elf64_vec -DASSOCIATED_VECS='&x86_64_elf64_vec,&i386_elf32_vec,&iamcu_elf32_vec,&x86_64_elf32_vec,&i386_pei_vec,&x86_64_pe_vec,&x86_64_pei_vec,&elf64_le_vec,&elf64_be_vec,&elf32_le_vec,&elf32_be_vec'
+tdefaults =  -DDEFAULT_VECTOR=x86_64_elf64_vec -DSELECT_VECS='&x86_64_elf64_vec,&i386_elf32_vec,&iamcu_elf32_vec,&x86_64_elf32_vec,&i386_pei_vec,&x86_64_pe_vec,&x86_64_pei_vec,&elf64_le_vec,&elf64_be_vec,&elf32_le_vec,&elf32_be_vec,&aarch64_elf64_le_vec,&aarch64_elf64_be_vec,&aarch64_elf32_le_vec,&aarch64_elf32_be_vec,&arm_elf32_le_vec,&arm_elf32_be_vec,&aarch64_pei_vec,&arm_elf32_fdpic_le_vec,&arm_elf32_fdpic_be_vec' -DSELECT_ARCHITECTURES='&bfd_i386_arch,&bfd_iamcu_arch,&bfd_aarch64_arch,&bfd_arm_arch'
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
@@ -529,7 +529,7 @@ ZLIB = -L$(top_builddir)/../zlib -lz
 ZLIBINC = -I$(top_srcdir)/../zlib
 AM_CFLAGS = $(WARN_CFLAGS) $(ZLIBINC) $(ZSTD_CFLAGS)
 AM_CPPFLAGS = -DBINDIR='"$(bindir)"' -DLIBDIR='"$(libdir)"' \
-	     \
+	        \
 	$(CSEARCH) $(CSWITCHES) $(HAVEVECS) 
 LIBDL = 
 
@@ -1132,10 +1132,10 @@ CONFIG_STATUS_DEPENDENCIES = \
 # These are defined by configure:
 WORDSIZE = 64
 ALL_BACKENDS = $(BFD64_BACKENDS) $(BFD32_BACKENDS)
-BFD_BACKENDS =  elf64-x86-64.lo elfxx-x86.lo elf-ifunc.lo elf-vxworks.lo elf64.lo elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo dwarf2.lo elf32-i386.lo elf32.lo pei-i386.lo peigen.lo cofflink.lo coffgen.lo pe-x86_64.lo pex64igen.lo pei-x86_64.lo elf64-gen.lo elf32-gen.lo plugin.lo $(ALL_BACKENDS)
-BFD_MACHINES =  cpu-i386.lo cpu-iamcu.lo $(ALL_MACHINES)
-TDEFAULTS =  -DDEFAULT_VECTOR=x86_64_elf64_vec -DASSOCIATED_VECS='&x86_64_elf64_vec,&i386_elf32_vec,&iamcu_elf32_vec,&x86_64_elf32_vec,&i386_pei_vec,&x86_64_pe_vec,&x86_64_pei_vec,&elf64_le_vec,&elf64_be_vec,&elf32_le_vec,&elf32_be_vec'
-HAVEVECS = -DHAVE_all_vecs
+BFD_BACKENDS =  elf64-x86-64.lo elfxx-x86.lo elf-ifunc.lo elf-vxworks.lo elf64.lo elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo dwarf2.lo elf32-i386.lo elf32.lo pei-i386.lo peigen.lo cofflink.lo coffgen.lo pe-x86_64.lo pex64igen.lo pei-x86_64.lo elf64-gen.lo elf32-gen.lo elf64-aarch64.lo elfxx-aarch64.lo elf32-aarch64.lo elf32-arm.lo elf-nacl.lo pei-aarch64.lo pe-aarch64igen.lo plugin.lo
+BFD_MACHINES =  cpu-i386.lo cpu-iamcu.lo cpu-aarch64.lo cpu-arm.lo
+TDEFAULTS =  -DDEFAULT_VECTOR=x86_64_elf64_vec -DSELECT_VECS='&x86_64_elf64_vec,&i386_elf32_vec,&iamcu_elf32_vec,&x86_64_elf32_vec,&i386_pei_vec,&x86_64_pe_vec,&x86_64_pei_vec,&elf64_le_vec,&elf64_be_vec,&elf32_le_vec,&elf32_be_vec,&aarch64_elf64_le_vec,&aarch64_elf64_be_vec,&aarch64_elf32_le_vec,&aarch64_elf32_be_vec,&arm_elf32_le_vec,&arm_elf32_be_vec,&aarch64_pei_vec,&arm_elf32_fdpic_le_vec,&arm_elf32_fdpic_be_vec' -DSELECT_ARCHITECTURES='&bfd_i386_arch,&bfd_iamcu_arch,&bfd_aarch64_arch,&bfd_arm_arch'
+HAVEVECS = -DHAVE_x86_64_elf64_vec -DHAVE_i386_elf32_vec -DHAVE_iamcu_elf32_vec -DHAVE_x86_64_elf32_vec -DHAVE_i386_pei_vec -DHAVE_x86_64_pe_vec -DHAVE_x86_64_pei_vec -DHAVE_elf64_le_vec -DHAVE_elf64_be_vec -DHAVE_elf32_le_vec -DHAVE_elf32_be_vec -DHAVE_aarch64_elf64_le_vec -DHAVE_aarch64_elf64_be_vec -DHAVE_aarch64_elf32_le_vec -DHAVE_aarch64_elf32_be_vec -DHAVE_arm_elf32_le_vec -DHAVE_arm_elf32_be_vec -DHAVE_aarch64_pei_vec -DHAVE_arm_elf32_fdpic_le_vec -DHAVE_arm_elf32_fdpic_be_vec
 
 # C source files that correspond to .o's.
 SOURCE_CFILES = \

@@ -280,13 +280,18 @@ tui_dummy_print_frame_info_listing_hook (struct symtab *s,
 static void
 tui_inferior_exit (struct inferior *inf)
 {
-  tui_console_leave();
+   try
+   {
+      tui_console_leave();
+   }
+   catch( ...)
+   {
+      return;
+   }
   /* Leave the SingleKey mode to make sure the gdb prompt is visible.  */
   tui_set_key_mode (TUI_COMMAND_MODE);
   tui_show_frame_info (0);
   tui_display_main ();
-
-
 }
 
 
@@ -1447,14 +1452,37 @@ char xyz[64];
 //
 // QList: size = d.end - d.begin
 
+
+
   try
   {
       if( regname != 0 && *regname != '\0')
       {
          // NS 18/11 check with m_rwMaps to see where this register is pointintg at
          sprintf( xyz, "$%s", regname); 
-
+         
+         // NS 020225 make sure you can actually read from the "memory" address in the register
+         const target_section_table *table = target_get_section_table (current_inferior ()->top_target ());
+         if (table == nullptr)
+         {
+            reg_value->insert( 0, xyz);
+            return;
+         }
          struct value *val9 = parse_and_eval( xyz);
+         CORE_ADDR addr_reg = value_as_address( val9);
+         bool _found = false;
+
+         for( const target_section &sec : *table)
+         {
+            if( sec.addr <= addr_reg && sec.endaddr >= addr_reg)
+            {
+                _found = true;
+               break;
+            }
+         } // endfor
+         if( !_found)
+            return;
+
          //gdb_printf( "Ref %s = %lx", xyz, value_as_address( val9));
          std::string xstr = tui_hooks_get_name_of_rwMaps( value_as_address( val9));
          if( !xstr.empty())

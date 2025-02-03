@@ -1,4 +1,4 @@
-/* generated for  gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0 */
+/* generated for  gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0 */
 
 #ifndef GCC_GENERATED_STDINT_H
 #define GCC_GENERATED_STDINT_H 1

@@ -38,7 +38,7 @@
 set -e
 
 sed=/usr/bin/sed
-awk=mawk
+awk=gawk
 grep=/usr/bin/grep
 objcopy=objcopy
 readelf=readelf

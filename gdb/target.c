@@ -144,7 +144,7 @@ bool may_stop = true;
 
 /* Non-zero if we want to see trace of target level stuff.  */
 
-static unsigned int targetdebug = 0;
+static unsigned int targetdebug = 0; 		
 
 static void
 set_targetdebug  (const char *args, int from_tty, struct cmd_list_element *c)

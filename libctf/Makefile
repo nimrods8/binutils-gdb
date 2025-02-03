@@ -128,9 +128,9 @@ host_triplet = x86_64-pc-linux-gnu
 target_triplet = x86_64-pc-linux-gnu
 #am__append_1 = ctf-qsort_r.c
 #am__append_2 = site.exp development.exp
-am__append_3 = doc/ctf-spec.texi
-am__append_4 = texput.log
-am__append_5 = doc/ctf-spec.info
+#am__append_3 = doc/ctf-spec.texi
+#am__append_4 = texput.log
+#am__append_5 = doc/ctf-spec.info
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/../bfd/acinclude.m4 \
@@ -375,14 +375,14 @@ distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing aclocal-1.15
+ACLOCAL = ${SHELL} /home/px/binutils-gdb/missing aclocal-1.15
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
-AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
-AUTOCONF = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing autoconf
-AUTOHEADER = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing autoheader
-AUTOMAKE = ${SHELL} /home/nimrod/Documents/binutils-gdb/missing automake-1.15
-AWK = mawk
+AR = ar --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
+AUTOCONF = ${SHELL} /home/px/binutils-gdb/missing autoconf
+AUTOHEADER = ${SHELL} /home/px/binutils-gdb/missing autoheader
+AUTOMAKE = ${SHELL} /home/px/binutils-gdb/missing automake-1.15
+AWK = gawk
 CATALOGS = 
 CATOBJEXT = .gmo
 CC = gcc
@@ -390,7 +390,7 @@ CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2  
 CPP = gcc -E
 CPPFLAGS = 
-CTF_LIBADD = -L/home/nimrod/Documents/binutils-gdb/libctf/../libiberty -liberty 
+CTF_LIBADD = -L/home/px/binutils-gdb/libctf/../libiberty -liberty 
 CYGPATH_W = echo
 DATADIRNAME = share
 DEFS = -DHAVE_CONFIG_H
@@ -427,7 +427,7 @@ LIPO =
 LN_S = ln -s
 LTLIBOBJS = 
 MAINT = #
-MAKEINFO = makeinfo
+MAKEINFO = /home/px/binutils-gdb/missing makeinfo
 MKDIR_P = /usr/bin/mkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = 
@@ -443,11 +443,11 @@ PACKAGE_TARNAME = libctf
 PACKAGE_URL = 
 PACKAGE_VERSION = 1.2.0
 PATH_SEPARATOR = :
-PKG_CONFIG = /usr/bin/x86_64-pc-linux-gnu-pkg-config
+PKG_CONFIG = 
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
 POSUB = po
-RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+RANLIB = ranlib --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
 SED = /usr/bin/sed
 SET_MAKE = 
 SHARED_LDFLAGS = 
@@ -462,10 +462,10 @@ WERROR =
 XGETTEXT = :
 ZSTD_CFLAGS = 
 ZSTD_LIBS = 
-abs_builddir = /home/nimrod/Documents/binutils-gdb/libctf
-abs_srcdir = /home/nimrod/Documents/binutils-gdb/libctf
-abs_top_builddir = /home/nimrod/Documents/binutils-gdb/libctf
-abs_top_srcdir = /home/nimrod/Documents/binutils-gdb/libctf
+abs_builddir = /home/px/binutils-gdb/libctf
+abs_srcdir = /home/px/binutils-gdb/libctf
+abs_top_builddir = /home/px/binutils-gdb/libctf
+abs_top_srcdir = /home/px/binutils-gdb/libctf
 ac_ct_AR = 
 ac_ct_CC = 
 ac_ct_DUMPBIN = 
@@ -497,7 +497,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/nimrod/Documents/binutils-gdb/install-sh
+install_sh = ${SHELL} /home/px/binutils-gdb/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -547,7 +547,7 @@ lib_LTLIBRARIES = libctf.la libctf-nobfd.la
 #include_HEADERS = 
 include_HEADERS = $(INCDIR)/ctf.h $(INCDIR)/ctf-api.h
 #noinst_LTLIBRARIES = libctf.la libctf-nobfd.la
-libctf_nobfd_la_LIBADD = -L/home/nimrod/Documents/binutils-gdb/libctf/../libiberty -liberty  $(ZLIB)
+libctf_nobfd_la_LIBADD = -L/home/px/binutils-gdb/libctf/../libiberty -liberty  $(ZLIB)
 libctf_ldflags_nover = -version-info 0:0:0 
 libctf_nobfd_la_LDFLAGS = $(libctf_ldflags_nover) -Wl,--version-script='./libctf.ver'
 libctf_nobfd_la_CPPFLAGS = $(AM_CPPFLAGS) -DNOBFD=1
@@ -556,11 +556,11 @@ libctf_nobfd_la_SOURCES = ctf-archive.c ctf-dump.c ctf-create.c \
 	ctf-link.c ctf-lookup.c ctf-open.c ctf-serialize.c ctf-sha1.c \
 	ctf-string.c ctf-subr.c ctf-types.c ctf-util.c $(am__append_1)
 
-# -L/home/nimrod/Documents/binutils-gdb/libctf/../libiberty -liberty  appears here twice: once, to force libiberty to get searched before
+# -L/home/px/binutils-gdb/libctf/../libiberty -liberty  appears here twice: once, to force libiberty to get searched before
 # install-time libbfd adds a -L to the install dir (possibly pointing at an
 # incompatible libiberty), and once via lictf_nobfd_la_LIBADD so that the
 # references in there get picked up.
-libctf_la_LIBADD = -L/home/nimrod/Documents/binutils-gdb/libctf/../libiberty -liberty  ../bfd/libbfd.la $(libctf_nobfd_la_LIBADD)
+libctf_la_LIBADD = -L/home/px/binutils-gdb/libctf/../libiberty -liberty  ../bfd/libbfd.la $(libctf_nobfd_la_LIBADD)
 libctf_la_CPPFLAGS = $(AM_CPPFLAGS) -DNOBFD=0
 libctf_la_LDFLAGS = $(libctf_ldflags_nover) -Wl,--version-script='./libctf.ver'
 libctf_la_SOURCES = $(libctf_nobfd_la_SOURCES) ctf-open-bfd.c
@@ -585,7 +585,7 @@ RUNTESTFLAGS =
 # development.sh is used to determine -Werror default.
 #CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/development.sh
 #EXTRA_DEJAGNU_SITE_CONFIG = development.exp
-AM_MAKEINFOFLAGS = --no-split
+#AM_MAKEINFOFLAGS = --no-split
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -1029,24 +1029,24 @@ doc/$(am__dirstamp):
 	@$(MKDIR_P) doc
 	@: > doc/$(am__dirstamp)
 
-doc/ctf-spec.info: doc/ctf-spec.texi 
-	@test -f doc/$(am__dirstamp) || $(MAKE) $(AM_MAKEFLAGS) doc/$(am__dirstamp)
-	$(AM_V_MAKEINFO)restore=: && backupdir="$(am__leading_dot)am$$$$" && \
-	rm -rf $$backupdir && mkdir $$backupdir && \
-	if ($(MAKEINFO) --version) >/dev/null 2>&1; then \
-	  for f in $@ $@-[0-9] $@-[0-9][0-9] $(@:.info=).i[0-9] $(@:.info=).i[0-9][0-9]; do \
-	    if test -f $$f; then mv $$f $$backupdir; restore=mv; else :; fi; \
-	  done; \
-	else :; fi && \
-	if $(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
-	 -o $@ `test -f 'doc/ctf-spec.texi' || echo '$(srcdir)/'`doc/ctf-spec.texi; \
-	then \
-	  rc=0; \
-	else \
-	  rc=$$?; \
-	  $$restore $$backupdir/* `echo "./$@" | sed 's|[^/]*$$||'`; \
-	fi; \
-	rm -rf $$backupdir; exit $$rc
+#doc/ctf-spec.info: doc/ctf-spec.texi 
+#	@test -f doc/$(am__dirstamp) || $(MAKE) $(AM_MAKEFLAGS) doc/$(am__dirstamp)
+#	$(AM_V_MAKEINFO)restore=: && backupdir="$(am__leading_dot)am$$$$" && \
+#	rm -rf $$backupdir && mkdir $$backupdir && \
+#	if ($(MAKEINFO) --version) >/dev/null 2>&1; then \
+#	  for f in $@ $@-[0-9] $@-[0-9][0-9] $(@:.info=).i[0-9] $(@:.info=).i[0-9][0-9]; do \
+#	    if test -f $$f; then mv $$f $$backupdir; restore=mv; else :; fi; \
+#	  done; \
+#	else :; fi && \
+#	if $(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
+#	 -o $@ `test -f 'doc/ctf-spec.texi' || echo '$(srcdir)/'`doc/ctf-spec.texi; \
+#	then \
+#	  rc=0; \
+#	else \
+#	  rc=$$?; \
+#	  $$restore $$backupdir/* `echo "./$@" | sed 's|[^/]*$$||'`; \
+#	fi; \
+#	rm -rf $$backupdir; exit $$rc
 
 doc/ctf-spec.dvi: doc/ctf-spec.texi  doc/$(am__dirstamp)
 	$(AM_V_TEXI2DVI)TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
@@ -1494,7 +1494,7 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
-#html-local:
+html-local:
 clean: clean-am
 
 clean-am: clean-aminfo clean-generic clean-libLTLIBRARIES \
@@ -1710,14 +1710,14 @@ uninstall-am: uninstall-dvi-am uninstall-html-am \
 #	$(AM_V_GEN)$(EGREP) "(development|experimental)=" $(BFDDIR)/development.sh  \
 #	  | $(AWK) -F= '{ print "set " $$1 " " $$2 }' > $@
 
-html-local: doc/ctf-spec/index.html
-doc/ctf-spec/index.html: doc/ctf-spec.texi doc/$(am__dirstamp)
-	$(AM_V_GEN)$(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) \
-	  --split=node -I$(srcdir) --output doc/ctf-spec $(srcdir)/doc/ctf-spec.texi
+#html-local: doc/ctf-spec/index.html
+#doc/ctf-spec/index.html: doc/ctf-spec.texi doc/$(am__dirstamp)
+#	$(AM_V_GEN)$(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) \
+#	  --split=node -I$(srcdir) --output doc/ctf-spec $(srcdir)/doc/ctf-spec.texi
 
 # Workaround bug in automake: it can't handle conditionally building info pages
 # since GNU projects normally include info pages in the source distributions.
-#doc/ctf-spec.info:
+doc/ctf-spec.info:
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

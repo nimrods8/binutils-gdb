@@ -127,7 +127,9 @@ tui_register_format (frame_info_ptr frame, int regnum, std::string &val)
   //gdb_printf( "next reg 2\n");
 
   // NS 20/10
-  const char *regname = gdbarch_register_name (gdbarch, regnum);
+  const char *regname = NULL;
+  if( gdbarch != NULL)
+     regname = gdbarch_register_name (gdbarch, regnum);
 
   // make sure value is empty because I am inserting into it in the notification function in tui_hook
   val = "";

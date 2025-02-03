@@ -2540,6 +2540,9 @@ cmd_func (struct cmd_list_element *cmd, const char *args, int from_tty)
       if (cmd->suppress_notification != NULL)
 	restore_suppress.emplace (cmd->suppress_notification, true);
 
+      // NS 30/01/25
+      // gdb_printf ("CMD name=%s (0x%p)\n", cmd->name, cmd->func);
+
       cmd->func (args, from_tty, cmd);
     }
   else

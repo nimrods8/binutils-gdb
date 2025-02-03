@@ -50,13 +50,13 @@ mkinstalldirs = $(SHELL) $(libiberty_topdir)/mkinstalldirs
 # Some compilers can't handle cc -c blah.c -o foo/blah.o.
 OUTPUT_OPTION = -o $@
 
-AR = ar --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+AR = ar --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
 AR_FLAGS = rc
 
 CC = gcc
 CFLAGS = -g -O2  
 CPPFLAGS = 
-RANLIB = ranlib --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so --plugin /usr/lib/gcc/x86_64-linux-gnu/11/liblto_plugin.so
+RANLIB = ranlib --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
 MAKEINFO = makeinfo
 PERL = perl
 

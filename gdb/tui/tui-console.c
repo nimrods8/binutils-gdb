@@ -238,7 +238,7 @@ tui_console_window::show_register_group (const reggroup *group,
 	 processor, so don't display anything.  */
       name = gdbarch_register_name (gdbarch, regnum);
       if (*name == '\0')
-	continue;
+continue;
 
       nr_regs++;
     }
@@ -735,12 +735,14 @@ void* threadFunction(void* args)
 
 
 /*creating thread id*/
-static pthread_t id;
+static pthread_t id = -1;
 
 //////////////////////////////////
 void tui_console_leave( void)
 {
-    pthread_cancel( id);
+    if( id != -1)
+       pthread_cancel( id);
+
     thread_kill = true; 
     //contents.clear();
     //newData = false; 
@@ -769,6 +771,7 @@ void initialize_tui_console()
     }
     else{
         gdb_printf("Thread not created.\n");
+        id = -1;
     }
 }
 

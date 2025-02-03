@@ -424,6 +424,7 @@ run_command_1 (const char *args, int from_tty, enum run_how run_how)
      mkfifo( myfifo, 0666);
      initialize_tui_console();
 
+#if 1
      //gdb_printf( "tui on %s", args);
      if( args == NULL)
         _concat = xstrprintf("%s 1>%s", "", myfifo);
@@ -431,6 +432,7 @@ run_command_1 (const char *args, int from_tty, enum run_how run_how)
         _concat = xstrprintf("%s 1>%s", args, myfifo);
      args = _concat.get();
      //gdb_printf( "tui on %s", args);
+#endif
   
    }
 
