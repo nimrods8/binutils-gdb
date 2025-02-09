@@ -100,6 +100,10 @@ struct mapping
 
 std::vector<mapping> m_execMaps;
 std::vector<mapping> m_rwMaps;
+
+// NS 050225
+std::vector<segments_lookup> m_filesMap;
+
 static bool newSolibsLoaded;         // true when new solibs have been loaded
 static bool commentsTainted;
 static bool breaksTainted;
@@ -292,6 +296,23 @@ tui_inferior_exit (struct inferior *inf)
   tui_set_key_mode (TUI_COMMAND_MODE);
   tui_show_frame_info (0);
   tui_display_main ();
+}
+
+/* Perform all necessary cleanups regarding our module's inferior data
+   that is required after the inferior INF just exited.  */
+
+static void
+tui_inferior_attach (struct inferior *inf)
+{
+   try
+   {
+      m_filesMap = tui_hooks_get_info_files("");
+   }
+   catch( ...)
+   {
+      m_filesMap.clear();
+      return;
+   }
 }
 
 
@@ -879,6 +900,65 @@ std::vector<functions_lookup> tui_hooks_get_info_func( std::string args)
    return retVec;
 } // end helper function
 
+/// @brief This is a util helper function which requests "info files"
+
+
+/// @param args regexp or straight func name to look for
+/// @return std::vector of struct functions
+///
+std::vector<segments_lookup> tui_hooks_get_info_files( std::string args)
+{
+   std::vector<segments_lookup> retVec;
+ 
+   std::string resultsstr = "";
+   std::string infof = "info files " + args;
+
+   // NS 050225 
+   // gdb_printf( "[hooks] info files");
+
+   try
+   {
+      execute_command_to_string( resultsstr, infof.c_str(), 0, false);
+   }
+   catch( ...)
+   {
+      // bail out...
+      return retVec;
+   }
+   std::vector<std::string>v1 = tui_hooks_split( resultsstr, '\n');
+   CORE_ADDR from_addr, to_addr;
+   char func_name[256];
+
+   // NS 050225
+   // gdb_printf( "[hook] lookup1 %lu\n", v1.size());
+    
+
+//   bool found = false;
+   int lline = 0;
+   for( auto vline : v1)
+   {
+        // don't allow too big function names here...
+        if( vline.length() > sizeof( func_name) - 1)
+           continue;
+        lline++;
+        if( lline < 3) continue;
+
+        //        0x20006c2c - 0x20006c80 is .ram_function
+        if( sscanf( vline.c_str(), "        0x%lx - 0x%lx is %s", &from_addr, &to_addr, func_name) >= 2)
+        {
+            segments_lookup lookup;
+            lookup.from_addr = from_addr;
+            lookup.to_addr   = to_addr;
+            lookup.func_name = func_name;
+            retVec.push_back( lookup);
+            //found = true;
+        } // endif
+   } // endfor
+   // NS 050225
+   gdb_printf( "[hooks] Info files found %lu segments\n", retVec.size());
+   return retVec;
+} // end helper function
+
 
 
 /// @brief static helper to run break points upon request with all sorts of goodies
@@ -1453,6 +1533,9 @@ char xyz[64];
 // QList: size = d.end - d.begin
 
 
+// NS 040225 test
+  regname = 0;
+
 
   try
   {
@@ -1626,6 +1709,11 @@ tui_attach_detach_observers (bool attach)
 // NS 20/10
   attach_or_detach (gdb::observers::tui_next_reg,
                     tui_hooks_next_reg, attach);
+
+// NS 05/02/25
+  attach_or_detach (gdb::observers::inferior_created,
+                    tui_inferior_attach, attach);
+
 }
 
 

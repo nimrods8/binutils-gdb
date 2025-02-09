@@ -53,7 +53,8 @@ static std::vector<std::string>mem_contents;
 static std::vector<gdb_byte>saved_contents;
 static CORE_ADDR savedCoreAddr;
 static std::string request;
-static int requestLength;
+static int requestLength, requestSize = 1;
+
 #if 0
 /* A subclass of string_file that expands tab characters.  */
 class tab_expansion_file : public string_file
@@ -416,6 +417,7 @@ std::string m_cont;
      CORE_ADDR pos = 0;
      mem_contents.clear();     
 
+     // evaluate the user's request
      struct value *val = parse_and_eval( request.c_str());
      if( val == NULL)
      {
@@ -430,6 +432,10 @@ std::string m_cont;
         savedCoreAddr = watchaddr;
         saved_contents.clear();
      }
+
+     // NS 090225 make sure that watchAddrs is aligned with the requestSize
+     
+
 
      while( true)
      {
@@ -726,7 +732,7 @@ tui_watch_command (const char *args, int from_tty)
       for( int i = 0; i < args_vec.size(); i++)
       {
           if( i == 0) request = args_vec.at(i);
-          if( i > 0)
+          if( i == 1)
           {
              watchLength = atoi( args_vec.at(i).c_str());
              if( watchLength > 0) break;
@@ -734,11 +740,20 @@ tui_watch_command (const char *args, int from_tty)
       }
       if( watchLength == 0) watchLength = 128;
 
+      // NS 090225 add another variable to the watch line "/#
+      // to specify the number of bytes per value to be displayed
+      // e.g. tui watch $r1/4
+      args_vec = tui_hooks_split( ar, '/');
+      if( args_vec.size() > 1)
+      {
+          requestSize = atoi( args_vec.at(1).c_str());
+          if( requestSize <= 0) requestSize = 1;
+      }
+
       requestLength = watchLength;
       savedCoreAddr = -1;
       TUI_MEMDUMP_WIN->tui_memdump_format( watchLength);
       //rerender();
-
 
       /* Make sure the curses mode is enabled.  */
       tui_enable ();

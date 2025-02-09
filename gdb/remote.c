@@ -5884,10 +5884,10 @@ remote_target::open_1 (const char *name, int from_tty, int extended_p)
 
     try
       {
-        // BS 300125
-        gdb_printf ( "<<< %s\n", get_remote_exec_file ());
+        // NS 300125
+        // gdb_printf ( "<<< %s\n", get_remote_exec_file ());
 	remote->start_remote (from_tty, extended_p);
-        gdb_printf ( ">>> %s\n", get_remote_exec_file ());
+        // gdb_printf ( ">>> %s\n", get_remote_exec_file ());
       }
     catch (const gdb_exception &ex)
       {

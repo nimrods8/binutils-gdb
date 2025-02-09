@@ -34,10 +34,19 @@ typedef struct
    std::string func_name;
 } functions_lookup;
 
+/************************************/
+typedef struct
+{
+   CORE_ADDR   from_addr;
+   CORE_ADDR   to_addr;
+   std::string func_name;
+} segments_lookup;
+
 /// @brief This is a util helper function which requests "info func"
 ///        with a given func name or regexp and returns a vector of addreses and func names
 /// @param args regexp or straight func name to look for
 /// @return std::vector of struct functions
 ///
 std::vector<functions_lookup> tui_hooks_get_info_func( std::string args);
+std::vector<segments_lookup> tui_hooks_get_info_files( std::string args);
 #endif /* TUI_TUI_HOOKS_H */
