@@ -1,4 +1,4 @@
-/* TUI display registers in window.
+/* TUI display memory dump in window.
 
    Copyright (C) 1998-2022 Free Software Foundation, Inc.
 
@@ -51,6 +51,7 @@
 
 static std::vector<std::string>mem_contents;
 static std::vector<gdb_byte>saved_contents;
+static std::vector<u_long>saved_contents_long;
 static CORE_ADDR savedCoreAddr;
 static std::string request;
 static int requestLength, requestSize = 1;
@@ -426,23 +427,35 @@ std::string m_cont;
      }
      CORE_ADDR watchaddr = value_as_address(val);
 
+     // NS 090225 make sure that watchAddrs is aligned with the requestSize
+     int showPerLine = 32;
+
+     if( requestSize == 2)
+        watchaddr = watchaddr & ((CORE_ADDR)0xfffffffffffffffe);
+     else if( requestSize == 4)
+        watchaddr = watchaddr & ((CORE_ADDR)0xfffffffffffffffc);
+     else if( requestSize == 8)
+        watchaddr = watchaddr & ((CORE_ADDR)0xfffffffffffffff8);
+     else
+     {
+        showPerLine = 16;
+        requestSize = 1;
+     }
+
      if( watchaddr != savedCoreAddr)
      {
         newData = true;
         savedCoreAddr = watchaddr;
         saved_contents.clear();
+        saved_contents_long.clear();
      }
-
-     // NS 090225 make sure that watchAddrs is aligned with the requestSize
-     
-
 
      while( true)
      {
         m_cont = "";
         try
         {
-           if( target_read_memory( watchaddr + pos, byte_buf, 16) == -1)
+           if( target_read_memory( watchaddr + pos, byte_buf, showPerLine) == -1)
            {
               mem_contents.push_back( "Can't sync with " + request);
 
@@ -468,21 +481,88 @@ std::string m_cont;
             m_cont += tui_hooks_filename2color( "reset");             // reset the color back to black
 
         m_cont += "    ";
-        for( int i = 0; i < 16; i++)
+        for( int i = 0; i < showPerLine; i++)
         {
-            if( !newData && ( gdb_byte)( saved_contents.at( i + pos)) != byte_buf[i])
-               sprintf( f, "\033[0;93m%02x\033[0m ", byte_buf[i]);
+            // NS 090225
+            if( requestSize == 2)
+            {
+                int loc = (i + pos) / 2;
+
+                short unsigned int *sint = ((short unsigned int *)&byte_buf[i]);
+                if( !newData && ( u_long)( saved_contents_long.at( loc)) != (unsigned long)*sint) //(unsigned long)*sint)
+                   sprintf( f, "\033[0;93m%04x\033[0m ", *sint);
+                else
+                   sprintf( f, "%04x ", *sint);
+
+                if( pos + i > watchSize)
+                   strcpy( f, "     ");
+
+                // update the saved content for next time
+                if( saved_contents_long.size() <= loc)
+                   saved_contents_long.push_back( *sint);
+                else
+                   saved_contents_long[loc] = *sint;
+
+                
+                i += 1;
+            }
+            else if( requestSize == 4)
+            {
+                int loc = (i + pos) / 4;
+
+                unsigned int *uint = ((unsigned int *)&byte_buf[i]);
+                if( !newData && ( u_long)( saved_contents_long.at( loc)) != (unsigned long)*uint)
+                   sprintf( f, "\033[0;93m%08x\033[0m ", *uint);
+                else
+                   sprintf( f, "%08x ", *uint);
+
+                if( pos + i > watchSize)
+                   strcpy( f, "         ");
+ 
+                // update the saved content for next time
+                if( saved_contents_long.size() <= loc)
+                   saved_contents_long.push_back( *uint);
+                else
+                   saved_contents_long[loc] = *uint;
+
+                i += 3;
+            }
+            else if( requestSize == 8)
+            {
+                int loc = (i + pos) / 8;
+
+                unsigned long *uint = ((unsigned long *)&byte_buf[i]);
+                if( !newData && ( u_long)( saved_contents_long.at( loc)) != (unsigned long)*uint)
+                   sprintf( f, "\033[0;93m%016lx\033[0m ", *uint);
+                else
+                   sprintf( f, "%016lx ", *uint);
+
+                if( pos + i > watchSize)
+                   strcpy( f, "                 ");
+ 
+                // update the saved content for next time
+                if( saved_contents_long.size() <= loc)
+                   saved_contents_long.push_back( *uint);
+                else
+                   saved_contents_long[loc] = *uint;
+
+                i += 7;
+            }
             else
-               sprintf( f, "%02x ", byte_buf[i]);
+            {
+                if( !newData && ( gdb_byte)( saved_contents.at( i + pos)) != byte_buf[i])
+                   sprintf( f, "\033[0;93m%02x\033[0m ", byte_buf[i]);
+                else
+                   sprintf( f, "%02x ", byte_buf[i]);
 
-            if( pos + i > watchSize)
-               strcpy( f, "   ");
-
+                if( pos + i > watchSize)
+                   strcpy( f, "   ");
+            }
             m_cont += f;
         } // endfor
         m_cont += "    ";
 
-        for( int i = 0; i < 16; i++)
+        for( int i = 0; i < showPerLine; i++)
         {
             gdb_byte g = byte_buf[i];
             if( g < 0x20 || g > 0x7f) g = '.';
@@ -505,7 +585,7 @@ std::string m_cont;
         } // endfor
         // m_cont += "\n";
         mem_contents.push_back( m_cont);
-        pos += 16;
+        pos += showPerLine;
         if( pos > watchSize)
            break;
      }            

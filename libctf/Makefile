@@ -375,13 +375,13 @@ distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/user/binutils-gdb/missing aclocal-1.15
+ACLOCAL = ${SHELL} /home/nimrod/projects/binutils-gdb/missing aclocal-1.15
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
 AR = ar --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so --plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so
-AUTOCONF = ${SHELL} /home/user/binutils-gdb/missing autoconf
-AUTOHEADER = ${SHELL} /home/user/binutils-gdb/missing autoheader
-AUTOMAKE = ${SHELL} /home/user/binutils-gdb/missing automake-1.15
+AUTOCONF = ${SHELL} /home/nimrod/projects/binutils-gdb/missing autoconf
+AUTOHEADER = ${SHELL} /home/nimrod/projects/binutils-gdb/missing autoheader
+AUTOMAKE = ${SHELL} /home/nimrod/projects/binutils-gdb/missing automake-1.15
 AWK = gawk
 CATALOGS = 
 CATOBJEXT = .gmo
@@ -390,7 +390,7 @@ CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2  
 CPP = gcc -E
 CPPFLAGS = 
-CTF_LIBADD = -L/home/user/binutils-gdb/libctf/../libiberty -liberty 
+CTF_LIBADD = -L/home/nimrod/projects/binutils-gdb/libctf/../libiberty -liberty 
 CYGPATH_W = echo
 DATADIRNAME = share
 DEFS = -DHAVE_CONFIG_H
@@ -462,10 +462,10 @@ WERROR =
 XGETTEXT = :
 ZSTD_CFLAGS = 
 ZSTD_LIBS = 
-abs_builddir = /home/user/binutils-gdb/libctf
-abs_srcdir = /home/user/binutils-gdb/libctf
-abs_top_builddir = /home/user/binutils-gdb/libctf
-abs_top_srcdir = /home/user/binutils-gdb/libctf
+abs_builddir = /home/nimrod/projects/binutils-gdb/libctf
+abs_srcdir = /home/nimrod/projects/binutils-gdb/libctf
+abs_top_builddir = /home/nimrod/projects/binutils-gdb/libctf
+abs_top_srcdir = /home/nimrod/projects/binutils-gdb/libctf
 ac_ct_AR = 
 ac_ct_CC = 
 ac_ct_DUMPBIN = 
@@ -497,7 +497,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/user/binutils-gdb/install-sh
+install_sh = ${SHELL} /home/nimrod/projects/binutils-gdb/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -547,7 +547,7 @@ lib_LTLIBRARIES = libctf.la libctf-nobfd.la
 #include_HEADERS = 
 include_HEADERS = $(INCDIR)/ctf.h $(INCDIR)/ctf-api.h
 #noinst_LTLIBRARIES = libctf.la libctf-nobfd.la
-libctf_nobfd_la_LIBADD = -L/home/user/binutils-gdb/libctf/../libiberty -liberty  $(ZLIB)
+libctf_nobfd_la_LIBADD = -L/home/nimrod/projects/binutils-gdb/libctf/../libiberty -liberty  $(ZLIB)
 libctf_ldflags_nover = -version-info 0:0:0 
 libctf_nobfd_la_LDFLAGS = $(libctf_ldflags_nover) -Wl,--version-script='./libctf.ver'
 libctf_nobfd_la_CPPFLAGS = $(AM_CPPFLAGS) -DNOBFD=1
@@ -556,11 +556,11 @@ libctf_nobfd_la_SOURCES = ctf-archive.c ctf-dump.c ctf-create.c \
 	ctf-link.c ctf-lookup.c ctf-open.c ctf-serialize.c ctf-sha1.c \
 	ctf-string.c ctf-subr.c ctf-types.c ctf-util.c $(am__append_1)
 
-# -L/home/user/binutils-gdb/libctf/../libiberty -liberty  appears here twice: once, to force libiberty to get searched before
+# -L/home/nimrod/projects/binutils-gdb/libctf/../libiberty -liberty  appears here twice: once, to force libiberty to get searched before
 # install-time libbfd adds a -L to the install dir (possibly pointing at an
 # incompatible libiberty), and once via lictf_nobfd_la_LIBADD so that the
 # references in there get picked up.
-libctf_la_LIBADD = -L/home/user/binutils-gdb/libctf/../libiberty -liberty  ../bfd/libbfd.la $(libctf_nobfd_la_LIBADD)
+libctf_la_LIBADD = -L/home/nimrod/projects/binutils-gdb/libctf/../libiberty -liberty  ../bfd/libbfd.la $(libctf_nobfd_la_LIBADD)
 libctf_la_CPPFLAGS = $(AM_CPPFLAGS) -DNOBFD=0
 libctf_la_LDFLAGS = $(libctf_ldflags_nover) -Wl,--version-script='./libctf.ver'
 libctf_la_SOURCES = $(libctf_nobfd_la_SOURCES) ctf-open-bfd.c
