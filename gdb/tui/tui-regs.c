@@ -40,7 +40,7 @@
 #include "valprint.h"
 #include "completer.h"
 #include "tui/tui-disasm.h"
-
+#include "tui/tui-memdump.h"
 #include "gdb_curses.h"
 
 /* A subclass of string_file that expands tab characters.  */
@@ -539,12 +539,21 @@ void tui_data_item_window::clicked( void)
      // DEBUG DEBUG DEBUG gdb_printf( "I'm clicked! %s", content.c_str());
      if( regno >= 0)
      {
+        // DEBUG gdb_printf( "I'm clicked! %s %d", content.c_str(), regno);
+
+        std::size_t loc = content.find( ' ');
         //const char *regname = gdbarch_register_name ( get_current_arch (), regno);
-        
-        std::string goWatch = "tui watch " + showValue;
-        gdb_printf( "%s ", goWatch.c_str());
-        execute_command( goWatch.c_str(), false);
-     }
+        if( loc != std::string::npos)
+        {
+           std::string tempstr = content;
+           tempstr.resize( loc);
+           std::string goWatch = "tui watch $" + tempstr;
+           // DEBUG gdb_printf( "%s ", goWatch.c_str());
+           execute_command( goWatch.c_str(), true);
+
+           TUI_MEMDUMP_WIN->rerender();
+        } // endif
+     } // endif
 }
 
 

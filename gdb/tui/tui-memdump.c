@@ -49,6 +49,9 @@
 #include "gdb_curses.h"
 
 
+#define DEFAULT_WATCH_LEN	256
+
+
 static std::vector<std::string>mem_contents;
 static std::vector<gdb_byte>saved_contents;
 static std::vector<u_long>saved_contents_long;
@@ -405,8 +408,15 @@ tui_console_window::delete_data_content_windows ()
 }
 #endif
 
-//////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // MEMDUMP FORMATTING
+/* 
+████████ ██    ██ ██     ██     ██  █████  ████████  ██████ ██   ██ 
+   ██    ██    ██ ██     ██     ██ ██   ██    ██    ██      ██   ██ 
+   ██    ██    ██ ██     ██  █  ██ ███████    ██    ██      ███████ 
+   ██    ██    ██ ██     ██ ███ ██ ██   ██    ██    ██      ██   ██ 
+   ██     ██████  ██      ███ ███  ██   ██    ██     ██████ ██   ██ 
+*/
 void tui_memdump_window::tui_memdump_format( size_t watchSize)
 {
 bool newData = false;
@@ -428,7 +438,10 @@ std::string m_cont;
      CORE_ADDR watchaddr = value_as_address(val);
 
      // NS 090225 make sure that watchAddrs is aligned with the requestSize
-     int showPerLine = 32;
+     int showPerLine = 16;
+
+     if( width > 80)
+        showPerLine = 32;
 
      if( requestSize == 2)
         watchaddr = watchaddr & ((CORE_ADDR)0xfffffffffffffffe);
@@ -802,7 +815,7 @@ tui_watch_command (const char *args, int from_tty)
   {
       //size_t len = strlen (args);
 
-      size_t watchLength   = 128;
+      size_t watchLength   = DEFAULT_WATCH_LEN;
       std::string ar = args;
       std::vector<std::string>args_vec;
       args_vec = tui_hooks_split( ar, ',');
@@ -811,14 +824,22 @@ tui_watch_command (const char *args, int from_tty)
 
       for( int i = 0; i < args_vec.size(); i++)
       {
-          if( i == 0) request = args_vec.at(i);
+          if( i == 0) 
+          {
+             request = args_vec.at(i);
+
+             // get rid of the '/'
+             std::string::size_type loc = request.find( "/", 0);
+             if( loc != std::string::npos) 
+                request.resize( loc);
+          }
           if( i == 1)
           {
              watchLength = atoi( args_vec.at(i).c_str());
              if( watchLength > 0) break;
           }
       }
-      if( watchLength == 0) watchLength = 128;
+      if( watchLength == 0) watchLength = DEFAULT_WATCH_LEN;
 
       // NS 090225 add another variable to the watch line "/#
       // to specify the number of bytes per value to be displayed

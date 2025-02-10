@@ -63,8 +63,9 @@ when running the inferior from the beginning, i.e. not by attaching to it.
 
 **tui watch**:  
 New watch mechanism.   
-`tui watch <expression>,[size to watch]`  
+`tui watch <expression>,[size to watch]/[block size in bytes]`  
 NOTE the comma between expression and size. If no size is give 128 bytes are shown.  
+The "block size in bytes" can be 1, 2, 4 or 8 bytes per block
 
 
 **tui skip**:  
@@ -73,6 +74,8 @@ Skips the next opcode
 
 **Better mouse interaction**  
 Click the mouse inside a window to set it into focus
+For example, you can press one of the registers in the tui register window and it will show in the watch window.
+
 
 **tui console layout**
 A new layout has been added, called `console`.  
@@ -85,7 +88,7 @@ Display any of the `info` commands on the console window. For example, use:
 to show breakpoints on the console window, or
 `tui info thread`
 to show current threads execution picture
-
+If these are not used, the stdin is shown in the info window.
 
 	  
 Notes:
