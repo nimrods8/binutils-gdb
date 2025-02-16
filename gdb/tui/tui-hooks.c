@@ -76,6 +76,7 @@ static void tui_hooks_skip_command( const char *arg, int from_tty);
 bool tui_hooks_serialize_comments( bool);
 bool tui_hooks_deserialize_comments( void);
 std::string toHexFromDecimal(long long t);
+static bool tui_hooks_check_if_in_filesMap( CORE_ADDR add_reg);
 
 
 
@@ -582,7 +583,7 @@ tui_hooks_solib_loaded_observer( struct so_list *so)
      again.  This means that the list of shared libraries may have
      evolved.  Reset our cached value.  */
   
-   tui_hooks_read_maps_info();  
+     tui_hooks_read_maps_info();  
 }
 
 
@@ -599,7 +600,18 @@ tui_context_changed (user_selected_what ignore)
 static void
 tui_symtab_changed ()
 {
-  from_source_symtab = true;
+   from_source_symtab = true;
+
+   // NS 150225
+   try
+   {
+      m_filesMap = tui_hooks_get_info_files("");
+   }
+   catch( ...)
+   {
+      m_filesMap.clear();
+      return;
+   }
 }
 
 /*
@@ -900,9 +912,35 @@ std::vector<functions_lookup> tui_hooks_get_info_func( std::string args)
    return retVec;
 } // end helper function
 
+
+
+/**
+ * @brief 	This function checks the m_filesMap vector which is read below
+ *		to see if add_reg is located inside any of its addresses
+ *
+ */
+static bool tui_hooks_check_if_in_filesMap( CORE_ADDR add_reg)
+{
+    bool found = false;
+
+    for( int i = 0; i < m_filesMap.size(); i++)
+    {
+	if( m_filesMap[i].from_addr <= add_reg && m_filesMap[i].to_addr >= add_reg)
+        {
+           found = true;
+           break;
+        }
+    } // endfor
+    return found;
+} // endfunc
+
+
+
+// ===========================================================================
+// NS 2025 !
 /// @brief This is a util helper function which requests "info files"
-
-
+//
+//
 /// @param args regexp or straight func name to look for
 /// @return std::vector of struct functions
 ///
@@ -955,7 +993,7 @@ std::vector<segments_lookup> tui_hooks_get_info_files( std::string args)
         } // endif
    } // endfor
    // NS 050225
-   gdb_printf( "[hooks] Info files found %lu segments\n", retVec.size());
+   gdb_printf( "[tui-hooks] Info files found %lu segments\n", retVec.size());
    return retVec;
 } // end helper function
 
@@ -1546,13 +1584,18 @@ char xyz[64];
          
          // NS 020225 make sure you can actually read from the "memory" address in the register
          const target_section_table *table = target_get_section_table (current_inferior ()->top_target ());
-         if (table == nullptr)
+
+         struct value *val9 = parse_and_eval( xyz);
+         CORE_ADDR addr_reg = value_as_address( val9);
+
+	 // NS 150225
+         bool isInFiles = tui_hooks_check_if_in_filesMap( addr_reg);
+         if (table == nullptr && !isInFiles)
          {
             reg_value->insert( 0, xyz);
             return;
          }
-         struct value *val9 = parse_and_eval( xyz);
-         CORE_ADDR addr_reg = value_as_address( val9);
+
          bool _found = false;
 
          for( const target_section &sec : *table)
