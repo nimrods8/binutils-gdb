@@ -30,11 +30,11 @@ import ghidra.program.model.symbol.IllegalCharCppTransformer;
 public class GhidraDecompiler2 extends HeadlessScript {
 
 
-	private void exportToC(DecompileResults results ) {
+	private void exportToC(DecompileResults results, String target_folder ) {
 		try {
 			ClangTokenGroup grp = results.getCCodeMarkup();
 			if(grp != null) {
-				File tmpFile = new File("/tmp/ghidra" + 
+				File tmpFile = new File( target_folder + 
 						"/" + results.getFunction().getName() + ".c");
 				PrintWriter writer = new PrintWriter(new FileOutputStream(tmpFile));
 
@@ -46,7 +46,7 @@ public class GhidraDecompiler2 extends HeadlessScript {
 				writer.close();
 
                                 try {
-                                   exportToC2( results);
+                                   exportToC2( results, target_folder);
                                 } catch (IOException e) {
                                   //log/handle the exception
                                 } catch (Exception e) {
@@ -59,7 +59,7 @@ public class GhidraDecompiler2 extends HeadlessScript {
 		}
 	}
 
-	private void exportToC2(DecompileResults results ) throws Exception {
+	private void exportToC2(DecompileResults results, String target_folder ) throws Exception {
 
 			println("Decompilation completed: " + results.decompileCompleted()); // DEBUG
 
@@ -71,8 +71,8 @@ public class GhidraDecompiler2 extends HeadlessScript {
 
                         //FileWriter fw = new FileWriter("ghidra-output.r2");
                         //FileWriter fw_dec = new FileWriter("decompiled.c");
-			FileWriter fw     = new FileWriter("/tmp/ghidra" + "/" + results.getFunction().getName() + ".r2");
-			FileWriter fw_dec = new FileWriter("/tmp/ghidra" + "/" + results.getFunction().getName() + ".c");
+			FileWriter fw     = new FileWriter( target_folder + "/" + results.getFunction().getName() + ".r2");
+			FileWriter fw_dec = new FileWriter( target_folder + "/" + results.getFunction().getName() + ".c");
 
 
 
@@ -118,12 +118,26 @@ public class GhidraDecompiler2 extends HeadlessScript {
 	
 	@Override
 	public void run() throws Exception {
+
+                // Stop after this headless script
+                setHeadlessContinuationOption(HeadlessContinuationOption.ABORT);
+
+                // Get the function address from the script arguments
+                String[] args = getScriptArgs();
+                println(String.format("Array length: %d", args.length)); // DEBUG
+
+                if( args.length == 0) {
+                   System.err.println("Please specify a target folder for the function files");
+                   return;
+                }
+
+
 		var program = this.getCurrentProgram();
 		DecompInterface ifc = new DecompInterface();
 		ifc.openProgram(program);
 		for(var func : program.getFunctionManager().getFunctions(true)) {
-		        var results = ifc.decompileFunction(func, 100000, null);
-		        exportToC(results);
+		        var results = ifc.decompileFunction(func, 5, null);
+		        exportToC(results, args[0]);
 		}
 	}
 }

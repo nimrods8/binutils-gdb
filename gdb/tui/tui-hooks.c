@@ -52,6 +52,9 @@
 #include <dirent.h>
 #include <fnmatch.h>
 #include <sys/stat.h>
+#include <iostream>
+#include <sstream>     // For stringstream
+
 
 #include "tui/tui.h"
 #include "tui/tui-hooks.h"
@@ -87,6 +90,8 @@ bool tui_hooks_deserialize_comments( void);
 std::string toHexFromDecimal(long long t);
 static bool tui_hooks_check_if_in_filesMap( CORE_ADDR add_reg);
 static void tui_hooks_file_command( const char *arg, int from_tty);
+// Function to calculate the SHA-1 hash of a string
+static std::string tui_hooks_calculate_sha1(const std::string& input);
 
 
 
@@ -1167,6 +1172,9 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
 
    execute_command( infof.c_str(), false);
 
+   std::string _hashproj = "gdb_" + tui_hooks_calculate_sha1( sarg);
+   std::string hashfn = "/tmp/" + _hashproj;
+
    char path[PATH_MAX];
    size_t count = readlink("/proc/self/exe", path, sizeof(path) - 1);
 
@@ -1184,6 +1192,19 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
 
       struct dirent *entry;
       struct stat statbuf;
+
+      if( stat( hashfn.c_str(), &statbuf) != 0)
+      {
+         std::string fpa = "shell mkdir " + hashfn;
+         execute_command( fpa.c_str(), false);
+      }
+      else if( S_ISDIR(statbuf.st_mode))
+      {
+         std::string fpa = "shell rm -rf " + hashfn + "*";
+         execute_command( fpa.c_str(), false);
+      } 
+
+
       while ((entry = readdir(dir)) != nullptr) 
       {
          if( fnmatch("ghidra_*", entry->d_name, 0) == 0) 
@@ -1192,7 +1213,8 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
 
             if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
             {
-                 full_path = "shell " + full_path + "/support/analyzeHeadless . tmp_ghidra_project -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler.java";
+                 full_path = "shell " + full_path + "/support/analyzeHeadless /tmp " + _hashproj + " -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler2.java " + hashfn;
+                 gdb_printf( "[tui hooks] %s", full_path.c_str());
                  execute_command( full_path.c_str(), false);
             } // endif
           } // endif
@@ -1202,6 +1224,23 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
       return;
    }
 } // endfunc helper tui breaks
+
+
+
+
+// Function to calculate the SHA-1 hash of a string
+static std::string tui_hooks_calculate_sha1(const std::string& input) 
+{
+    std::hash<std::string> hash_fn;
+    size_t hash = hash_fn( input);
+    
+    // Convert the size_t hash value to a hexadecimal string
+    std::stringstream ss;
+    ss << std::hex << hash;
+    return ss.str();  // Return the hexadecimal string
+} // endfunc
+
+
 
 
 static void
@@ -1875,9 +1914,11 @@ _initialize_tui_hooks ()
 	       _("Skips over the forthcoming opcode, so the next opcode will not be executed."),
 	       tuicmd);
 
-  add_cmd ( "file", class_tui, tui_hooks_file_command,
+  struct cmd_list_element *c = add_cmd ( "file", class_tui, tui_hooks_file_command,
 	       _("Loads an elf file (currently with debug information) to be analyzed by Ghidra. Similar to native 'file' command"),
 	       tuicmd);
+  set_cmd_completer (c, filename_completer);
+
 
 
   m_comments.clear();
