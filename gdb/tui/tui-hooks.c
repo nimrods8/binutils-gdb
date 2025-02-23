@@ -45,6 +45,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+// NS 230225
+#include <iostream>
+#include <limits.h>
+#include <libgen.h>
+#include <dirent.h>
+#include <fnmatch.h>
+#include <sys/stat.h>
+
 #include "tui/tui.h"
 #include "tui/tui-hooks.h"
 #include "tui/tui-data.h"
@@ -68,6 +76,7 @@
 #include <unordered_map>
 
 
+
 // NS 16/10
 static void tui_hooks_comment_all_command (const char *, int);
 static void tui_hooks_call_rename_command (const char *, int);
@@ -77,6 +86,7 @@ bool tui_hooks_serialize_comments( bool);
 bool tui_hooks_deserialize_comments( void);
 std::string toHexFromDecimal(long long t);
 static bool tui_hooks_check_if_in_filesMap( CORE_ADDR add_reg);
+static void tui_hooks_file_command( const char *arg, int from_tty);
 
 
 
@@ -1143,8 +1153,55 @@ static void tui_hooks_break_command( const char *arg, int from_tty)
 } // endfunc
 
 
+/************************************************************************/
+/// @brief calls the file command then runs the Ghidra analysis tool
+/// @param arg 
+/// @param from_tty 
+/************************************************************************/
+static void tui_hooks_file_command( const char *arg, int from_tty)
+{
+   std::string sarg = std::string( arg), dir_path;
 
+   // try now with "file ..."
+   std::string infof = "file " + sarg;
 
+   execute_command( infof.c_str(), false);
+
+   char path[PATH_MAX];
+   size_t count = readlink("/proc/self/exe", path, sizeof(path) - 1);
+
+   if( count != -1) 
+   {
+      path[count] = '\0'; // Null-terminate the string
+      dir_path = std::string( dirname(path)) + "/tui/";
+
+      DIR *dir = opendir( dir_path.c_str());
+      if (!dir) 
+      {
+          gdb_printf( "[tui-file] opendir error");
+          return;
+      }
+
+      struct dirent *entry;
+      struct stat statbuf;
+      while ((entry = readdir(dir)) != nullptr) 
+      {
+         if( fnmatch("ghidra_*", entry->d_name, 0) == 0) 
+         { // Matches "ghidra_*"
+            std::string full_path = dir_path + "/" + entry->d_name;
+
+            if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
+            {
+                 full_path = "shell " + full_path + "/support/analyzeHeadless . tmp_ghidra_project -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler.java";
+                 execute_command( full_path.c_str(), false);
+            } // endif
+          } // endif
+      } // endwhile
+      closedir(dir);
+   } else {
+      return;
+   }
+} // endfunc helper tui breaks
 
 
 static void
@@ -1818,6 +1875,9 @@ _initialize_tui_hooks ()
 	       _("Skips over the forthcoming opcode, so the next opcode will not be executed."),
 	       tuicmd);
 
+  add_cmd ( "file", class_tui, tui_hooks_file_command,
+	       _("Loads an elf file (currently with debug information) to be analyzed by Ghidra. Similar to native 'file' command"),
+	       tuicmd);
 
 
   m_comments.clear();

@@ -45,9 +45,13 @@ public class GhidraDecompiler2 extends HeadlessScript {
 				writer.write(decompFunc.getC());
 				writer.close();
 
-
-                                exportWithAddresses( result);
-
+                                try {
+                                   exportToC2( results);
+                                } catch (IOException e) {
+                                  //log/handle the exception
+                                } catch (Exception e) {
+                                  // whatever
+                                }
 			}
 		}
 		catch (IOException e) {
@@ -55,11 +59,11 @@ public class GhidraDecompiler2 extends HeadlessScript {
 		}
 	}
 
-	private void exportToC(DecompileResults results ) {
+	private void exportToC2(DecompileResults results ) throws Exception {
 
-			println("Decompilation completed: " + dr.decompileCompleted()); // DEBUG
+			println("Decompilation completed: " + results.decompileCompleted()); // DEBUG
 
-    			DecompiledFunction df = dr.getDecompiledFunction();
+    			DecompiledFunction df = results.getDecompiledFunction();
     			println(df.getC());
 
                         Function f = results.getFunction();
@@ -74,7 +78,7 @@ public class GhidraDecompiler2 extends HeadlessScript {
 
 			// Print lines prepend with addresses
 			//    PrettyPrinter pp = new PrettyPrinter(f, dr.getCCodeMarkup());
-    			PrettyPrinter pp = new PrettyPrinter(f, dr.getCCodeMarkup(), new IllegalCharCppTransformer());
+    			PrettyPrinter pp = new PrettyPrinter(f, results.getCCodeMarkup(), new IllegalCharCppTransformer());
     			List<ClangLine> lines = pp.getLines();
 
     			for( ClangLine line : lines) {

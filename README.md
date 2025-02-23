@@ -15,6 +15,19 @@ apt install libgmp-dev
 apt install python3-dev
 apt install flex bison
 ```
+
+For the ghidra decompiler you need to get OpenJDK:
+```
+apt install -y wget apt-transport-https gpg
+wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null
+echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
+apt update # update if you haven't already
+apt install temurin-21-jdk
+```
+
+
+
+
 (2) configure:   
 `./configure --enable-targets=aarch64-linux-gnu,arm-linux-gnueabi,x86_64-pc-linux-gnu --enable-tui --with-python --disable-ld --disable-gas --disable-sim`
 
