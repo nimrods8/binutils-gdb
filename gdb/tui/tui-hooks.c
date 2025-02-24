@@ -1008,7 +1008,7 @@ std::vector<segments_lookup> tui_hooks_get_info_files( std::string args)
         } // endif
    } // endfor
    // NS 050225
-   gdb_printf( "[tui-hooks] Info files found %lu segments\n", retVec.size());
+   // gdb_printf( "[tui-hooks] Info files found %lu segments\n", retVec.size());
    return retVec;
 } // end helper function
 
@@ -1193,17 +1193,17 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
       struct dirent *entry;
       struct stat statbuf;
 
+      if( hashfn.length() > 18)
+      {
+         std::string fpa = "shell rm -rf " + hashfn + "*";
+         execute_command( fpa.c_str(), false);
+      }
+
       if( stat( hashfn.c_str(), &statbuf) != 0)
       {
          std::string fpa = "shell mkdir " + hashfn;
          execute_command( fpa.c_str(), false);
       }
-      else if( S_ISDIR(statbuf.st_mode))
-      {
-         std::string fpa = "shell rm -rf " + hashfn + "*";
-         execute_command( fpa.c_str(), false);
-      } 
-
 
       while ((entry = readdir(dir)) != nullptr) 
       {
@@ -1213,8 +1213,8 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
 
             if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
             {
-                 full_path = "shell " + full_path + "/support/analyzeHeadless /tmp " + _hashproj + " -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler2.java " + hashfn;
-                 gdb_printf( "[tui hooks] %s", full_path.c_str());
+                 full_path = "shell " + full_path + "/support/analyzeHeadless /tmp " + _hashproj + " -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler2.java " + hashfn + " > /dev/null";
+                 // gdb_printf( "[tui-hooks] %s", full_path.c_str());
                  execute_command( full_path.c_str(), false);
             } // endif
           } // endif
