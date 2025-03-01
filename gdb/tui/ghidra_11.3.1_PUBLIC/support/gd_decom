@@ -2,7 +2,7 @@
 
 #script to automatically decompile and output source code of a binary with ghidra
 
-GHIDRA_PATH=/home/nimrod/projects/ghidra_11.3.1_PUBLIC/
+GHIDRA_PATH=/home/nimrod/projects/binutils-gdb/gdb/tui/ghidra_11.3.1_PUBLIC/
 DECOMPILE_SCRIPT_PATH="/tmp"
 
 if [ "$#" -ne    2 ]

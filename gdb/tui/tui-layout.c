@@ -51,6 +51,10 @@
 #include "tui/tui-memdump.h"
 #include "top.h"
 
+// NS 2702
+#include "tui/tui-decomp.h"
+
+
 static void extract_display_start_addr (struct gdbarch **, CORE_ADDR *);
 
 /* The layouts.  */
@@ -235,6 +239,7 @@ tui_set_initial_layout ()
 {
   tui_set_layout (layouts[0].get ());
   execute_command( "tui new-layout console {-horizontal regs 3 console 1} 2 memdump 1 asm 3 cmd 1 asmot 0 status 0", false);
+  execute_command( "tui new-layout decompile {-horizontal regs 3 console 1} 2 memdump 1 {-horizontal asm 3 decomp 1} 3 cmd 1 asmot 0 status 0", false);
 }
 
 /* Implement the "layout prev" command.  */
@@ -263,6 +268,12 @@ void tui_console_layout()
 {
   // NS 13/11
 //  execute_command( "tui new-layout console {-horizontal regs 2 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
+  tui_set_layout ( asm_console_layout);
+}
+
+// NS 24/02/25
+void tui_decomp_layout()
+{
   tui_set_layout ( asm_console_layout);
 }
 
@@ -307,6 +318,14 @@ tui_console_layout_command (const char *arg, int from_tty)
 {
   tui_enable ();
   tui_console_layout ();
+}
+
+
+static void
+tui_decomp_layout_command (const char *arg, int from_tty)
+{
+  tui_enable ();
+  tui_decomp_layout ();
 }
 
 
@@ -455,6 +474,9 @@ initialize_known_windows ()
 // NS 26/12
   known_window_types->emplace( MEMDUMP_NAME,
              make_standard_window<MEMDUMP_WIN, tui_memdump_window>);
+// NS 27/02/25
+  known_window_types->emplace( DECOMP_NAME,
+             make_standard_window<DECOMP_WIN, tui_decomp_window>);
 #endif
 }
 
@@ -1373,8 +1395,6 @@ initialize_layouts ()
 
   // NS 13/11
   //execute_command( "tui new-layout console {-horizontal regs 1 console 1} 2 asm 3 cmd 1 asmot 0 status 0", false);
-
-
 }
 
 
@@ -1511,6 +1531,11 @@ Usage: tui layout prev | next | LAYOUT-NAME"),
 // NS 30/10
   add_cmd ("console", class_tui, tui_console_layout_command,
      _("Apply the TUI asm on-top+console layout."),
+     &layout_list);
+
+// NS 30/10
+  add_cmd ("decompile", class_tui, tui_decomp_layout_command,
+     _("Apply the TUI asm on-top+console+decompiler layout."),
      &layout_list);
 
 

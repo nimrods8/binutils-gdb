@@ -53,6 +53,9 @@
 #include "tui/tui-winsource.h"
 #include "tui/tui-win.h"
 
+// NS 270225
+#include "tui/tui-decomp.h"
+
 #include "gdb_curses.h"
 #include <ctype.h>
 #include "readline/readline.h"
@@ -251,6 +254,8 @@ set_style_tui_current_position (const char *ignore, int from_tty,
     TUI_SRC_WIN->refill ();
   if (TUI_DISASM_WIN != nullptr)
     TUI_DISASM_WIN->refill ();
+  if (TUI_DECOMP_WIN != nullptr)
+    TUI_DECOMP_WIN->refill ();
 }
 
 

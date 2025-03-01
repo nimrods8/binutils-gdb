@@ -61,6 +61,8 @@ enum tui_win_type
 // NS 11/12  
   MEMDUMP_WIN, 
 
+  DECOMP_WIN,
+
   /* This must ALWAYS be AFTER the major windows last.  */
   MAX_MAJOR_WINDOWS,
 };

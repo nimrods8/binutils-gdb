@@ -84,6 +84,9 @@ The "block size in bytes" can be 1, 2, 4 or 8 bytes per block
 **tui skip**:  
 Skips the next opcode  
   
+**tui goto**:  
+Changes the source windows to another address. You can use a register, a function name or a specific address  
+  
 
 **Better mouse interaction**  
 Click the mouse inside a window to set it into focus
@@ -93,7 +96,9 @@ For example, you can press one of the registers in the tui register window and i
 **tui console layout**
 A new layout has been added, called `console`.  
 Use `layout console` to set it.  
-  
+
+**tui decompiler layout**
+WIP: Decompiler layout 
 
 **tui info**
 Display any of the `info` commands on the console window. For example, use:
@@ -134,6 +139,10 @@ $as_echo "no - pkg-config not found" >&6; }
       as_fn_error $? "pkg-config was not found in your system" "$LINENO" 5
     fi
 ```
+
+Note that you have the pkg-config executable in /usr/bin. If not, you can install it using:
+```apt install -y pkg-config```
+
 
 (2) add the libsource-highlight package:  
 `apt install libsource-highlight-dev`  
