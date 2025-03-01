@@ -97,8 +97,8 @@ For example, you can press one of the registers in the tui register window and i
 A new layout has been added, called `console`.  
 Use `layout console` to set it.  
 
-**tui decompiler layout**
-WIP: Decompiler layout 
+**tui decompiler layout**   
+WIP: Decompiler layout  
 
 **tui info**
 Display any of the `info` commands on the console window. For example, use:
@@ -117,7 +117,7 @@ which installed the missing python scripts.
 
 2. We encountered problems when loading a debug info symbol file (using the symbol_file command) with only .abs file. Hardware breapoints
 did not set correctly due to breakpoint kind defaulting to 4. It is now automatically defaults to 2 (hardware breakpoint) and to set it back
-to the original value, use 
+to the original value, use  
 `target bp_kind off`
 
 
@@ -148,7 +148,7 @@ Note that you have the pkg-config executable in /usr/bin. If not, you can instal
 `apt install libsource-highlight-dev`  
   
 (2) add `--enable-source-highlight` to the configure line  
-(3) run `./configure` with all flags
+(3) run `./configure` with all flags   
 (4) run `make all-gdb`
 
 
