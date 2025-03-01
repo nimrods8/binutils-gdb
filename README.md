@@ -88,19 +88,14 @@ Skips the next opcode
 Changes the source windows to another address. You can use a register, a function name (or part of it) or a specific address  
   
 
-**Better mouse interaction**  
-Click the mouse inside a window to set it into focus
-For example, you can press one of the registers in the tui register window and it will show in the watch window.
-
-
-**tui console layout**
+**tui console layout:**  
 A new layout has been added, called `console`.  
 Use `layout console` to set it.  
 
-**tui decompiler layout**   
+**tui decompiler layout:**   
 WIP: Decompiler layout  
 
-**tui info**  
+**tui info:**  
 Display any of the `info` commands on the console window. For example, use:
 `tui info break` 
 to show breakpoints on the console window, or
@@ -108,8 +103,13 @@ to show breakpoints on the console window, or
 to show current threads execution picture
 If these are not used, the stdin is shown in the info window.
 
+
+**Better mouse interaction:**  
+Click the mouse inside a window to set it into focus
+For example, you can press one of the registers in the tui register window and it will show in the watch window.
+
 	  
-Notes:
+**Notes:**  
 1. You may need to install the compiled gdb python libraries to /usr/share/gdb using:  
 `cd ./gdb/data-directory`  
 `make install`
