@@ -8,12 +8,13 @@ on Ubuntu you need to:
 
 (1) Load the following packages:
 ```
-apt install libncurses5-dev
-apt install texinfo
-apt install build-essential
-apt install libgmp-dev
-apt install python3-dev
-apt install flex bison
+apt update -y
+apt install -y libncurses5-dev
+apt install -y texinfo
+apt install -y build-essential
+apt install -y libgmp-dev
+apt install -y python3-dev
+apt install -y flex bison
 ```
 
 For the ghidra decompiler you need to get OpenJDK:
@@ -111,9 +112,11 @@ For example, you can press one of the registers in the tui register window and i
 	  
 **Notes:**  
 1. You may need to install the compiled gdb python libraries to /usr/share/gdb using:  
-`cd ./gdb/data-directory`  
-`make install`
-which installed the missing python scripts.
+```
+cd ./gdb/data-directory   
+make install
+```
+which installs the missing python scripts.
 
 2. We encountered problems when loading a debug info symbol file (using the symbol_file command) with only .abs file. Hardware breapoints
 did not set correctly due to breakpoint kind defaulting to 4. It is now automatically defaults to 2 (hardware breakpoint) and to set it back
