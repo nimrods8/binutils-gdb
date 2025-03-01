@@ -85,7 +85,7 @@ The "block size in bytes" can be 1, 2, 4 or 8 bytes per block
 Skips the next opcode  
   
 **tui goto**:  
-Changes the source windows to another address. You can use a register, a function name or a specific address  
+Changes the source windows to another address. You can use a register, a function name (or part of it) or a specific address  
   
 
 **Better mouse interaction**  
@@ -100,7 +100,7 @@ Use `layout console` to set it.
 **tui decompiler layout**   
 WIP: Decompiler layout  
 
-**tui info**
+**tui info**  
 Display any of the `info` commands on the console window. For example, use:
 `tui info break` 
 to show breakpoints on the console window, or
