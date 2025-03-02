@@ -49,7 +49,22 @@ tui_source_window::set_contents (struct gdbarch *arch,
   int line_no = sal.line;
 
   if (s == NULL)
+  {
+    const char *filename = "/tmp/test.c";
+    symtab *s1 = new symtab();
+    compunit_symtab *cpunit = new compunit_symtab();
+    linetable *lt = new linetable();
+    s1->set_linetable( lt);
+    s1->set_compunit( cpunit);
+    std::string sfilename = std::string( filename); //"/tmp/ghidra/main.c";
+    //gdb::unique_xmalloc_ptr<char> full_path( (filename));
+    s1->filename = filename;
+    std::string srcclines;
+    g_source_cache.get_source_lines( s1, 1, 1000, &srcclines);
+    gdb_printf( "\n\n\n\n\n\n\n\n\n\n\n[src] got source lines %s", srcclines.c_str());
     return false;
+  }
+
 
   /* Take hilite (window border) into account, when
      calculating the number of lines.  */
@@ -61,6 +76,10 @@ tui_source_window::set_contents (struct gdbarch *arch,
 					&srclines)
       || !g_source_cache.get_line_charpos (s, &offsets))
     return false;
+
+  // debug NS 260225
+  // gdb_printf( "[src] symtab %s", srclines.c_str());
+
 
   int cur_line_no, cur_line;
   const char *s_filename = symtab_to_filename_for_display (s);

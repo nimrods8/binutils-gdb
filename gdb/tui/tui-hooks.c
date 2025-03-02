@@ -38,6 +38,7 @@
 #include "arch-utils.h"
 #include "frame.h"
 #include "disasm.h"
+#include <signal.h>
 
 // NS 0801
 #include "gdbcmd.h"
@@ -92,7 +93,7 @@ static bool tui_hooks_check_if_in_filesMap( CORE_ADDR add_reg);
 static void tui_hooks_file_command( const char *arg, int from_tty);
 // Function to calculate the SHA-1 hash of a string
 static std::string tui_hooks_calculate_sha1(const std::string& input);
-
+void tui_decompiler_finished_signal( int sig);
 
 
 /* Data from one mapping from /proc/PID/maps.  */
@@ -1213,7 +1214,9 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
 
             if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
             {
-                 full_path = "shell " + full_path + "/support/analyzeHeadless /tmp " + _hashproj + " -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler2.java " + hashfn + " > /dev/null";
+                 full_path = "shell " + full_path + "/support/analyzeHeadless /tmp " + _hashproj + 
+                              " -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler2.java " + 
+                               hashfn + " " + atoi( getpid()) + " > /dev/null";
                  // gdb_printf( "[tui-hooks] %s", full_path.c_str());
                  execute_command( full_path.c_str(), false);
             } // endif
@@ -1856,6 +1859,11 @@ tui_attach_detach_observers (bool attach)
 }
 
 
+void tui_decompiler_finished_signal( int sig)
+{
+   if( sig == SIGUSR1) 
+      gdb_printf("[%d] Received SIGUSR1, batch action completed!", 0);
+} // endfunc
 
 
 
@@ -1873,6 +1881,10 @@ tui_install_hooks (void)
 
   /* Install the event hooks.  */
   tui_attach_detach_observers (true);
+
+  // NS 020325 install user signal for decompiler finished
+  signal( SIGUSR1, tui_decompiler_finished);
+
 }
 
 /* Remove the TUI specific hooks.  */

@@ -12196,7 +12196,7 @@ else
 fi
 
 
-pkg_config_prog_path="/usr/bin/pkg-config"
+pkg_config_prog_path="/usr/bin/pkgconf"
 if test "${enable_source_highlight}" != "no"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the source-highlight library" >&5
 $as_echo_n "checking for the source-highlight library... " >&6; }
