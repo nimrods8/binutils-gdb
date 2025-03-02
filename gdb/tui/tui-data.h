@@ -214,7 +214,7 @@ protected:
 #define CMD_NAME                "cmd"
 #define DATA_NAME               "regs"
 #define DISASSEM_NAME           "asm"
-#define STATUS_NAME		          "status"
+#define STATUS_NAME	        "status"
 
 // NS 30/10
 #define DISASSEM_ONTOP_NAME     "asmot"
@@ -224,6 +224,9 @@ protected:
 
 // NS 11/12
 #define MEMDUMP_NAME            "memdump"
+
+// NS 24/02/25
+#define DECOMP_NAME             "decomp"
 
 
 /* Global Data.  */
@@ -242,6 +245,8 @@ extern struct tui_win_info *tui_win_list[MAX_MAJOR_WINDOWS];
 #define TUI_CONSOLE_WIN	((tui_console_window *) tui_win_list[CONSOLE_WIN])
 // NS 12/11
 #define TUI_MEMDUMP_WIN	((tui_memdump_window *) tui_win_list[MEMDUMP_WIN])
+// NS 24/02/25
+#define TUI_DECOMP_WIN	((tui_decomp_window *) tui_win_list[DECOMP_WIN])
 
 
 

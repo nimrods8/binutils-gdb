@@ -341,6 +341,8 @@ extern void tui_regs_layout ();
 extern void tui_ontop_layout ();
 // NS 12/11
 extern void tui_console_layout ();
+// NS 270225
+extern void tui_decomp_layout ();
 
 
 /* Remove some windows from the layout, leaving only the focused

@@ -67,6 +67,7 @@
 #include "tui/tui-stack.h"
 #include "tui/tui-winsource.h"
 #include "tui/tui-location.h"
+#include "tui/tui-decomp.h"
 
 //NS 01/11
 #include "tui/tui-disasm.h"
@@ -93,7 +94,12 @@ static bool tui_hooks_check_if_in_filesMap( CORE_ADDR add_reg);
 static void tui_hooks_file_command( const char *arg, int from_tty);
 // Function to calculate the SHA-1 hash of a string
 static std::string tui_hooks_calculate_sha1(const std::string& input);
+<<<<<<< HEAD
 void tui_decompiler_finished_signal( int sig);
+=======
+static void tui_hooks_goto_command( const char *arg, int from_tty);
+
+>>>>>>> 7d09dbf97f74734e910ce3f7b99a5a25acca3c7a
 
 
 /* Data from one mapping from /proc/PID/maps.  */
@@ -619,6 +625,7 @@ tui_symtab_changed ()
    from_source_symtab = true;
 
    // NS 150225
+#if 0
    try
    {
       m_filesMap = tui_hooks_get_info_files("");
@@ -628,6 +635,7 @@ tui_symtab_changed ()
       m_filesMap.clear();
       return;
    }
+#endif
 }
 
 /*
@@ -851,6 +859,9 @@ std::string toHexFromDecimal(long long t)
 
 
 
+
+
+
 /// @brief tui_hooks_skip_command
 /// @param arg - arguments
 /// @param from_tty 
@@ -876,6 +887,57 @@ static void tui_hooks_skip_command( const char *arg, int from_tty)
          tui_refresh_frame_and_register_information();
      }
 } // endfunc
+
+
+/// @brief tui_hooks_goto_command
+/// @param arg - arguments
+/// @param from_tty 
+//
+//
+static void tui_hooks_goto_command( const char *arg, int from_tty)
+{
+   CORE_ADDR func_addr;
+   std::string name = std::string( arg);
+   
+   struct value *val0 = NULL;
+   try
+   {
+      val0 = parse_and_eval( name.c_str());
+      func_addr = value_as_address( val0);
+   }   
+   catch( const gdb_exception_error &except)
+   {
+      // try now with "info func"
+      std::string resultsstr = "";
+      std::string infof = "info func " + name;
+      execute_command_to_string( resultsstr, infof.c_str(), 0, false);
+      
+      
+      std::vector<std::string>v1 = tui_hooks_split( resultsstr, '\n');
+      char func_name[256];
+
+      for( int l = 0; l < v1.size(); l++)
+      {  
+           // don't allow too big function names here...
+           if( v1[l].length() > 256)
+              continue;
+
+           if( sscanf( v1[l].c_str(), "0x%lx  %s", &func_addr, func_name) == 2)
+           {
+               // DEBUG: gdb_printf( "Found %lx %s\t", func_addr, func_name);
+
+               // this is how it looks like: 0x0000ffff8fd32000  QrCodeManager::IsTytoWifiCode()@plt
+
+
+           } // endif
+      } // endfor
+  } // end try
+
+  struct gdbarch *gdbarch = target_gdbarch();
+  tui_update_source_windows_with_addr( gdbarch, func_addr);
+} // endfunc
+
+
 
 
 /// @brief This is a util helper function which requests "info func"
@@ -1930,6 +1992,10 @@ _initialize_tui_hooks ()
 	       _("Loads an elf file (currently with debug information) to be analyzed by Ghidra. Similar to native 'file' command"),
 	       tuicmd);
   set_cmd_completer (c, filename_completer);
+
+  add_cmd ( "goto", class_tui, tui_hooks_goto_command,
+	       _("Goto specified address"),
+	       tuicmd);
 
 
 

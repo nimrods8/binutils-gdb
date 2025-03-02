@@ -50,7 +50,7 @@
 
 static CORE_ADDR showAddr;
 static bool isDecompiler = false;
-static int decompiler_line;
+// NS 280225: NOT USED static int decompiler_line;
 
 
 // NS 04/11 should be list per arch
@@ -871,6 +871,7 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
   {
       if (mouse_button == 3)
       {
+#if 0
           if (TUI_DISASMOT_WIN != nullptr && !TUI_DISASMOT_WIN->isVisible)
           {
             // gdb_printf( "have xor\n\n");
@@ -896,6 +897,7 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
             TUI_DISASMOT_WIN->erase_data_content( "Wait for Decompiler...");
             TUI_DISASMOT_WIN->isVisible = false;
           }
+#endif // no decompiler here
       } // endif mouse button decompiler
       else
           TUI_DISASMOT_WIN->erase_data_content( "Wait for Disassembler...");
@@ -1019,7 +1021,7 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
         fclose(fil);
         free( byte_buf);
       } // endif malloc OK
-
+#if 0
       if (mouse_button == 3)
       {
         int p = system("/home/cyberark/projects/binutils-gdb/gdb/tui/ghidra/ghidra_test_dbg -sleighpath /home/cyberark/projects/binutils-gdb/gdb/tui/ghidra -path /home/cyberark/projects/binutils-gdb/gdb/tui/ghidra/datatests datatests > /dev/null");
@@ -1029,6 +1031,7 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
         }
         isDecompiler = true;
       }
+#endif
       showAddr = addr;
 
 #if 0
