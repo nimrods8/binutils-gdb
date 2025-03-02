@@ -38,7 +38,6 @@
 #include "arch-utils.h"
 #include "frame.h"
 #include "disasm.h"
-#include <signal.h>
 
 // NS 0801
 #include "gdbcmd.h"
@@ -79,6 +78,7 @@
 
 // NS 09/01
 #include <unordered_map>
+#include <signal.h>
 
 
 
@@ -94,12 +94,9 @@ static bool tui_hooks_check_if_in_filesMap( CORE_ADDR add_reg);
 static void tui_hooks_file_command( const char *arg, int from_tty);
 // Function to calculate the SHA-1 hash of a string
 static std::string tui_hooks_calculate_sha1(const std::string& input);
-<<<<<<< HEAD
-void tui_decompiler_finished_signal( int sig);
-=======
+static void tui_decompiler_finished_signal( int sig);
 static void tui_hooks_goto_command( const char *arg, int from_tty);
-
->>>>>>> 7d09dbf97f74734e910ce3f7b99a5a25acca3c7a
+static void tui_hooks_parse_sal_file( void);
 
 
 /* Data from one mapping from /proc/PID/maps.  */
@@ -480,7 +477,6 @@ tui_before_prompt (const char *current_gdb_prompt)
   {
      TUI_MEMDUMP_WIN->rerender();
   }
-   
 }
 
 
@@ -1221,6 +1217,7 @@ static void tui_hooks_break_command( const char *arg, int from_tty)
 } // endfunc
 
 
+static std::string hashed_filename;
 /************************************************************************/
 /// @brief calls the file command then runs the Ghidra analysis tool
 /// @param arg 
@@ -1237,6 +1234,7 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
 
    std::string _hashproj = "gdb_" + tui_hooks_calculate_sha1( sarg);
    std::string hashfn = "/tmp/" + _hashproj;
+   hashed_filename = hashfn;
 
    char path[PATH_MAX];
    size_t count = readlink("/proc/self/exe", path, sizeof(path) - 1);
@@ -1272,13 +1270,16 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
       {
          if( fnmatch("ghidra_*", entry->d_name, 0) == 0) 
          { // Matches "ghidra_*"
+            char tmp_buffer[32];
+
             std::string full_path = dir_path + "/" + entry->d_name;
+            sprintf( tmp_buffer, "%d", getpid());
 
             if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
             {
                  full_path = "shell " + full_path + "/support/analyzeHeadless /tmp " + _hashproj + 
                               " -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler2.java " + 
-                               hashfn + " " + atoi( getpid()) + " > /dev/null";
+                               hashfn + " " + tmp_buffer + " > /dev/null";
                  // gdb_printf( "[tui-hooks] %s", full_path.c_str());
                  execute_command( full_path.c_str(), false);
             } // endif
@@ -1288,6 +1289,17 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
    } else {
       return;
    }
+#if 0 // debug
+   // debug symtab:
+   struct symtab_and_line sal = get_current_source_symtab_and_line ();
+   gdb_printf( "[H] sal.space=%p, sal.symbol=%p, line=%d, pc=%lu, end=%lu", sal.pspace, sal.symbol, sal.line, sal.pc, sal.end);
+   struct symtab *nextsal = sal.symtab;
+
+   while( nextsal != NULL)
+   {
+       gdb_printf( "[H] symtab.filename=%s", nextsal->filename);
+   }
+#endif // debug
 } // endfunc helper tui breaks
 
 
@@ -1306,6 +1318,62 @@ static std::string tui_hooks_calculate_sha1(const std::string& input)
 } // endfunc
 
 
+#if 1
+/************************************************************************/
+/// @brief Parses the sal.rx/rxx file created by Ghidra decompiler
+/// @param arg 
+/// @param from_tty 
+/************************************************************************/
+static void tui_hooks_parse_sal_file( void)
+{
+  char text[256], *rd;
+  struct symtab_and_line sal = get_current_source_symtab_and_line ();
+  
+  FILE *file = fopen( "/tmp/ghidra2/sal.rxx", "rt");
+  if( file == NULL)
+    return;
+
+  //char filename[256];
+  unsigned long addr, addr2;
+  int lineNo, inx = 0;
+  struct symtab *prev_s = sal.symtab;
+
+  while( true)
+  {
+     rd = fgets( text, sizeof( text), file);
+
+     if( rd != 0)
+     {
+         struct symtab *s = new symtab();
+         if( inx == 0)
+         {
+            sal.symtab = s;
+            prev_s = s;
+         }
+         else 
+         { 
+            prev_s->next = s;
+            prev_s = s;
+         }
+         std::string tmps = std::string( text);
+         std::vector<std::string> vec = tui_hooks_split( tmps, ':');
+         sscanf( vec[0].c_str(), "0x%lx 0x%lx", 
+                    &addr, //&com.type,
+                    &addr2);
+
+         s->fullname = (char *)vec[1].c_str();
+         lineNo = atoi( vec[2].c_str()); 
+
+         inx++;
+         gdb_printf( "[H] %d:%d %s " , inx, lineNo, s->fullname);
+
+      } // endif have data
+      else 
+         break;
+   } // endwhile
+   fclose( file);
+}
+#endif
 
 
 static void
@@ -1920,11 +1988,15 @@ tui_attach_detach_observers (bool attach)
 
 }
 
-
-void tui_decompiler_finished_signal( int sig)
+//////////////////////////////////////////////////////////////////////////////////
+// NS 02/03/2025
+static void tui_decompiler_finished_signal( int sig)
 {
    if( sig == SIGUSR1) 
+   {
       gdb_printf("[%d] Received SIGUSR1, batch action completed!", 0);
+      tui_hooks_parse_sal_file();
+   } // endfunc
 } // endfunc
 
 
@@ -1945,7 +2017,7 @@ tui_install_hooks (void)
   tui_attach_detach_observers (true);
 
   // NS 020325 install user signal for decompiler finished
-  signal( SIGUSR1, tui_decompiler_finished);
+  signal( SIGUSR1, tui_decompiler_finished_signal);
 
 }
 

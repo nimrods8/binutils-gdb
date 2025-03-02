@@ -40,6 +40,7 @@
 #include "tui/tui-location.h"
 #include "gdb_curses.h"
 
+
 /* Function to display source in the source window.  */
 bool
 tui_decomp_window::set_contents (struct gdbarch *arch,
