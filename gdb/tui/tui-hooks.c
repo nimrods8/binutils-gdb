@@ -1328,7 +1328,9 @@ static void tui_hooks_parse_sal_file( void)
 {
   char text[256], *rd;
   struct symtab_and_line sal = get_current_source_symtab_and_line ();
-  
+  struct symtab *original = sal.symtab;
+  std::string moduleName = std::string("");
+
   FILE *file = fopen( "/tmp/ghidra2/sal.rxx", "rt");
   if( file == NULL)
     return;
@@ -1336,39 +1338,113 @@ static void tui_hooks_parse_sal_file( void)
   //char filename[256];
   unsigned long addr, addr2;
   int lineNo, inx = 0;
-  struct symtab *prev_s = sal.symtab;
+  struct symtab *prev_s = sal.symtab, *s;
+/*
 
+struct symtab
+{
+  struct compunit_symtab *compunit () const
+  {
+    return m_compunit;
+  }
+
+  void set_compunit (struct compunit_symtab *compunit)
+  {
+    m_compunit = compunit;
+  }
+
+  struct linetable *linetable () const
+  {
+    return m_linetable;
+  }
+
+  void set_linetable (struct linetable *linetable)
+  {
+    m_linetable = linetable;
+  }
+
+  enum language language () const
+  {
+    return m_language;
+  }
+
+
+*/
+  int state = 0, inx_lt = 0, inx_s = 0;
+  std::vector<linetable_entry> vecLines;
   while( true)
   {
      rd = fgets( text, sizeof( text), file);
 
      if( rd != 0)
      {
-         struct symtab *s = new symtab();
-         if( inx == 0)
-         {
-            sal.symtab = s;
-            prev_s = s;
-         }
-         else 
-         { 
-            prev_s->next = s;
-            prev_s = s;
-         }
          std::string tmps = std::string( text);
          std::vector<std::string> vec = tui_hooks_split( tmps, ':');
          sscanf( vec[0].c_str(), "0x%lx 0x%lx", 
                     &addr, //&com.type,
                     &addr2);
 
-         s->fullname = (char *)vec[1].c_str();
+         std::string fns = "/tmp/ghidra2/" + vec[1];
+         //s->fullname = (char *)fns.c_str();
          lineNo = atoi( vec[2].c_str()); 
 
-         inx++;
-         gdb_printf( "[H] %d:%d %s " , inx, lineNo, s->fullname);
+         // last state before starting all over again
+         if( vec[1] != moduleName && moduleName != "")
+         {
+            struct linetable_entry *lt = new linetable_entry[inx_lt];
+            for( int i = 0; i < inx_lt; i++)
+            {
+                lt[i].line = vecLines[i].line;
+                lt[i].pc   = vecLines[i].pc;
+                lt[i].is_stmt = vecLines[i].is_stmt;
+                lt[i].prologue_end = vecLines[i].prologue_end;
+            } // endfor
+	    s->linetable()->item[0]= lt[0];
+            s->linetable()->nitems = inx_lt;
+            moduleName = vec[1];
+            vecLines.clear();						// clear the vector for the next symtab
+            state = 0;
+            if( inx_s == 0)
+               prev_s = sal.symtab;
+            else
+               prev_s = s;
+            inx_s++;
+            inx_lt = 0;
+         }
 
-      } // endif have data
-      else 
+         if( state == 0)
+         {
+            s = new symtab();
+            if( inx_s > 0)
+               prev_s->next = s;
+            
+            state = 1;
+            struct linetable *lt = new linetable();
+            s->set_linetable( lt);
+            s->fullname = (char *)vec[1].c_str();
+
+            if( original != NULL) {
+               s->set_compunit( original->compunit());
+               s->set_language( original->language());
+            }
+         }
+         if( state == 1)
+         {
+            struct linetable_entry *entry = new linetable_entry();
+            entry->line         = lineNo;
+            entry->pc           = addr;
+            entry->is_stmt      = true;
+            entry->prologue_end = false;
+            vecLines.push_back( *entry);
+	    //s->linetable->item[inx_lt] = entry;
+            //s->linetable->nitems = inx_lt + 1;
+            inx_lt++;
+            if( moduleName == "")
+               moduleName = vec[1];
+         }
+        gdb_printf( "[H] %d:%d %s " , inx, lineNo, s->fullname);
+     } // endif have data
+     else 
          break;
    } // endwhile
    fclose( file);
