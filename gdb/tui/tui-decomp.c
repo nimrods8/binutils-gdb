@@ -32,6 +32,7 @@
 
 #include "tui/tui.h"
 #include "tui/tui-data.h"
+#include "tui/tui-hooks.h"
 #include "tui/tui-io.h"
 #include "tui/tui-stack.h"
 #include "tui/tui-win.h"
@@ -44,8 +45,12 @@
 /* Function to display source in the source window.  */
 bool
 tui_decomp_window::set_contents (struct gdbarch *arch,
-				 const struct symtab_and_line &sal)
+				 const struct symtab_and_line &_sal)
 {
+
+  symtab_and_line sal = tui_hooks_parse_sal_file();
+
+
   struct symtab *s = sal.symtab;
   int line_no = sal.line;
 

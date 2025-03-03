@@ -49,4 +49,8 @@ typedef struct
 ///
 std::vector<functions_lookup> tui_hooks_get_info_func( std::string args);
 std::vector<segments_lookup> tui_hooks_get_info_files( std::string args);
+
+// NS 030325
+struct symtab_and_line tui_hooks_parse_sal_file( void);
+
 #endif /* TUI_TUI_HOOKS_H */
