@@ -50,6 +50,7 @@ tui_source_window::set_contents (struct gdbarch *arch,
 
   if (s == NULL)
   {
+#if 0 // DEBUG DEBUG DEBUG
     const char *filename = "/tmp/test.c";
     symtab *s1 = new symtab();
     compunit_symtab *cpunit = new compunit_symtab();
@@ -61,7 +62,8 @@ tui_source_window::set_contents (struct gdbarch *arch,
     s1->filename = filename;
     std::string srcclines;
     g_source_cache.get_source_lines( s1, 1, 1000, &srcclines);
-    gdb_printf( "\n\n\n\n\n\n\n\n\n\n\n[src] got source lines %s", srcclines.c_str());
+    // DEBUG DEBUG gdb_printf( "\n\n\n\n\n\n\n\n\n\n\n[src] got source lines %s", srcclines.c_str());
+#endif
     return false;
   }
 

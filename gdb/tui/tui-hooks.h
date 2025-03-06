@@ -26,7 +26,8 @@ std::vector<std::string> tui_hooks_split(const std::string& s, char seperator);
 
 std::string tui_hooks_get_name_of_rwMaps( CORE_ADDR addr);
 std::string tui_hooks_filename2color( std::string filename);
-
+std::string tui_hooks_readFile(const std::string& filename);
+void tui_hooks_style_source_lines( symtab *s, char *fullname, std::string &contents);
 /************************************/
 typedef struct
 {

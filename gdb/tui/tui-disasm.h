@@ -128,7 +128,10 @@ std::string tui_diasm_remove_ansi_colors(std::string _line);
 */
 CORE_ADDR tui_disasm_find_next_opcode( CORE_ADDR pc);
 
-
+/**
+ * returns the function name at the given address
+ */
+std::string tui_disasm_get_funcname_at_pc( CORE_ADDR pc);
 
 #endif /* TUI_TUI_DISASM_H */
 

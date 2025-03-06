@@ -508,6 +508,8 @@ bool tui_disasm_window::set_contents(struct gdbarch *arch,
   return true;
 }
 
+
+
 void tui_get_begin_asm_address(struct gdbarch **gdbarch_p, CORE_ADDR *addr_p)
 {
   struct gdbarch *gdbarch = get_current_arch();
@@ -1372,6 +1374,18 @@ std::vector<std::string> tui_disasm_find_funcnames(CORE_ADDR from, CORE_ADDR to)
   }   // endfor all asm lines
   return retVec;
 } // endfunc
+
+
+///////////////////////////////////////////////////////////////////////////////////
+std::string tui_disasm_get_funcname_at_pc( CORE_ADDR pc)
+{
+  // try to find the function name from the disassembly line
+  struct gdbarch *gdbarch = get_current_arch();
+  std::vector<tui_asm_line> single_asm_line;
+  tui_disassemble( gdbarch, single_asm_line, pc, 1);
+  return( tui_disasm_parse_for_funcnames( single_asm_line[0].addr_string));
+}
+
 
 #if 1
 ///////////////////////////////////////////////////////////////////////////////////

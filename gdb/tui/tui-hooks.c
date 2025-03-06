@@ -79,7 +79,7 @@
 // NS 09/01
 #include <unordered_map>
 #include <signal.h>
-
+#include <fstream>
 
 
 // NS 16/10
@@ -96,6 +96,7 @@ static void tui_hooks_file_command( const char *arg, int from_tty);
 static std::string tui_hooks_calculate_sha1(const std::string& input);
 static void tui_decompiler_finished_signal( int sig);
 static void tui_hooks_goto_command( const char *arg, int from_tty);
+static void  tui_switch_to_src_command( const char *arg, int from_tty);
 
 
 /* Data from one mapping from /proc/PID/maps.  */
@@ -126,6 +127,9 @@ std::vector<segments_lookup> m_filesMap;
 static bool newSolibsLoaded;         // true when new solibs have been loaded
 static bool commentsTainted;
 static bool breaksTainted;
+
+// NS 060325
+static bool switchToSource = false;
 
 typedef enum
 { 
@@ -276,8 +280,12 @@ tui_refresh_frame_and_register_information ()
 	  tui_refreshing_registers = false;
 	}
     }
-  else if (!from_stack)
+  else if (!from_stack && switchToSource)
     {
+      // DEBUG 060325
+      gdb_printf( "[H] we're here... %d", from_stack);
+
+
       /* Make sure that the source window is displayed.  */
       tui_add_win_to_layout (SRC_WIN);
 
@@ -884,6 +892,17 @@ static void tui_hooks_skip_command( const char *arg, int from_tty)
 } // endfunc
 
 
+
+static void  tui_switch_to_src_command( const char *arg, int from_tty)
+{
+   std::string name = std::string( arg);
+   if( name == "enable" || name == "on")
+      switchToSource = true; 
+   else 
+      switchToSource = false;
+}
+
+
 /// @brief tui_hooks_goto_command
 /// @param arg - arguments
 /// @param from_tty 
@@ -1326,7 +1345,7 @@ static std::string tui_hooks_calculate_sha1(const std::string& input)
 struct symtab_and_line tui_hooks_parse_sal_file( void)
 {
   char text[256], *rd;
-  struct symtab_and_line sal = get_current_source_symtab_and_line();
+  struct symtab_and_line sal;   // = get_current_source_symtab_and_line();
   struct symtab *original = sal.symtab;
   std::string moduleName = std::string("");
 
@@ -1448,10 +1467,24 @@ struct symtab
          //DEBUG: gdb_printf( "[H] %d:%d %s " , inx, lineNo, s->fullname);
      } // endif have data
      else 
+     {
+            //struct linetable_entry *lt = new linetable_entry[inx_lt];
+            struct linetable *lt = (struct linetable *)malloc( sizeof( struct linetable) + (inx_lt - 1) * sizeof( struct linetable_entry));
+            s->set_linetable( lt);
+
+            for( int i = 0; i < inx_lt; i++)
+            {
+                s->linetable()->item[i].line    = vecLines[i].line;
+                s->linetable()->item[i].pc      = vecLines[i].pc;
+                s->linetable()->item[i].is_stmt = vecLines[i].is_stmt;
+                s->linetable()->item[i].prologue_end = vecLines[i].prologue_end;
+            } // endfor
+            s->linetable()->nitems = inx_lt;
          break;
+     }
    } // endwhile
    fclose( file);
-   set_current_source_symtab_and_line( sal);
+   // debug: set_current_source_symtab_and_line( sal);
    return sal;
 }
 #endif
@@ -2081,6 +2114,43 @@ static void tui_decompiler_finished_signal( int sig)
 } // endfunc
 
 
+/**************************************************
+ * Helper function to read a text file in C++
+ *
+ *
+ */
+std::string tui_hooks_readFile(const std::string& filename) 
+{
+    std::ifstream file( filename, std::ios::ate); // Open at the end to get size
+    if( !file) 
+    {
+       return std::string( "ERROR!");
+    }
+    std::streamsize size = file.tellg();
+    file.seekg(0); // Rewind file to beginning
+
+    std::string content(size, '\0');  // Allocate string with proper size
+    file.read(&content[0], size);     // Read file content into string
+    return content;
+} // endfunc
+
+
+
+void tui_hooks_style_source_lines( symtab *s, char *fullname, std::string &contents)
+{
+    if( gdb_stdout->can_emit_style_escape ())
+    {
+	{
+	  gdb::optional<std::string> ext_contents;
+	  ext_contents = ext_lang_colorize (fullname, contents);
+	  if (ext_contents.has_value ())
+	    contents = std::move (*ext_contents);
+	}
+    }
+}
+
+
+
 
 
 /* Install the TUI specific hooks.  */
@@ -2148,6 +2218,10 @@ _initialize_tui_hooks ()
 
   add_cmd ( "goto", class_tui, tui_hooks_goto_command,
 	       _("Goto specified address"),
+	       tuicmd);
+
+  add_cmd ( "switch-to-src", class_tui, tui_switch_to_src_command,
+	       _("enable or disable automatic switch to source window"),
 	       tuicmd);
 
 

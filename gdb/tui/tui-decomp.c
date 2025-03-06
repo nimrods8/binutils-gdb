@@ -39,24 +39,118 @@
 #include "tui/tui-winsource.h"
 #include "tui/tui-decomp.h"
 #include "tui/tui-location.h"
+#include "tui/tui-disasm.h"
 #include "gdb_curses.h"
+#include "valprint.h"
 
 
 /* Function to display source in the source window.  */
 bool
 tui_decomp_window::set_contents (struct gdbarch *arch,
-				 const struct symtab_and_line &_sal)
+				 const struct symtab_and_line &sal)
 {
+  //std::string *name = new std::string();
+  //std::string *filename = new std::string();
+  int /*offset, line, unmapped,*/ line_no = sal.line; 
+  CORE_ADDR cur_pc = sal.pc;
+  if( cur_pc == 0)
+     return false;
 
-  symtab_and_line sal = tui_hooks_parse_sal_file();
+  //build_address_symbolic ( arch, cur_pc, true, true, name, &offset, filename, &line, &unmapped);
 
+  // try to find the function name from the disassembly line
+  std::string function_name = tui_disasm_get_funcname_at_pc( cur_pc);
+  gdb_printf( "[D] %s", function_name.c_str());
+
+
+  std::string srclines;
 
   struct symtab *s = sal.symtab;
-  int line_no = sal.line;
+  CORE_ADDR baseaddr = 0;
+  if( s != NULL && s->compunit() != NULL)
+  {
+     baseaddr = s->compunit()->objfile()->text_section_offset ();
+     //debug: gdb_printf( "baseaddr=%lx", baseaddr);
+  }
+//unused?  int line_no = sal.line;
+
+  symtab_and_line sal_ghidra = tui_hooks_parse_sal_file();
+  unsigned long mask = 0;
+  
+  if( sal_ghidra.symtab == NULL) 
+     return false;
+
+  bool foundStart = false, foundExact = false, foundWithin = false;
+if( s != NULL) {
+  for( int p = 0; p < 2; p++)
+  {
+
+
+  s = sal_ghidra.symtab;
+  int foundLine = 0;
+
+  while( s != NULL)
+  {
+        for( int i = 0; i < s->linetable()->nitems; i++) 
+        {
+            CORE_ADDR ipc =  s->linetable()->item[i].pc;
+            if( mask != 0) ipc &= mask;
+            ipc += baseaddr;
+
+            if( ipc == cur_pc) 
+            {
+               foundExact = true; 
+               foundLine = i;
+               break;
+            }
+            if( ipc <= cur_pc)
+               foundStart = true;
+            else if( ipc >= (unsigned long)cur_pc && foundStart == true)
+            {
+               foundWithin = true;
+               foundLine = i;
+               break;
+            }
+        } // endfor
+        if( foundExact || foundWithin)
+        {
+           // found - open file and write to m_contents
+           gdb_printf( "[D] found file: %s, at line=%d", s->fullname, s->linetable()->item[foundLine].line);
+
+           // open the ghidra decompile file and read all strings to srclines
+           srclines = tui_hooks_readFile( s->fullname);
+           tui_hooks_style_source_lines( s, s->fullname, srclines);
+           break;
+        }
+     s = s->next;
+  } // endwhile all symtabs
+  if( !foundExact && !foundWithin)
+  {
+     mask = 0xffff;
+     continue;
+  }
+  else
+  {
+     break;
+  }
+} // endfor
+} // endif
+	if( !foundExact && !foundWithin)
+	{
+           gdb_printf( "[D] func: %s", function_name.c_str());
+           std::string f__name = "/tmp/ghidra2/" + function_name + ".c";
+           srclines = tui_hooks_readFile( f__name.c_str());
+           char *full = (char *)"12345678";
+           tui_hooks_style_source_lines( sal_ghidra.symtab, full, srclines);
+	}
+ 
+
+  s = sal.symtab;
 
   if( s == NULL)
   {
      // try to open the sal.rx file for info
+     gdb_printf( "[D] and out...%d", 1);
      return false;
   }
 
@@ -64,14 +158,16 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
      calculating the number of lines.  */
   int nlines = height - box_size ();
 
-  std::string srclines;
+  int cur_line_no, cur_line;
+
+#if 0
   const std::vector<off_t> *offsets;
   if (!g_source_cache.get_source_lines (s, line_no, line_no + nlines,
 					&srclines)
       || !g_source_cache.get_line_charpos (s, &offsets))
     return false;
+#endif
 
-  int cur_line_no, cur_line;
   const char *s_filename = symtab_to_filename_for_display (s);
 
   set_title (s_filename);
@@ -83,6 +179,7 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
   m_start_line_or_addr.loa = LOA_LINE;
   cur_line_no = m_start_line_or_addr.u.line_no = line_no;
 
+#if 0
   m_digits = 7;
   if (compact_source)
     {
@@ -94,14 +191,10 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
       int trailing_space = 1;
       m_digits = digits_needed + trailing_space;
     }
+#endif
 
   m_max_length = -1;
   const char *iter = srclines.c_str ();
-
-// NS debug
-// gdb_printf( "== %s ==", iter);
-
-
 
   m_content.resize (nlines);
   while (cur_line < nlines)
