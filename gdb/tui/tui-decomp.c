@@ -52,16 +52,27 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
   //std::string *name = new std::string();
   //std::string *filename = new std::string();
   int /*offset, line, unmapped,*/ line_no = sal.line; 
-  CORE_ADDR cur_pc = sal.pc;
+  CORE_ADDR cur_pc; // = sal.pc;
+  cur_pc = tui_location.addr();
   if( cur_pc == 0)
-     return false;
+  {
+     cur_pc = sal.pc;
+     if( cur_pc == 0)
+        return false;
+  }
+
+  bool addBaseAddr = false, useMask = false;
+
 
   //build_address_symbolic ( arch, cur_pc, true, true, name, &offset, filename, &line, &unmapped);
 
   // try to find the function name from the disassembly line
   std::string function_name = tui_disasm_get_funcname_at_pc( cur_pc);
-  gdb_printf( "[D] %s", function_name.c_str());
-
+  // if have a "+something" at the end - just remove it
+  size_t pos = function_name.find('+');
+  if (pos != std::string::npos) {
+        function_name = function_name.substr(0, pos);
+  }
 
   std::string srclines;
 
@@ -70,7 +81,13 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
   if( s != NULL && s->compunit() != NULL)
   {
      baseaddr = s->compunit()->objfile()->text_section_offset ();
+     addBaseAddr = true;
      //debug: gdb_printf( "baseaddr=%lx", baseaddr);
+  }
+  else
+  {
+     baseaddr = get_current_source_symtab_and_line().symtab->compunit()->objfile()->text_section_offset ();
+     addBaseAddr = true;
   }
 //unused?  int line_no = sal.line;
 
@@ -80,27 +97,36 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
   if( sal_ghidra.symtab == NULL) 
      return false;
 
+
   bool foundStart = false, foundExact = false, foundWithin = false;
+if( s == NULL) s = sal_ghidra.symtab;
 if( s != NULL) {
+
+
   for( int p = 0; p < 2; p++)
   {
-
-
-  s = sal_ghidra.symtab;
-  int foundLine = 0;
+  // DEBUG:: int foundLine = 0;
+      s = sal_ghidra.symtab;
 
   while( s != NULL)
-  {
+  {     // ======================================
+        // starting analysis of ghidra's symtab
+        s->filename = s->fullname;
+        s->set_language( language_c);
+
         for( int i = 0; i < s->linetable()->nitems; i++) 
         {
             CORE_ADDR ipc =  s->linetable()->item[i].pc;
-            if( mask != 0) ipc &= mask;
+            if( mask != 0) 
+            {
+               ipc &= mask;
+            }
             ipc += baseaddr;
 
             if( ipc == cur_pc) 
             {
                foundExact = true; 
-               foundLine = i;
+               // debug:: foundLine = i;
                break;
             }
             if( ipc <= cur_pc)
@@ -108,18 +134,18 @@ if( s != NULL) {
             else if( ipc >= (unsigned long)cur_pc && foundStart == true)
             {
                foundWithin = true;
-               foundLine = i;
+               // DEBUG:: foundLine = i;
                break;
             }
         } // endfor
         if( foundExact || foundWithin)
         {
            // found - open file and write to m_contents
-           gdb_printf( "[D] found file: %s, at line=%d", s->fullname, s->linetable()->item[foundLine].line);
+           // DEBUG:: gdb_printf( "[D] found file: %s, at line=%d", s->fullname, s->linetable()->item[foundLine].line);
 
            // open the ghidra decompile file and read all strings to srclines
            srclines = tui_hooks_readFile( s->fullname);
-           tui_hooks_style_source_lines( s, s->fullname, srclines);
+           tui_hooks_style_source_lines( s, (char *)/*"/tmp/ghidra2/main.c"*/ s->fullname, srclines);
            break;
         }
      s = s->next;
@@ -127,6 +153,7 @@ if( s != NULL) {
   if( !foundExact && !foundWithin)
   {
      mask = 0xffff;
+     useMask = true;
      continue;
   }
   else
@@ -135,22 +162,29 @@ if( s != NULL) {
   }
 } // endfor
 } // endif
+
+////>>> you can't replace the symtab you just found, stupid!  s = sal.symtab;
+
 	if( !foundExact && !foundWithin)
 	{
-           gdb_printf( "[D] func: %s", function_name.c_str());
+           // DEBUG:: gdb_printf( "[D] func: %s", function_name.c_str());
            std::string f__name = "/tmp/ghidra2/" + function_name + ".c";
            srclines = tui_hooks_readFile( f__name.c_str());
-           char *full = (char *)"12345678";
+           char *full = (char *)f__name.c_str();
            tui_hooks_style_source_lines( sal_ghidra.symtab, full, srclines);
+           sal_ghidra.pspace = sal.pspace;
+           sal_ghidra.symtab->fullname = full;
+           sal_ghidra.symtab->filename = full;
+	   sal_ghidra.symtab->set_language( language_c); 
+           s = sal_ghidra.symtab;
 	}
  
 
-  s = sal.symtab;
 
   if( s == NULL)
   {
      // try to open the sal.rx file for info
-     gdb_printf( "[D] and out...%d", 1);
+     // DEBUG:: gdb_printf( "[D] and out...%d", 1);
      return false;
   }
 
@@ -175,7 +209,11 @@ if( s != NULL) {
   m_fullname = make_unique_xstrdup (symtab_to_fullname (s));
 
   cur_line = 0;
-  m_gdbarch = s->compunit ()->objfile ()->arch ();
+  if( s->compunit() == NULL)
+     m_gdbarch = arch;
+  else
+     m_gdbarch = s->compunit ()->objfile ()->arch ();
+
   m_start_line_or_addr.loa = LOA_LINE;
   cur_line_no = m_start_line_or_addr.u.line_no = line_no;
 
@@ -197,6 +235,12 @@ if( s != NULL) {
   const char *iter = srclines.c_str ();
 
   m_content.resize (nlines);
+
+  bool firstTime = true;
+
+  // NS 080325
+  cur_line_no = 1;
+
   while (cur_line < nlines)
     {
       struct tui_source_element *element = &m_content[cur_line];
@@ -211,18 +255,51 @@ if( s != NULL) {
       else
 	{
 	  /* Line not in source file.  */
-	  cur_line_no = -1;
+	  // NS cur_line_no = -1;
 	}
 
       /* Set whether element is the execution point
 	 and whether there is a break point on it.  */
       element->line_or_addr.loa = LOA_LINE;
       element->line_or_addr.u.line_no = cur_line_no;
-      element->is_exec_point
+
+
+      bool foundLine = false;
+      // check if current source line appears in the parsed symtab linetables 
+      for( int i = 0; i < s->linetable()->nitems; i++) 
+      {
+          // CORE_ADDR ipc =  s->linetable()->item[i].pc;
+          CORE_ADDR pce = s->linetable()->item[i].pc;
+
+          if( useMask)
+             pce &= 0xffff;
+          if( addBaseAddr)
+             pce += baseaddr;
+
+          if( pce == cur_pc && s->linetable()->item[i].line == cur_line_no)
+          {
+             foundLine = true;
+             break;
+          }
+      } // endfor all lines
+
+      if( foundLine && firstTime)
+      {  // clear all exec points if have a new one
+         for( int pp = 0; pp < m_content.size(); pp++)
+         {
+             struct tui_source_element *_element = &m_content[pp];
+             _element->is_exec_point = false;
+         }
+         firstTime = false;
+      }
+      if( foundLine)
+         element->is_exec_point = true; //(foundLine) ? true : false;
+      
+/*
 	= (filename_cmp (tui_location.full_name ().c_str (),
 			 symtab_to_fullname (s)) == 0
 	   && cur_line_no == tui_location.line_no ());
-
+*/
       m_content[cur_line].line = std::move (text);
 
       cur_line++;

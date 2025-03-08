@@ -39,6 +39,7 @@
 #include "tui/tui-winsource.h"
 #include "tui/tui-source.h"
 #include "tui/tui-disasm.h"
+#include "tui/tui-decomp.h"
 #include "tui/tui-location.h"
 #include "gdb_curses.h"
 
@@ -529,7 +530,9 @@ tui_source_window_base::set_is_exec_point_at (struct tui_line_or_address l)
 	new_state = true;
       else
 	new_state = false;
-      if (new_state != m_content[i].is_exec_point)
+
+// NS 070325 add decomp window
+      if (new_state != m_content[i].is_exec_point || this == TUI_DECOMP_WIN)
 	{
 	  changed = true;
 	  m_content[i].is_exec_point = new_state;
