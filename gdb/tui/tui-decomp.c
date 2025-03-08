@@ -90,14 +90,15 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
      addBaseAddr = true;
   }
 //unused?  int line_no = sal.line;
+  symtab_and_line *aqs = tui_hooks_parse_sal_file();
+  if( aqs == NULL)
+     return false;
 
-  symtab_and_line sal_ghidra = tui_hooks_parse_sal_file();
-  unsigned long mask = 0;
-  
+  symtab_and_line sal_ghidra = *aqs; 
   if( sal_ghidra.symtab == NULL) 
      return false;
 
-
+  unsigned long mask = 0;
   bool foundStart = false, foundExact = false, foundWithin = false;
 if( s == NULL) s = sal_ghidra.symtab;
 if( s != NULL) {

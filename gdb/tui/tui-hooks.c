@@ -1235,7 +1235,8 @@ static void tui_hooks_break_command( const char *arg, int from_tty)
 } // endfunc
 
 
-static std::string hashed_filename;
+static std::string hashed_dirname;
+static bool file_read = false;
 /************************************************************************/
 /// @brief calls the file command then runs the Ghidra analysis tool
 /// @param arg 
@@ -1244,6 +1245,8 @@ static std::string hashed_filename;
 static void tui_hooks_file_command( const char *arg, int from_tty)
 {
    std::string sarg = std::string( arg), dir_path;
+   struct dirent *entry;
+   struct stat statbuf;
 
    // try now with "file ..."
    std::string infof = "file " + sarg;
@@ -1251,10 +1254,24 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
    execute_command( infof.c_str(), false);
 
    std::string _hashproj = "gdb_" + tui_hooks_calculate_sha1( sarg);
-   std::string hashfn = "/tmp/" + _hashproj;
-   hashed_filename = hashfn;
 
+   const char *home = getenv("HOME");  // Get home directory
    char path[PATH_MAX];
+
+   std::string hashfn = std::string( home) + "/" + _hashproj;
+   hashed_dirname = hashfn;
+
+   // check if have a directory of that name and it has the .rxx file then don't reread
+   //if( stat( hashed_dirname.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
+   {  
+      std::string _s0 = hashed_dirname + "/sal.rxx";
+      if( stat( _s0.c_str(), &statbuf) == 0) 
+      {
+         file_read = true;
+         return;
+      }
+   } // endif check if have a dir and sal.rxx file
+   
    size_t count = readlink("/proc/self/exe", path, sizeof(path) - 1);
 
    if( count != -1) 
@@ -1268,9 +1285,6 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
           gdb_printf( "[tui-file] opendir error");
           return;
       }
-
-      struct dirent *entry;
-      struct stat statbuf;
 
       if( hashfn.length() > 18)
       {
@@ -1295,7 +1309,8 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
 
             if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
             {
-                 full_path = "shell " + full_path + "/support/analyzeHeadless /tmp " + _hashproj + 
+                 std::string home_str = std::string( home);
+                 full_path = "shell " + full_path + "/support/analyzeHeadless " + home_str + " " + _hashproj + 
                               " -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler2.java " + 
                                hashfn + " " + tmp_buffer + " > /dev/null";
                  // gdb_printf( "[tui-hooks] %s", full_path.c_str());
@@ -1318,6 +1333,7 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
        gdb_printf( "[H] symtab.filename=%s", nextsal->filename);
    }
 #endif // debug
+
 } // endfunc helper tui breaks
 
 
@@ -1337,56 +1353,35 @@ static std::string tui_hooks_calculate_sha1(const std::string& input)
 
 
 #if 1
+
+static struct symtab_and_line *sal = NULL;
 /************************************************************************/
 /// @brief Parses the sal.rx/rxx file created by Ghidra decompiler
 /// @param arg 
 /// @param from_tty 
 /************************************************************************/
-struct symtab_and_line tui_hooks_parse_sal_file( void)
+struct symtab_and_line *tui_hooks_parse_sal_file( void)
 {
   char text[256], *rd;
-  struct symtab_and_line sal;   // = get_current_source_symtab_and_line();
-  struct symtab *original = sal.symtab;
+
+  if( !file_read)
+     return NULL;
+
+  sal = new symtab_and_line();
+
+  ////struct symtab_and_line sal;   // = get_current_source_symtab_and_line();
+  struct symtab *original = sal->symtab;
   std::string moduleName = std::string("");
 
-  FILE *file = fopen( "/tmp/ghidra2/sal.rxx", "rt");
+  std::string openfn = hashed_dirname + "/sal.rxx";
+  FILE *file = fopen( openfn.c_str() /*"/tmp/ghidra2/sal.rxx"*/, "rt");
   if( file == NULL)
     return sal;
 
   unsigned long addr, addr2;
   int lineNo;
-  struct symtab *prev_s = sal.symtab, *s;
-/*
+  struct symtab *prev_s = sal->symtab, *s;
 
-struct symtab
-{
-  struct compunit_symtab *compunit () const
-  {
-    return m_compunit;
-  }
-
-  void set_compunit (struct compunit_symtab *compunit)
-  {
-    m_compunit = compunit;
-  }
-
-  struct linetable *linetable () const
-  {
-    return m_linetable;
-  }
-
-  void set_linetable (struct linetable *linetable)
-  {
-    m_linetable = linetable;
-  }
-
-  enum language language () const
-  {
-    return m_language;
-  }
-
-
-*/
   int state = 0, inx_lt = 0, inx_s = 0;
   std::vector<linetable_entry> vecLines;
   while( true)
@@ -1424,7 +1419,7 @@ struct symtab
             vecLines.clear();						// clear the vector for the next symtab
             state = 0;
             if( inx_s == 0)
-               prev_s = sal.symtab;
+               prev_s = sal->symtab;
             else
                prev_s = s;
             inx_s++;
@@ -1437,7 +1432,7 @@ struct symtab
             if( inx_s > 0)
                prev_s->next = s;
             else
-               sal.symtab = s;
+               sal->symtab = s;
             
             state = 1;
             //struct linetable *lt = new linetable();
@@ -2108,6 +2103,8 @@ static void tui_decompiler_finished_signal( int sig)
 {
    if( sig == SIGUSR1) 
    {
+      file_read = true;
+
       gdb_printf("[%d] Received SIGUSR1, batch action completed!", 0);
       tui_hooks_parse_sal_file();
    } // endfunc
