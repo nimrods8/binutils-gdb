@@ -20,13 +20,17 @@
 #ifndef TUI_TUI_HOOKS_H
 #define TUI_TUI_HOOKS_H
 
+
+/**************************************/
+/*  P U B L I C    F U N C T I O N S  */
+/**************************************/
 extern void tui_install_hooks (void);
 extern void tui_remove_hooks (void);
 std::vector<std::string> tui_hooks_split(const std::string& s, char seperator);
 
 std::string tui_hooks_get_name_of_rwMaps( CORE_ADDR addr);
 std::string tui_hooks_filename2color( std::string filename);
-std::string tui_hooks_readFile(const std::string& filename);
+std::string tui_hooks_readFile(const std::string& filename, int *count);
 void tui_hooks_style_source_lines( symtab *s, char *fullname, std::string &contents);
 /************************************/
 typedef struct

@@ -81,7 +81,9 @@
 #include <signal.h>
 #include <fstream>
 
-
+//***************************************/
+//* P R I V A T E     F U N C T I O N S *
+//***************************************/
 // NS 16/10
 static void tui_hooks_comment_all_command (const char *, int);
 static void tui_hooks_call_rename_command (const char *, int);
@@ -97,6 +99,7 @@ static std::string tui_hooks_calculate_sha1(const std::string& input);
 static void tui_decompiler_finished_signal( int sig);
 static void tui_hooks_goto_command( const char *arg, int from_tty);
 static void  tui_switch_to_src_command( const char *arg, int from_tty);
+static size_t tui_hooks_countLines(const std::string& str);
 
 
 /* Data from one mapping from /proc/PID/maps.  */
@@ -1701,9 +1704,9 @@ tui_process_next_instruction( CORE_ADDR cur_inst_addr, std::string *str_comment,
          ht_comments.clear();
          ht_renames.clear();
 
-
+/*
          gdb_printf( "solib=%d, taint=%d, size=%ld", newSolibsLoaded, commentsTainted, m_comments.size());
-
+*/
          static int hooks_axa = -1;
 
          // prepare a hashmap of all comments, renames and breaks for this filename
@@ -2114,23 +2117,31 @@ static void tui_decompiler_finished_signal( int sig)
 /**************************************************
  * Helper function to read a text file in C++
  *
- *
+ * reads the file and returns everything in it
+ * also returns the line count.
+ * 
  */
-std::string tui_hooks_readFile(const std::string& filename) 
+std::string tui_hooks_readFile(const std::string& filename, int *lineCount) 
 {
     std::ifstream file( filename, std::ios::ate); // Open at the end to get size
     if( !file) 
     {
-       return std::string( "ERROR!");
+       *lineCount = 0;
+       return std::string( "< Function not found! >");
     }
     std::streamsize size = file.tellg();
     file.seekg(0); // Rewind file to beginning
 
     std::string content(size, '\0');  // Allocate string with proper size
     file.read(&content[0], size);     // Read file content into string
+    *lineCount = tui_hooks_countLines( content);
     return content;
 } // endfunc
 
+
+static size_t tui_hooks_countLines(const std::string& str) {
+    return std::count(str.begin(), str.end(), '\n') + 1;  // +1 to count the last line
+}
 
 
 void tui_hooks_style_source_lines( symtab *s, char *fullname, std::string &contents)

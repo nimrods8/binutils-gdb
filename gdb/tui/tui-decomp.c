@@ -45,13 +45,22 @@
 
 
 /* Function to display source in the source window.  */
+/**
+ * Symtab is a structure per source file. Gdb is providing this function
+ * with the appropriate symtab_and_line structure which contains the symtab
+ * of what is being displayed and its line number.
+ * In our case, we can't make gdb provide the correct symtab so we generate
+ * it in the fly in this function from sal.rxx.
+ * If there is no function in the sal.rxx that is within the cur_pc range
+ * this function would simply read the <function_name>.c file and show that
+ */
 bool
 tui_decomp_window::set_contents (struct gdbarch *arch,
 				 const struct symtab_and_line &sal)
 {
   //std::string *name = new std::string();
   //std::string *filename = new std::string();
-  int /*offset, line, unmapped,*/ line_no = sal.line; 
+  int /*offset, line, unmapped,*/ line_no = sal.line, lineCount; 
   CORE_ADDR cur_pc; // = sal.pc;
   cur_pc = tui_location.addr();
   if( cur_pc == 0)
@@ -145,7 +154,7 @@ if( s != NULL) {
            // DEBUG:: gdb_printf( "[D] found file: %s, at line=%d", s->fullname, s->linetable()->item[foundLine].line);
 
            // open the ghidra decompile file and read all strings to srclines
-           srclines = tui_hooks_readFile( s->fullname);
+           srclines = tui_hooks_readFile( s->fullname, &lineCount);
            tui_hooks_style_source_lines( s, (char *)/*"/tmp/ghidra2/main.c"*/ s->fullname, srclines);
            break;
         }
@@ -166,11 +175,12 @@ if( s != NULL) {
 
 ////>>> you can't replace the symtab you just found, stupid!  s = sal.symtab;
 
+        // FIX FIX FIX FIX FIX FIX FIX
 	if( !foundExact && !foundWithin)
 	{
            // DEBUG:: gdb_printf( "[D] func: %s", function_name.c_str());
            std::string f__name = "/tmp/ghidra2/" + function_name + ".c";
-           srclines = tui_hooks_readFile( f__name.c_str());
+           srclines = tui_hooks_readFile( f__name.c_str(), &lineCount);
            char *full = (char *)f__name.c_str();
            tui_hooks_style_source_lines( sal_ghidra.symtab, full, srclines);
            sal_ghidra.pspace = sal.pspace;
@@ -218,13 +228,14 @@ if( s != NULL) {
   m_start_line_or_addr.loa = LOA_LINE;
   cur_line_no = m_start_line_or_addr.u.line_no = line_no;
 
-#if 0
   m_digits = 7;
+#if 1
   if (compact_source)
     {
       /* Solaris 11+gcc 5.5 has ambiguous overloads of log10, so we
 	 cast to double to get the right one.  */
-      int lines_in_file = offsets->size ();
+//      int lines_in_file = offsets->size ();
+      int lines_in_file = lineCount; //offsets->size ();
       int max_line_nr = lines_in_file;
       int digits_needed = 1 + (int)log10 ((double) max_line_nr);
       int trailing_space = 1;
