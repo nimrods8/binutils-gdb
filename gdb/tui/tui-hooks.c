@@ -81,6 +81,11 @@
 #include <signal.h>
 #include <fstream>
 
+#include <filesystem>
+#include <string>
+
+
+
 //***************************************/
 //* P R I V A T E     F U N C T I O N S *
 //***************************************/
@@ -2121,8 +2126,18 @@ static void tui_decompiler_finished_signal( int sig)
  * also returns the line count.
  * 
  */
-std::string tui_hooks_readFile(const std::string& filename, int *lineCount) 
+std::string tui_hooks_readFile(const std::string& filepath, int *lineCount) 
 {
+    // Find the position of the last slash
+    size_t pos = filepath.find_last_of("/\\");
+
+    // Extract the filename (everything after the last slash)
+    std::string _filename = filepath.substr(pos + 1);  // Skip the slash itself
+
+    // Combine the new directory with the filename
+    std::string filename = hashed_dirname + "/" + _filename;
+
+
     std::ifstream file( filename, std::ios::ate); // Open at the end to get size
     if( !file) 
     {
