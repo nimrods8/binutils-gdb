@@ -868,8 +868,41 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
      return;
   }
 
+  // *** S E T    B R E A K P O I N T ***
+  if( mouse_x < 5 && !m_content.empty() && m_content.size() >= mouse_y)
+  {
+    std::string line2 = m_content[mouse_y].line;
+    CORE_ADDR addr;
+    addr = m_content[mouse_y].line_or_addr.u.addr;
 
-  if (!m_content.empty() && m_content.size() >= mouse_y)
+
+    for( breakpoint *bp : all_breakpoints ())
+    {
+//        if( bp == being_deleted)
+//           continue;
+
+        for( bp_location *loc : bp->locations ())
+        {
+            if (location_matches_p (loc, mouse_y))
+            {
+               //gdb_printf( "[dis] found break %d", bp->number);
+               char cmd[64];
+               sprintf( cmd, "del break %d", bp->number);
+               execute_command( cmd, false);
+               return;
+            }
+        }  // endfor
+      // try now with "info func"
+    } // endfor
+
+//    addr = tui_disasm_parse_line(line2); // return jump to address
+    char cmd[64];
+    sprintf( cmd, "b *0x%lx", addr);
+    execute_command( cmd, false);
+    //gdb_printf( "[dis] set break at *%lx", addr);
+
+  }
+  else if (!m_content.empty() && m_content.size() >= mouse_y)
   {
       if (mouse_button == 3)
       {
@@ -976,7 +1009,6 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
 */
       }
     } // endif no address found
-
 
     // address is found!
     if (addr != 0L && !TUI_DISASMOT_WIN->isVisible)
