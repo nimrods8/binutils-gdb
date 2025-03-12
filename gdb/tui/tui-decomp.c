@@ -95,8 +95,13 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
   }
   else
   {
-     baseaddr = get_current_source_symtab_and_line().symtab->compunit()->objfile()->text_section_offset ();
-     addBaseAddr = true;
+     if( get_current_source_symtab_and_line().symtab != NULL)
+     {
+        baseaddr = get_current_source_symtab_and_line().symtab->compunit()->objfile()->text_section_offset ();
+        addBaseAddr = true;
+     }
+     else 
+        addBaseAddr = false;
   }
 //unused?  int line_no = sal.line;
   symtab_and_line *aqs = tui_hooks_parse_sal_file();
@@ -179,7 +184,7 @@ if( s != NULL) {
 	if( !foundExact && !foundWithin)
 	{
            // DEBUG:: gdb_printf( "[D] func: %s", function_name.c_str());
-           std::string f__name = "/tmp/ghidra2/" + function_name + ".c";
+           std::string f__name = /*"/tmp/ghidra2/" +*/  function_name + ".c";
            srclines = tui_hooks_readFile( f__name.c_str(), &lineCount);
            char *full = (char *)f__name.c_str();
            tui_hooks_style_source_lines( sal_ghidra.symtab, full, srclines);
@@ -228,7 +233,7 @@ if( s != NULL) {
   m_start_line_or_addr.loa = LOA_LINE;
   cur_line_no = m_start_line_or_addr.u.line_no = line_no;
 
-  m_digits = 7;
+  m_digits = 3;
 #if 1
   if (compact_source)
     {

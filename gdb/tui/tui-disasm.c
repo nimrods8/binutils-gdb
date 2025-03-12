@@ -158,10 +158,17 @@ tui_disassemble(struct gdbarch *gdbarch,
       /* If PC points to an invalid address then we'll catch a
          MEMORY_ERROR here, this should stop the disassembly, but
          otherwise is fine.  */
-      if (except.error != MEMORY_ERROR)
-        throw;
+      if( except.error != MEMORY_ERROR)
+         gdb_printf( "%d", except.error);         //throw;
+
       return pc;
+    } 
+    catch (...) 
+    {
+       gdb_printf( "unknown exception: %d", -1);
+       return pc;
     }
+
 
     /* Capture the disassembled instruction.  */
     tal.insn = gdb_dis_out.release();

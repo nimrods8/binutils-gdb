@@ -956,7 +956,18 @@ static void tui_hooks_goto_command( const char *arg, int from_tty)
   } // end try
 
   struct gdbarch *gdbarch = target_gdbarch();
-  tui_update_source_windows_with_addr( gdbarch, func_addr);
+  if( gdbarch != NULL)
+  {
+     std::string resultsstr = "";
+     std::string infof = "x/4x " + std::to_string( func_addr);
+     execute_command_to_string( resultsstr, infof.c_str(), 0, false);
+//     size_t a = resultsstr.find( "Cannot");
+//     gdb_printf( "[[[[%lu]]]]", a);
+//     if( resultsstr.find( "Cannot") != std::string::npos)
+        tui_update_source_windows_with_addr( gdbarch, func_addr);
+//     else
+//        gdb_printf( "%s", resultsstr.c_str());
+  }
 } // endfunc
 
 

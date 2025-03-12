@@ -67,6 +67,8 @@ New break point type:
 `tui break apply` to re-apply the breaks that were previously set using `tui break` and saved with `tui comment save`  
 Note that `tui break` now supports **regexp** for the function name, through `info func`. It will find all matching functions and place breakpoints on them.  
 Use `tui comment save` to save the tui breakpoints to the `~/.comments` file, so you can reapply them in future sessions.  
+  
+**You can also set a breakpoint (or remove it) by clicking left of the disassembly information in the disassemble window.**
 	
 	
 
@@ -94,7 +96,9 @@ A new layout has been added, called `console`.
 Use `layout console` to set it.  
 
 **tui decompiler layout:**   
-WIP: Decompiler layout  
+WIP: Decompiler layout. Run  
+`tui file <binary filename>`  
+to load a binary file (with or without debug information) and start the ghidra decompilation analysis.   
 
 **tui info:**  
 Display any of the `info` commands on the console window. For example, use:
