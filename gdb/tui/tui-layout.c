@@ -239,7 +239,7 @@ tui_set_initial_layout ()
 {
   tui_set_layout (layouts[0].get ());
   execute_command( "tui new-layout console {-horizontal regs 3 console 1} 2 memdump 1 asm 3 cmd 1 asmot 0 status 0", false);
-  execute_command( "tui new-layout decompile {-horizontal regs 3 console 1} 2 memdump 1 {-horizontal asm 3 decomp 1} 3 cmd 1 asmot 0 status 0", false);
+  execute_command( "tui new-layout decompile {-horizontal regs 3 console 1} 2 memdump 1 {-horizontal asm 4 decomp 2} 3 cmd 1 asmot 0 status 0", false);
 }
 
 /* Implement the "layout prev" command.  */

@@ -95,6 +95,30 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
   }
   else
   {
+//     baseaddr = current_program_space->objfiles()->text_section_offset();
+
+     for (objfile *ofile : current_program_space->objfiles ())
+     {
+         if( ofile->obfd == current_program_space->exec_bfd())
+         {
+            baseaddr = ofile->text_section_offset();
+            addBaseAddr = true;
+            break;
+         }
+
+/*
+        if (ofile->obfd == current_program_space->exec_bfd ())
+           maint_print_all_sections (_("Exec file: "), ofile->obfd.get (),
+                                  ofile, arg);
+        else if (opts.all_objects)
+           maint_print_all_sections (_("Object file: "), ofile->obfd.get (),
+                                  ofile, arg);
+*/
+     }
+
+
+
+#if 0
      if( get_current_source_symtab_and_line().symtab != NULL)
      {
         baseaddr = get_current_source_symtab_and_line().symtab->compunit()->objfile()->text_section_offset ();
@@ -102,6 +126,7 @@ tui_decomp_window::set_contents (struct gdbarch *arch,
      }
      else 
         addBaseAddr = false;
+#endif
   }
 //unused?  int line_no = sal.line;
   symtab_and_line *aqs = tui_hooks_parse_sal_file();

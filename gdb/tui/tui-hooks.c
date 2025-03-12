@@ -1386,16 +1386,22 @@ struct symtab_and_line *tui_hooks_parse_sal_file( void)
   if( !file_read)
      return NULL;
 
+  std::string openfn = hashed_dirname + "/sal.rxx";
+  FILE *file = fopen( openfn.c_str() /*"/tmp/ghidra2/sal.rxx"*/, "rt");
+  if( file == NULL)
+    return NULL;
+
+  // if have a static symtab_and_line return it
+  if( sal != NULL) {
+     fclose( file);
+     return sal;
+  }
+
   sal = new symtab_and_line();
 
   ////struct symtab_and_line sal;   // = get_current_source_symtab_and_line();
   struct symtab *original = sal->symtab;
   std::string moduleName = std::string("");
-
-  std::string openfn = hashed_dirname + "/sal.rxx";
-  FILE *file = fopen( openfn.c_str() /*"/tmp/ghidra2/sal.rxx"*/, "rt");
-  if( file == NULL)
-    return sal;
 
   unsigned long addr, addr2;
   int lineNo;
