@@ -159,7 +159,8 @@ if( s != NULL) {
             CORE_ADDR ipc =  s->linetable()->item[i].pc;
             if( mask != 0) 
             {
-               ipc &= mask;
+               // ipc &= mask;
+               ipc -= 0x100000;
             }
             ipc += baseaddr;
 
@@ -314,7 +315,8 @@ if( s != NULL) {
           CORE_ADDR pce = s->linetable()->item[i].pc;
 
           if( useMask)
-             pce &= 0xffff;
+             pce -= 0x100000;
+             //pce &= 0xffff;
           if( addBaseAddr)
              pce += baseaddr;
 
