@@ -43,6 +43,7 @@
 #include "gdb_curses.h"
 #include "valprint.h"
 
+#include <unordered_map>
 
 /* Function to display source in the source window.  */
 /**
@@ -54,6 +55,10 @@
  * If there is no function in the sal.rxx that is within the cur_pc range
  * this function would simply read the <function_name>.c file and show that
  */
+//std::vector<CORE_ADDR> m_additional;
+std::unordered_map<CORE_ADDR, std::vector<int>> addressMap;
+
+
 bool
 tui_decomp_window::set_contents (struct gdbarch *arch,
 				 const struct symtab_and_line &sal)
@@ -283,10 +288,12 @@ if( s != NULL) {
 
   // NS 080325
   cur_line_no = 1;
+  addressMap.clear();
 
   while (cur_line < nlines)
     {
       struct tui_source_element *element = &m_content[cur_line];
+
 
       std::string text;
       if (*iter != '\0')
@@ -306,7 +313,6 @@ if( s != NULL) {
       element->line_or_addr.loa = LOA_LINE;
       element->line_or_addr.u.line_no = cur_line_no;
 
-
       bool foundLine = false;
       // check if current source line appears in the parsed symtab linetables 
       for( int i = 0; i < s->linetable()->nitems; i++) 
@@ -320,8 +326,13 @@ if( s != NULL) {
           if( addBaseAddr)
              pce += baseaddr;
 
+          if( cur_line_no == s->linetable()->item[i].line)
+             addressMap[pce].push_back(cur_line);
+
+
           if( pce == cur_pc && s->linetable()->item[i].line == cur_line_no)
           {
+             // doesn't work nicely>>> element->line_or_addr.u.line_no = pce;
              foundLine = true;
              break;
           }
@@ -446,11 +457,19 @@ tui_decomp_window::do_scroll_vertical (int num_to_scroll)
 bool
 tui_decomp_window::location_matches_p (struct bp_location *loc, int line_no)
 {
+  for( const auto& line : addressMap[loc->address]) 
+  {
+      if( line == line_no)
+         return true;
+  }
+  return false;
+/*
   return (m_content[line_no].line_or_addr.loa == LOA_LINE
 	  && m_content[line_no].line_or_addr.u.line_no == loc->line_number
 	  && loc->symtab != NULL
 	  && filename_cmp (m_fullname.get (),
 			   symtab_to_fullname (loc->symtab)) == 0);
+*/
 }
 
 /* See tui-decomp.h.  */
