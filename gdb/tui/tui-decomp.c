@@ -45,6 +45,11 @@
 
 #include <unordered_map>
 
+
+static int find_pc_line( CORE_ADDR cur_pc, CORE_ADDR);
+static int calculateStartLine(int totalLines, int targetLine, int screen_lines) ;
+
+
 /* Function to display source in the source window.  */
 /**
  * Symtab is a structure per source file. Gdb is providing this function
@@ -57,6 +62,7 @@
  */
 //std::vector<CORE_ADDR> m_additional;
 std::unordered_map<CORE_ADDR, std::vector<int>> addressMap;
+
 
 
 bool
@@ -242,6 +248,11 @@ if( s != NULL) {
 
   int cur_line_no, cur_line;
 
+  // NS 160325
+  line_no = find_pc_line( cur_pc, baseaddr);
+  line_no = calculateStartLine( nlines, line_no, lineCount);
+
+
 #if 0
   const std::vector<off_t> *offsets;
   if (!g_source_cache.get_source_lines (s, line_no, line_no + nlines,
@@ -261,6 +272,7 @@ if( s != NULL) {
      m_gdbarch = arch;
   else
      m_gdbarch = s->compunit ()->objfile ()->arch ();
+
 
   m_start_line_or_addr.loa = LOA_LINE;
   cur_line_no = m_start_line_or_addr.u.line_no = line_no;
@@ -366,11 +378,120 @@ if( s != NULL) {
 }
 
 
+
+
 /**
+ */
+static int calculateStartLine(int totalLines, int targetLine, int screen_lines) 
+{
+    int halfScreen = screen_lines / 2;  // Half of the screen size
+
+    // If the target line is near the start, show from line 1
+    if (targetLine <= halfScreen) {
+        return 1;
+    }
+
+    // If the target line is near the end, adjust so we don't go past total lines
+    if (targetLine >= totalLines - halfScreen) {
+        return totalLines - screen_lines + 1;
+    }
+
+    // Otherwise, center the target line
+    return targetLine - halfScreen;
+} // endfunc
+
+
+
+/**
+ * @brief finds the source line corresponding to the given pc
  *
- *
- *
+ * @param pc = address of the current program counter
+ * @returns 0 if error, otherwise line number
+ * 
 **/
+static int find_pc_line( CORE_ADDR cur_pc, CORE_ADDR baseaddr)
+{
+    int ret_line = 0;
+    symtab_and_line *aqs = tui_hooks_parse_sal_file();
+    if( aqs == NULL)
+      return 0;
+
+    symtab_and_line sal_ghidra = *aqs; 
+    if( sal_ghidra.symtab == NULL) 
+      return 0;
+
+    unsigned long mask = 0;
+    bool foundStart = false, foundExact = false, foundWithin = false;
+    symtab *s = sal_ghidra.symtab;
+
+    if( s != NULL) 
+    {
+       for( int p = 0; p < 2; p++)
+       {
+           s = sal_ghidra.symtab;
+
+           while( s != NULL)
+           {     // ======================================
+              // starting analysis of ghidra's symtab
+              s->filename = s->fullname;
+              s->set_language( language_c);
+
+              for( int i = 0; i < s->linetable()->nitems; i++) 
+              {
+                  CORE_ADDR ipc =  s->linetable()->item[i].pc;
+                  if( mask != 0) 
+                  {
+                    // ipc &= mask;
+                    ipc -= 0x100000;
+                  }
+                  ipc += baseaddr;
+
+                  if( ipc == cur_pc) 
+                  {
+                    foundExact = true; 
+                    // debug:: foundLine = i;
+                    ret_line = s->linetable()->item[i].line;
+                    break;
+                  }
+                  if( ipc <= cur_pc)
+                    foundStart = true;
+                  else if( ipc >= (unsigned long)cur_pc && foundStart == true)
+                  {
+                    foundWithin = true;
+                    // DEBUG:: foundLine = i;
+                    ret_line = s->linetable()->item[i].line;
+                    break;
+                  }
+              } // endfor
+              if( foundExact || foundWithin)
+              {
+                // found - open file and write to m_contents
+                // DEBUG:: gdb_printf( "[D] found file: %s, at line=%d", s->fullname, s->linetable()->item[foundLine].line);
+                return( ret_line);
+              }
+
+              s = s->next;
+            } // endwhile all symtabs
+
+            if( !foundExact && !foundWithin)
+            {
+                mask = 0xffff;
+                //useMask = true;
+                continue;
+            }
+            else
+            {
+              break;
+            }
+        } // endfor
+    } // endif
+    return 0;
+} // endfunc
+
+
+
+
+
 #if 0
 int tui_source_build_sal( const struct symtab_and_line &sal)
 {
