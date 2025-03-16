@@ -190,6 +190,7 @@ if( s != NULL) {
            // DEBUG:: gdb_printf( "[D] found file: %s, at line=%d", s->fullname, s->linetable()->item[foundLine].line);
 
            // open the ghidra decompile file and read all strings to srclines
+           s->fullname = (char *)s->filename_for_id;
            srclines = tui_hooks_readFile( s->fullname, &lineCount);
            tui_hooks_style_source_lines( s, (char *)/*"/tmp/ghidra2/main.c"*/ s->fullname, srclines);
            break;
