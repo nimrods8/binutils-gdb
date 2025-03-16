@@ -48,6 +48,7 @@
 
 static int find_pc_line( CORE_ADDR cur_pc, CORE_ADDR);
 static int calculateStartLine(int totalLines, int targetLine, int screen_lines) ;
+static std::string decomp_extractLines(const std::string& input, int from_line, int to_line);
 
 
 /* Function to display source in the source window.  */
@@ -250,7 +251,9 @@ if( s != NULL) {
 
   // NS 160325
   line_no = find_pc_line( cur_pc, baseaddr);
-  line_no = calculateStartLine( nlines, line_no, lineCount);
+  line_no = calculateStartLine( lineCount, line_no, nlines);
+
+  std::string srcLines = decomp_extractLines( srclines, line_no, line_no + nlines); 
 
 
 #if 0
@@ -293,14 +296,14 @@ if( s != NULL) {
 #endif
 
   m_max_length = -1;
-  const char *iter = srclines.c_str ();
+  const char *iter = srcLines.c_str ();
 
   m_content.resize (nlines);
 
   bool firstTime = true;
 
   // NS 080325
-  cur_line_no = 1;
+  cur_line_no = line_no;
   addressMap.clear();
 
   while (cur_line < nlines)
@@ -378,9 +381,44 @@ if( s != NULL) {
 }
 
 
+/*******************************************************************************/
+static std::string decomp_extractLines(const std::string& input, int from_line, int to_line) 
+{
+    std::string result;
+    int current_line = 1;
+    size_t start_pos = 0;
+    size_t end_pos = input.find('\n');
+    
+    // Loop through the string and extract lines
+    while (end_pos != std::string::npos) {
+        if (current_line >= from_line && current_line <= to_line) {
+            result.append(input.substr(start_pos, end_pos - start_pos));  // Append the line
+            if (current_line != to_line) {
+                result.append("\n");  // Add newline unless it's the last line in range
+            }
+        }
+        
+        // Move to the next line
+        start_pos = end_pos + 1;  // Skip over the newline
+        end_pos = input.find('\n', start_pos);  // Find the next newline
+        current_line++;
+    }
+    
+    // Handle the last line (if it's within the range)
+    if (current_line >= from_line && current_line <= to_line) {
+        result.append(input.substr(start_pos));  // Append the last part of the string (after the final newline)
+    }
+    
+    return result;
+}
+
+
 
 
 /**
+ * @param totalLines - how many total lines are in the source file
+ * @param targetLine - the number of line we are interested in
+ * @param screen_lines - the number of lines available in the screen
  */
 static int calculateStartLine(int totalLines, int targetLine, int screen_lines) 
 {
