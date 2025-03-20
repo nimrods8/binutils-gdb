@@ -586,6 +586,7 @@ tui_decomp_window::do_scroll_vertical (int num_to_scroll)
 {
   if (!m_content.empty ())
     {
+#if 0
       struct symtab *s;
       struct symtab_and_line cursal = get_current_source_symtab_and_line ();
       struct gdbarch *arch = m_gdbarch;
@@ -609,8 +610,21 @@ tui_decomp_window::do_scroll_vertical (int num_to_scroll)
 
       cursal.line = line_no;
       find_line_pc (cursal.symtab, cursal.line, &cursal.pc);
+
       for (struct tui_source_window_base *win_info : tui_source_windows ())
 	win_info->update_source_window_as_is (arch, cursal);
+#else
+      symtab_and_line *aqs = tui_hooks_parse_sal_file();
+      struct gdbarch *arch = m_gdbarch;
+      if( aqs == NULL)
+         return;
+      
+      int line_no = m_start_line_or_addr.u.line_no + num_to_scroll;
+      aqs->line = line_no;
+
+      for (struct tui_source_window_base *win_info : tui_source_windows ())
+	win_info->update_source_window_as_is (arch, *aqs);
+#endif
     }
 }
 
@@ -706,4 +720,23 @@ tui_decomp_window::show_line_number (int offset) const
 		 lineno, space);
     }
   waddstr (handle.get (), text);
+}
+
+
+
+
+
+// NS 20/03/25
+
+/* Called for each mouse click inside this window.  Coordinates MOUSE_X
+   and MOUSE_Y are 0-based relative to the window, and MOUSE_BUTTON can
+   be 1 (left), 2 (middle), or 3 (right).  */
+void tui_decomp_window::click(int mouse_x, int mouse_y, int mouse_button)
+{
+  // if clicked at the top line - just do focus on disasm...
+  if( !TUI_DECOMP_WIN->isVisible)
+  {
+     tui_set_win_focus_to ( this);
+//     rerender();
+  }
 }

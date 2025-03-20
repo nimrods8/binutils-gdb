@@ -89,7 +89,7 @@ struct tui_disasm_ontop_window : public tui_source_window_base
   void erase_source_content () override
   {
     #if 1
-    do_erase_source_content (_("[ Wait for Decompiler ]"));
+    do_erase_source_content (_("[ No data to show ]"));
     #else
     do_erase_source_content (_(""));
     #endif
