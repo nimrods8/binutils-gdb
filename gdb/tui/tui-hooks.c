@@ -1330,8 +1330,8 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
             {
                  std::string home_str = std::string( home);
                  full_path = "shell " + full_path + "/support/analyzeHeadless " + home_str + " " + _hashproj + 
-                              " -import " + sarg + " -scriptPath " + full_path + "/support/ -postScript GhidraDecompiler2.java " + 
-                               hashfn + " " + tmp_buffer + " > /dev/null";
+                              " -import " + sarg + " -scriptPath " + full_path + "/support/ -preScript SetThumbModeScript.java -postScript GhidraDecompiler2.java " + 
+                               hashfn + " " + tmp_buffer; // + " > /dev/null";
                  // gdb_printf( "[tui-hooks] %s", full_path.c_str());
                  execute_command( full_path.c_str(), false);
             } // endif
@@ -1381,7 +1381,7 @@ static struct symtab_and_line *sal = NULL;
 /************************************************************************/
 struct symtab_and_line *tui_hooks_parse_sal_file( void)
 {
-  char text[256], *rd;
+  char text[1024], *rd;
 
   if( !file_read)
      return NULL;
@@ -1417,6 +1417,10 @@ struct symtab_and_line *tui_hooks_parse_sal_file( void)
      {
          std::string tmps = std::string( text);
          std::vector<std::string> vec = tui_hooks_split( tmps, ':');
+
+         if( vec.size() < 3)
+            continue;
+
          sscanf( vec[0].c_str(), "0x%lx 0x%lx", 
                     &addr, //&com.type,
                     &addr2);

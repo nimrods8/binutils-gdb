@@ -9,7 +9,7 @@
 MAXMEM=2G
 
 # Launch mode can be changed to one of the following: fg, debug, debug-suspend
-LAUNCH_MODE=bg                       # was fg
+LAUNCH_MODE=fg   #bg                       # was fg
 
 # Set the debug address to listen on.
 # NOTE: This variable is ignored if not launching in a debugging mode.

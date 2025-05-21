@@ -48,7 +48,7 @@
 
 #include <fstream>
 
-static CORE_ADDR showAddr;
+//static CORE_ADDR showAddr;
 static bool isDecompiler = false;
 // NS 280225: NOT USED static int decompiler_line;
 
@@ -863,7 +863,7 @@ bool tui_disasm_ontop_window::set_contents(struct gdbarch *arch,
    be 1 (left), 2 (middle), or 3 (right).  */
 void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
 {
-  bool found = false;
+  //bool found = false;
 
   isDecompiler = false;
 
@@ -906,187 +906,24 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
     char cmd[64];
     sprintf( cmd, "b *0x%lx", addr);
     execute_command( cmd, false);
-    //gdb_printf( "[dis] set break at *%lx", addr);
+    gdb_printf( "[dis] set break at *%lx", addr);
 
-  }
+  } // endif SET BREAKPOINT
+
+
+// ====================================
   else if (!m_content.empty() && m_content.size() >= mouse_y)
   {
+      CORE_ADDR addr = 0;
       if (mouse_button == 3)
       {
-#if 0
-          if (TUI_DISASMOT_WIN != nullptr && !TUI_DISASMOT_WIN->isVisible)
-          {
-            // gdb_printf( "have xor\n\n");
-            //struct gdbarch *gdbarch = get_current_arch();
-
-            decompiler_line = 0;
-
-            int _x = TUI_DISASMOT_WIN->x;
-            int _y = TUI_DISASMOT_WIN->y;
-            int _w = TUI_DISASMOT_WIN->width;
-            int _h = TUI_DISASMOT_WIN->height;
-            _y = mouse_y + TUI_DISASM_WIN->y + 2;
-            _x = mouse_x + TUI_DISASM_WIN->x + 1;
-            _w = 100;
-            _h = 20;
-
-            TUI_DISASMOT_WIN->resize(_h, _w, _x, _y);
-            TUI_DISASMOT_WIN->make_visible(true);
-            TUI_DISASMOT_WIN->isVisible = true;
-            // TUI_DISASMOT_WIN->refill();
-            //tui_apply_current_layout(true);
-            //tui_update_ontop_windows_with_addr(gdbarch, 0L);
-            TUI_DISASMOT_WIN->erase_data_content( "Wait for Decompiler...");
-            TUI_DISASMOT_WIN->isVisible = false;
-          }
-#endif // no decompiler here
       } // endif mouse button decompiler
       else
           TUI_DISASMOT_WIN->erase_data_content( "Wait for Disassembler...");
 
 
-
-    // gdb_printf( "Line=%s", m_content[mouse_y].line.c_str());
-
-    std::string line2 = m_content[mouse_y].line;
-    std::string decompName = "func";
-    CORE_ADDR addr;
-
-    addr = tui_disasm_parse_line(line2); // return jump to address
-
-    // NS 11/11 try to get the address AT the line instead
-    if (addr == 0L)
-    {
-      std::string line3 = tui_diasm_remove_ansi_colors(line2);
-      std::size_t frip = line3.find("0x");
-      std::size_t fripend = line3.find(" ", frip);
-      addr = std::stoul(line3.substr(frip, fripend - frip), nullptr, 16);
-      // gdb_printf( "0x%lx", addr);
-
-      // next try to find the decompiled function name
-      std::size_t fnme = line3.find("<", frip);
-      std::size_t fnmed = line3.find(">", frip);
-      std::size_t fnmed2 = line3.find("+", frip);
-      if( fnmed2 < fnmed) fnmed = fnmed2;
-      if( fnme != std::string::npos)
-      {
-         decompName = line3.substr( fnme + 1, fnmed - fnme - 1);
-         if( decompName.find( "@plt") != std::string::npos)
-         {
-            // DEBUG 12/1
-            gdb_printf( "plt @%s ", decompName.c_str());
-         }
-         /*
-               // try now with "info func"
-      std::string resultsstr = "";
-      std::string infof = "info func " + name;
-      execute_command_to_string( resultsstr, infof.c_str(), 0, false);
-      
-      
-      std::vector<std::string>v1 = tui_hooks_split( resultsstr, '\n');
-      CORE_ADDR func_addr;
-      char func_name[256];
-
-      bool found = false;
-      for( int l = 0; l < v1.size(); l++)
-      {  
-           // don't allow too big function names here...
-           if( v1[l].length() > 256)
-              continue;
-
-           if( sscanf( v1[l].c_str(), "0x%lx  %s", &func_addr, func_name) == 2)
-           {
-               // DEBUG: gdb_printf( "Found %lx %s\t", func_addr, func_name);
-
-               // this is how it looks like: 0x0000ffff8fd32000  QrCodeManager::IsTytoWifiCode()@plt
-
-               // now add what you asked...
-               func_addr += (fnd1 > 0 ? v : -v);
-
-
-               char cmd[64];
-               sprintf( cmd, "b *0x%s", toHexFromDecimal( func_addr).c_str());
-               gdb_printf( "<%s> ", cmd);
-
-               execute_command( cmd, false);
-               found = true;
-
-           } // endif
-      } // endfor
-*/
-      }
-    } // endif no address found
-
-    // address is found!
-    if (addr != 0L && !TUI_DISASMOT_WIN->isVisible)
-    {
-      // read this memory to array
-
-    //gdb_printf("decompile1 @%lx", addr);
-
-
-      // find -maybe- end of func address by scanning
-      CORE_ADDR end_addr = tui_disasm_find_maybe_end_of_func( addr) + 1; // to add the ret
-    
-    //gdb_printf("decompile2 @%lx", end_addr);
-
-      long take = 300; // = sizeof( byte_buf);
-      if (end_addr - 1L > 0L)
-      {
-        take = end_addr - addr + 1;
-        //gdb_printf("take=%lx::%lx\n", take, end_addr);
-      }
-      gdb_byte *byte_buf = (gdb_byte *)malloc(take);
-
-      if (byte_buf != 0)
-      {
-        /*int g =*/target_read_code(addr, byte_buf, take);
-
-        // gdb_printf( "ret=%d", g);
-        FILE *fil;
-        fil = fopen("/tmp/data000", "w");
-        fprintf(fil, "\"0x%lx\"\n", addr);
-
-        for (int iz = 0; iz < take /*sizeof( byte_buf)*/; iz++)
-        {
-          fprintf(fil, "%02x", byte_buf[iz]);
-        }
-        fprintf(fil, "\n");
-        fprintf( fil, "%s\n", decompName.c_str());
-
-        std::vector<std::string> comVec = tui_disasm_find_funcnames(addr, end_addr);
-        for (int ii = 0; ii < comVec.size(); ii++)
-        {
-          fprintf(fil, "%s\n", comVec.at(ii).c_str());
-        }
-        fclose(fil);
-        free( byte_buf);
-      } // endif malloc OK
-#if 0
-      if (mouse_button == 3)
-      {
-        int p = system("/home/cyberark/projects/binutils-gdb/gdb/tui/ghidra/ghidra_test_dbg -sleighpath /home/cyberark/projects/binutils-gdb/gdb/tui/ghidra -path /home/cyberark/projects/binutils-gdb/gdb/tui/ghidra/datatests datatests > /dev/null");
-        if( p != 0) { 
-//          gdb_printf("problemos!");
-           TUI_DISASMOT_WIN->erase_data_content( "Decompiler Error!");
-        }
-        isDecompiler = true;
-      }
-#endif
-      showAddr = addr;
-
-#if 0
-                  // just dump pit for now on the cmd window
-		  fil = fopen( "/tmp/decompiler.txt", "r");
-                  if( fil != NULL)
-                  {
-                     char l[1024];
-                     while( fgets( l, sizeof( l), fil)) {
-                         gdb_printf( "%s\n", l);
-                     } // endwhile
-                     fclose( fil);
-                  }
-#endif
+//      showAddr = addr;
+// ====================================
 
       if (TUI_DISASMOT_WIN != nullptr)
       {
@@ -1109,16 +946,15 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
         tui_apply_current_layout(true);
         tui_update_ontop_windows_with_addr(gdbarch, addr);
 
-        found = true;
+        //found = true;
 
         tui_set_win_focus_to ( TUI_DISASMOT_WIN);
 
       }
       //                    break;
-    } // found one of calls
   }   // if have enough lines in y
 
-  if (TUI_DISASMOT_WIN != nullptr && (!found))
+  if (TUI_DISASMOT_WIN != nullptr /* && (!found)*/)
   {
     // gdb_printf( "have xor\n\n");
     TUI_DISASMOT_WIN->isVisible = false;
@@ -1126,25 +962,6 @@ void tui_disasm_window::click(int mouse_x, int mouse_y, int mouse_button)
     TUI_DISASMOT_WIN->make_visible(false);
     TUI_DISASMOT_WIN->refill();
   }
-
-  // execute_command( "x/100bx $ax", false);
-#if 0     
-      int _first_element_no = first_data_item_displayed ();
-      int _line_no = 0, i;
-
-      for( i = _first_element_no; i < m_regs_content.size(); i++)
-      {
-         _line_no = line_from_reg_element_no ( i);
-         if( _line_no == mouse_y) break;
-	    }
-      int per_line = ( i - _first_element_no + 1) / _line_no;
-      int separator = ( width - 2) / per_line;
-      i += mouse_x / separator;
-         
-      //gdb_printf( "mouse @%d:%d, %d, element=%d\n", mouse_x, mouse_y, mouse_button, i);
-  
-      execute_command( m_regs_content.at(i).cmd.c_str(), false);
-#endif
 } // endfunc
 
 

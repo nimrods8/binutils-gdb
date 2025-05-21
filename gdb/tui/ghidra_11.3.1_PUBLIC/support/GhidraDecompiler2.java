@@ -182,9 +182,13 @@ public class GhidraDecompiler2 extends HeadlessScript {
                 } // endwhile
                 reader.close();
                 List<FunctionEntry> sortedEntries = new ArrayList<>(entries);  // Create and use FunctionEntry objects inside the method
-                Collections.sort( sortedEntries, new Comparator<FunctionEntry>() {
-                @Override
-                   public int compare(FunctionEntry e1, FunctionEntry e2) {
+
+
+
+
+//-                Collections.sort( sortedEntries, new Comparator<FunctionEntry>() {
+//-                @Override
+//-                   public int compare(FunctionEntry e1, FunctionEntry e2) {
                          // First compare by function_name
 /*
                          int functionComparison = e1.getFunctionName().compareTo(e2.getFunctionName());
@@ -192,10 +196,25 @@ public class GhidraDecompiler2 extends HeadlessScript {
                             return functionComparison;
                          }
 */
-                         // If function_name is the same, compare by addr2 (hex comparison)
-                         return Long.compare(e1.getAddr1(), e2.getAddr1());
-                   } // endfunc compare
+//-                         // If function_name is the same, compare by addr2 (hex comparison)
+//-                         return Long.compare(e1.getAddr1(), e2.getAddr1());
+//-                   } // endfunc compare
+//-                });
+
+
+                Collections.sort(sortedEntries, new Comparator<FunctionEntry>() {
+                @Override
+                   public int compare(FunctionEntry e1, FunctionEntry e2) {
+                      int functionComparison = e1.getFunctionName().compareTo(e2.getFunctionName());
+                      if (functionComparison != 0) {
+                         return functionComparison;  // Group by function name
+                      }
+                      return Long.compare(e1.getAddr1(), e2.getAddr1());  // Sort by address within each group
+                  }
                 });
+
+
+
                 // Output the entries
                 BufferedWriter writer = new BufferedWriter(new FileWriter( target_folder + "/sal.rxx"));
                 for( FunctionEntry entry : sortedEntries) {
@@ -232,6 +251,7 @@ public class GhidraDecompiler2 extends HeadlessScript {
                 }
 
 		var program = this.getCurrentProgram();
+
 		DecompInterface ifc = new DecompInterface();
 		ifc.openProgram(program);
 		for(var func : program.getFunctionManager().getFunctions(true)) {
