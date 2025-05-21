@@ -18,7 +18,7 @@ import ghidra.program.model.lang.Language;
 
 
 
-    x
+
 public class SetThumbModeScript extends GhidraScript {
 
     @Override
