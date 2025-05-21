@@ -72,3 +72,6 @@ stamp-*
 /mpc*
 /gmp*
 /isl*
+
+#ignore tmp_ghidra_project
+tmp_ghidra_project*
