@@ -1348,7 +1348,7 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
                 pthread_t id;
                 int ret = pthread_create(&id,NULL,&threadFunction,static_cast<void*>( &full_path));
                 if( ret == 0) {
-                    gdb_printf("Thread created successfully.\n");
+                    gdb_printf("Ghidra Decompiler thread created successfully.\n");
                 }
                 else{
                     gdb_printf("Thread not created.\n");
