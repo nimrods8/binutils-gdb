@@ -186,9 +186,9 @@ public class GhidraDecompiler2 extends HeadlessScript {
 
 
 
-//-                Collections.sort( sortedEntries, new Comparator<FunctionEntry>() {
-//-                @Override
-//-                   public int compare(FunctionEntry e1, FunctionEntry e2) {
+                Collections.sort( sortedEntries, new Comparator<FunctionEntry>() {
+                @Override
+                   public int compare(FunctionEntry e1, FunctionEntry e2) {
                          // First compare by function_name
 /*
                          int functionComparison = e1.getFunctionName().compareTo(e2.getFunctionName());
@@ -196,22 +196,25 @@ public class GhidraDecompiler2 extends HeadlessScript {
                             return functionComparison;
                          }
 */
-//-                         // If function_name is the same, compare by addr2 (hex comparison)
-//-                         return Long.compare(e1.getAddr1(), e2.getAddr1());
-//-                   } // endfunc compare
-//-                });
-
-
-                Collections.sort(sortedEntries, new Comparator<FunctionEntry>() {
-                @Override
-                   public int compare(FunctionEntry e1, FunctionEntry e2) {
-                      int functionComparison = e1.getFunctionName().compareTo(e2.getFunctionName());
-                      if (functionComparison != 0) {
-                         return functionComparison;  // Group by function name
-                      }
-                      return Long.compare(e1.getAddr1(), e2.getAddr1());  // Sort by address within each group
-                  }
+                         // If function_name is the same, compare by addr2 (hex comparison)
+                         return Long.compare(e1.getAddr1(), e2.getAddr1());
+                   } // endfunc compare
                 });
+
+		// remove all the helper ..lin.. for now... at least until I understand what is their role
+                sortedEntries.removeIf( entry -> entry.getFunctionName().startsWith("..lin."));
+
+
+//--                Collections.sort(sortedEntries, new Comparator<FunctionEntry>() {
+//--                @Override
+//--                   public int compare(FunctionEntry e1, FunctionEntry e2) {
+//--                      int functionComparison = e1.getFunctionName().compareTo(e2.getFunctionName());
+//--                      if (functionComparison != 0) {
+//--                         return functionComparison;  // Group by function name
+//--                      }
+//--                      return Long.compare(e1.getAddr1(), e2.getAddr1());  // Sort by address within each group
+//--                  }
+//--                });
 
 
 

@@ -54,6 +54,7 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <sstream>     // For stringstream
+#include <pthread.h>    // For threading ghidra decompilation
 
 
 #include "tui/tui.h"
@@ -106,6 +107,9 @@ static void tui_hooks_goto_command( const char *arg, int from_tty);
 static void  tui_switch_to_src_command( const char *arg, int from_tty);
 static size_t tui_hooks_countLines(const std::string& str);
 
+/*NS 220525 thread function definition*/
+static void* threadFunction(void* args);
+
 
 /* Data from one mapping from /proc/PID/maps.  */
 #define MAX_FN_TEXT	256
@@ -156,6 +160,11 @@ struct comment
    ULONGEST unbased_addr;
 };
 std::vector<comment> m_comments;
+
+// NS 22/5/2025
+std::string full_path;
+ 
+
 
 
 /* Service function for corefiles and info proc.  */
@@ -1323,7 +1332,7 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
          { // Matches "ghidra_*"
             char tmp_buffer[32];
 
-            std::string full_path = dir_path + "/" + entry->d_name;
+            /*std::string*/ full_path = dir_path + "/" + entry->d_name;
             sprintf( tmp_buffer, "%d", getpid());
 
             if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
@@ -1331,9 +1340,20 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
                  std::string home_str = std::string( home);
                  full_path = "shell " + full_path + "/support/analyzeHeadless " + home_str + " " + _hashproj + 
                               " -import " + sarg + " -scriptPath " + full_path + "/support/ -preScript SetThumbModeScript.java -postScript GhidraDecompiler2.java " + 
-                               hashfn + " " + tmp_buffer; // + " > /dev/null";
+                               hashfn + " " + tmp_buffer + " > /tmp/ghidra_dec.txt 2>&1";
                  // gdb_printf( "[tui-hooks] %s", full_path.c_str());
-                 execute_command( full_path.c_str(), false);
+
+
+                /*creating thread*/
+                pthread_t id;
+                int ret = pthread_create(&id,NULL,&threadFunction,static_cast<void*>( &full_path));
+                if( ret == 0) {
+                    gdb_printf("Thread created successfully.\n");
+                }
+                else{
+                    gdb_printf("Thread not created.\n");
+                }
+                //execute_command( full_path.c_str(), false);
             } // endif
           } // endif
       } // endwhile
@@ -1354,6 +1374,17 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
 #endif // debug
 
 } // endfunc helper tui breaks
+
+
+
+/*thread function definition*/
+void* threadFunction(void* args)
+{
+   // Cast the argument back to a std::string*
+   //std::string* full_path = static_cast<std::string*>(args);
+   execute_command( full_path.c_str(), false);
+   return( 0);
+}
 
 
 
