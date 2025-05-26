@@ -72,12 +72,21 @@ public class GhidraDecompiler2 extends HeadlessScript {
 
                         Function f = results.getFunction();
 
+			// add a first line to each function with start address and line 1
+			Address startAddress = f.getEntryPoint();
+
 
                         //FileWriter fw = new FileWriter("ghidra-output.r2");
 			FileWriter fw     = new FileWriter( target_folder + "/" + results.getFunction().getName() + ".r2");
 
                         // *** open the sal.rx with append flag ***
 			FileWriter fw_sal = new FileWriter( target_folder + "/sal.rx", true);
+
+			//==================================================
+                        long addrValue = startAddress.getOffset();
+			String sr_2 = String.format("0x%08x 0x%08x:%s:%d\n", addrValue, addrValue, results.getFunction().getName() + ".c", 1);
+        		fw_sal.write( sr_2);
+			//==================================================
 
 
 			// Print lines prepend with addresses
@@ -239,7 +248,7 @@ public class GhidraDecompiler2 extends HeadlessScript {
 
                 // Stop after this headless script
                 setHeadlessContinuationOption(HeadlessContinuationOption.ABORT);
-		System.out.println("*******************\nGD2 v0.2\n*******************\n\n");
+		System.out.println("*******************\nGD2 v0.3\n*******************\n\n");
 
                 // Get the function address from the script arguments
                 String[] args = getScriptArgs();
