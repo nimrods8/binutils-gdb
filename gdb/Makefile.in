@@ -326,7 +326,8 @@ SUBDIR_TUI_SRCS = \
 	tui/tui-wingeneral.c \
 	tui/tui-winsource.c \
 	tui/tui-console.c \
-	tui/tui-memdump.c
+	tui/tui-memdump.c \
+	tui/tui-decomp.c
 
 SUBDIR_TUI_OBS = $(patsubst %.c,%.o,$(SUBDIR_TUI_SRCS))
 
