@@ -443,12 +443,15 @@ std::string m_cont;
      if( width > 80)
         showPerLine = 32;
 
-     if( requestSize == 2)
-        watchaddr = watchaddr & ((CORE_ADDR)0xfffffffffffffffe);
-     else if( requestSize == 4)
-        watchaddr = watchaddr & ((CORE_ADDR)0xfffffffffffffffc);
-     else if( requestSize == 8)
-        watchaddr = watchaddr & ((CORE_ADDR)0xfffffffffffffff8);
+     /* Only round the address down to the element size on AArch64.
+        On other targets (e.g. x86/x86-64) show memory starting at the
+        exact requested address.  */
+     bool align_addr = (gdbarch_bfd_arch_info (target_gdbarch ())->arch == bfd_arch_aarch64);
+     if( requestSize == 2 || requestSize == 4 || requestSize == 8)
+     {
+        if( align_addr)
+           watchaddr = watchaddr & ~((CORE_ADDR)requestSize - 1);
+     }			 
      else
      {
         showPerLine = 16;
