@@ -1335,12 +1335,22 @@ static void tui_hooks_file_command( const char *arg, int from_tty)
             /*std::string*/ full_path = dir_path + "/" + entry->d_name;
             sprintf( tmp_buffer, "%d", getpid());
 
-            if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) 
+            if( stat(full_path.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode))							
             {
                  std::string home_str = std::string( home);
-                 full_path = "shell " + full_path + "/support/analyzeHeadless " + home_str + " " + _hashproj + 
-                              " -import " + sarg + " -scriptPath " + full_path + "/support/ -preScript SetThumbModeScript.java -postScript GhidraDecompiler2.java " + 
-                               hashfn + " " + tmp_buffer + " > /tmp/ghidra_dec.txt 2>&1";
+
+                 /* Log into the per-project directory (owned by the current
+                    user) instead of a fixed, shared /tmp path.  A fixed
+                    /tmp file created by another user (or by an earlier run
+                    under sudo) cannot be reopened for writing because /tmp
+										is sticky and fs.protected_regular is enabled, which
+                    yields "Permission denied" on the redirect.  */
+							
+                 std::string log_fn = hashfn + "/ghidra_dec.txt";
+                 full_path = "shell " + full_path + "/support/analyzeHeadless " + home_str + " " + _hashproj +
+                              " -import " + sarg + " -scriptPath " + full_path + "/support/ -preScript SetThumbModeScript.java -postScript GhidraDecompiler2.java " +
+                               hashfn + " " + tmp_buffer + " > " + log_fn + " 2>&1";
+							
                  // gdb_printf( "[tui-hooks] %s", full_path.c_str());
 
 
